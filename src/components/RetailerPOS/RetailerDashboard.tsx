@@ -8,7 +8,6 @@ import { addRetailerItemApi, overridePriceApi, verifyPickupCodeApi, updateReserv
 import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { DonationModal } from './DonationModal';
 import { CsrCertificateModal } from './CsrCertificateModal';
-import { DigitalTwinCockpit } from './DigitalTwinCockpit';
 import { sounds } from '../../lib/soundEffects';
 
 interface RetailerDashboardProps {
@@ -418,9 +417,6 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
           </ResponsiveContainer>
         </div>
       </div>
-
-      {/* Predictive AI Digital Twin Spoilage Cockpit */}
-      <DigitalTwinCockpit />
 
       {/* Active Surplus Listings Table */}
       <div className="bg-white dark:bg-[#182230] p-6 rounded-[2rem] border border-[#2D6A4F]/15 dark:border-white/10 shadow-xs">
