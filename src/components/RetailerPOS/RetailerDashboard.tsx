@@ -47,6 +47,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
   const [overrideDealId, setOverrideDealId] = useState<string | null>(null);
   const [overridePriceInput, setOverridePriceInput] = useState<string>('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Cashier Pass Redemption State
   const [verifyCodeInput, setVerifyCodeInput] = useState<string>('');
@@ -522,20 +523,40 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                             setOverrideDealId(deal.id);
                             setOverridePriceInput(deal.currentPricePkr.toString());
                           }}
-                          className="p-1.5 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300"
+                          className="p-1.5 rounded-lg bg-[#edf7ed] hover:bg-[#c8e6c9] border border-[#c8e6c9] text-[#2e7d32] transition-colors"
                           title="Override Price"
                         >
                           <Edit3 className="size-3.5" />
                         </button>
                       )}
 
-                      <button
-                        onClick={() => onRemoveItem(deal.id)}
-                        className="p-1.5 rounded-lg bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300"
-                        title="Remove Listing"
-                      >
-                        <X className="size-3.5" />
-                      </button>
+                      {deleteConfirmId === deal.id ? (
+                        <div className="flex items-center gap-1 animate-in fade-in duration-150">
+                          <button
+                            onClick={() => {
+                              onRemoveItem(deal.id);
+                              setDeleteConfirmId(null);
+                            }}
+                            className="px-2 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold shadow-xs transition-colors"
+                          >
+                            Delete
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmId(null)}
+                            className="px-1.5 py-1 rounded-lg bg-stone-200 hover:bg-stone-300 text-stone-700 text-[10px] font-medium"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setDeleteConfirmId(deal.id)}
+                          className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 transition-colors"
+                          title="Remove Listing"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -547,8 +568,8 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
       {/* Cashier Verification Modal */}
       {isVerifyPassOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md glass-panel border border-emerald-500/60 rounded-3xl p-6 shadow-2xl overflow-hidden bg-[#09150e]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md bg-white border border-[#2D6A4F]/20 rounded-3xl p-6 shadow-2xl overflow-hidden">
             
             <button
               onClick={() => {
@@ -557,18 +578,18 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                 setVerifyError(null);
                 setIsSuccessCollected(false);
               }}
-              className="absolute top-4 right-4 p-2 rounded-full bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 transition-colors"
             >
               <X className="size-5" />
             </button>
 
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="size-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center">
+              <div className="size-10 rounded-2xl bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] flex items-center justify-center">
                 <QrCode className="size-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Cashier Counter Pass Verification</h3>
-                <p className="text-xs text-emerald-300/70">Verify customer pickup code PK-XXXXX</p>
+                <h3 className="text-base font-bold text-stone-900">Cashier Counter Pass Verification</h3>
+                <p className="text-xs text-stone-500">Verify customer pickup code PK-XXXXX</p>
               </div>
             </div>
 
@@ -579,50 +600,50 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                 placeholder="Enter Code (e.g. PK-84920)"
                 value={verifyCodeInput}
                 onChange={(e) => setVerifyCodeInput(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-950 border border-emerald-700 text-amber-300 font-mono text-sm font-bold placeholder-emerald-400/40 uppercase"
+                className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 font-mono text-sm font-bold placeholder-stone-400 uppercase focus:outline-none focus:border-[#2D6A4F]"
               />
               <button
                 type="submit"
                 disabled={isVerifying}
-                className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black text-xs shadow-lg transition-all"
+                className="px-4 py-2.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] disabled:opacity-50 text-white font-black text-xs shadow-md transition-all"
               >
                 {isVerifying ? 'Verifying...' : 'Verify'}
               </button>
             </form>
 
             {verifyError && (
-              <div className="p-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-300 text-xs font-semibold mb-4">
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-semibold mb-4">
                 ❌ {verifyError}
               </div>
             )}
 
             {verifiedPass && (
-              <div className="p-4 rounded-2xl bg-slate-950 border border-emerald-600/80 flex flex-col gap-3 animate-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between border-b border-emerald-900 pb-2">
-                  <span className="font-mono text-xs font-bold text-amber-300">
+              <div className="p-4 rounded-2xl bg-[#F9F6F0] border border-[#2D6A4F]/30 flex flex-col gap-3 animate-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+                  <span className="font-mono text-xs font-bold text-[#1b4332]">
                     Code: #{verifiedPass.pickupCode}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9]">
                     ✓ Valid Pass
                   </span>
                 </div>
 
                 <div className="text-xs space-y-1">
-                  <p className="text-white font-bold">{verifiedPass.dealTitle}</p>
-                  <p className="text-emerald-300/80">Quantity: <strong>{verifiedPass.quantity} pcs</strong></p>
-                  <p className="text-emerald-300/80">Amount: <strong className="text-amber-300">{formatCurrency(verifiedPass.totalPricePkr)}</strong></p>
-                  <p className="text-emerald-300/80">Payment: <strong>{verifiedPass.paymentMethod}</strong> ({verifiedPass.paymentStatus})</p>
+                  <p className="text-stone-900 font-bold">{verifiedPass.dealTitle}</p>
+                  <p className="text-stone-600">Quantity: <strong>{verifiedPass.quantity} pcs</strong></p>
+                  <p className="text-stone-600">Amount: <strong className="text-[#f37021]">{formatCurrency(verifiedPass.totalPricePkr)}</strong></p>
+                  <p className="text-stone-600">Payment: <strong>{verifiedPass.paymentMethod}</strong> ({verifiedPass.paymentStatus})</p>
                 </div>
 
                 {isSuccessCollected ? (
-                  <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 animate-bounce">
+                  <div className="p-3 rounded-xl bg-[#edf7ed] border border-[#c8e6c9] text-[#2e7d32] text-xs font-bold flex items-center justify-center gap-1.5 animate-bounce">
                     <CheckCircle2 className="size-4" />
                     <span>Item Handover Confirmed!</span>
                   </div>
                 ) : (
                   <button
                     onClick={handleConfirmCollection}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg transition-all"
+                    className="w-full py-2.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-black text-xs shadow-md transition-all"
                   >
                     Confirm Customer Handover (Collect)
                   </button>
@@ -635,25 +656,33 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
       {/* Add Item Modal */}
       {isAddItemOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="glass-panel p-6 rounded-3xl border border-amber-500/40 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h3 className="text-base font-bold text-white mb-4">List New Surplus Item</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-3xl border border-stone-200 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative">
+            
+            <button
+              onClick={() => setIsAddItemOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 transition-colors"
+            >
+              <X className="size-5" />
+            </button>
+
+            <h3 className="text-base font-bold text-stone-900 mb-4">List New Surplus Item</h3>
             <form onSubmit={handleCreateSurplusItem} className="flex flex-col gap-3">
               <div>
-                <label className="block text-xs text-emerald-300/80 mb-1 font-medium">Item Name:</label>
+                <label className="block text-xs text-stone-600 mb-1 font-medium">Item Name:</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Fresh Chaunsa Mangoes Box"
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-emerald-950 border border-emerald-800 text-white text-xs font-bold"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-emerald-300/80 mb-1 font-medium">Category:</label>
+                  <label className="block text-xs text-stone-600 mb-1 font-medium">Category:</label>
                   <select
                     value={newItemCategory}
                     onChange={(e) => {
@@ -661,7 +690,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                       setNewItemCategory(cat);
                       setNewItemImageUrl(PRESET_IMAGES[cat as keyof typeof PRESET_IMAGES]);
                     }}
-                    className="w-full px-3 py-2 rounded-xl bg-emerald-950 border border-emerald-800 text-white text-xs font-bold"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
                   >
                     <option value="grocery">Grocery</option>
                     <option value="bakery">Bakery</option>
@@ -669,45 +698,45 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-emerald-300/80 mb-1 font-medium">Original Price (PKR):</label>
+                  <label className="block text-xs text-stone-600 mb-1 font-medium">Original Price (PKR):</label>
                   <input
                     type="number"
                     required
                     value={newItemPrice}
                     onChange={(e) => setNewItemPrice(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-emerald-950 border border-emerald-800 text-white text-xs font-bold"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-emerald-300/80 mb-1 font-medium">Quantity:</label>
+                  <label className="block text-xs text-stone-600 mb-1 font-medium">Quantity:</label>
                   <input
                     type="number"
                     required
                     value={newItemQuantity}
                     onChange={(e) => setNewItemQuantity(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-emerald-950 border border-emerald-800 text-white text-xs font-bold"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-emerald-300/80 mb-1 font-medium">Hours to Deadline:</label>
+                  <label className="block text-xs text-stone-600 mb-1 font-medium">Hours to Deadline:</label>
                   <input
                     type="number"
                     step="0.5"
                     required
                     value={newItemExpiryHours}
                     onChange={(e) => setNewItemExpiryHours(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-emerald-950 border border-emerald-800 text-white text-xs font-bold"
+                    className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
                   />
                 </div>
               </div>
 
               {/* Photo Upload / Preset Selector */}
               <div>
-                <label className="block text-xs text-emerald-300/80 mb-1 font-medium flex items-center gap-1">
-                  <ImageIcon className="size-3.5 text-amber-400" />
+                <label className="block text-xs text-stone-600 mb-1 font-medium flex items-center gap-1">
+                  <ImageIcon className="size-3.5 text-[#f37021]" />
                   <span>Item Photo (URL or Presets):</span>
                 </label>
                 <input
@@ -715,7 +744,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                   placeholder="https://images.unsplash.com/..."
                   value={newItemImageUrl}
                   onChange={(e) => setNewItemImageUrl(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-emerald-950 border border-emerald-800 text-white text-xs font-bold mb-2"
+                  className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold mb-2 focus:outline-none focus:border-[#2D6A4F]"
                 />
                 <div className="flex gap-2">
                   {(['grocery', 'bakery', 'restaurant'] as const).map((cat) => (
@@ -723,7 +752,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                       key={cat}
                       type="button"
                       onClick={() => setNewItemImageUrl(PRESET_IMAGES[cat])}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-950 border border-emerald-800 text-[10px] text-emerald-300 hover:text-white capitalize"
+                      className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 border border-stone-200 text-[10px] text-stone-700 capitalize font-medium transition-colors"
                     >
                       {cat} photo
                     </button>
@@ -735,13 +764,13 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAddItemOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-emerald-950 text-emerald-300 border border-emerald-800 text-xs font-semibold"
+                  className="flex-1 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 text-xs font-semibold transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg"
+                  className="flex-1 py-2.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-xs shadow-md transition-all"
                 >
                   Publish &amp; Apply Time-Decay
                 </button>

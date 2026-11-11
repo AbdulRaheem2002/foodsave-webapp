@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Store, Leaf, User, LogIn, MapPin, Sparkles } from 'lucide-react';
+import { ShoppingBag, Store, Leaf, LogIn, MapPin, Sparkles } from 'lucide-react';
 import type { AuthUser, PakistanCity, AppTab } from '../types';
 
 interface NavbarProps {
@@ -163,10 +163,26 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* User Auth */}
             <button
               onClick={onOpenAuth}
-              className="p-1.5 rounded-full hover:bg-stone-200 text-stone-700 transition-colors"
-              title={currentUser ? currentUser.name : 'Sign In'}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
+                currentUser
+                  ? 'bg-[#1b4332]/10 hover:bg-[#1b4332]/20 text-[#1b4332]'
+                  : 'hover:bg-stone-200 text-stone-700'
+              }`}
+              title={currentUser ? `Logged in as ${currentUser.name}` : 'Sign In'}
             >
-              {currentUser ? <User className="size-3.5 text-[#2D6A4F]" /> : <LogIn className="size-3.5" />}
+              {currentUser ? (
+                <>
+                  <div className="size-4 rounded-full bg-[#1b4332] text-white flex items-center justify-center text-[9px] font-black">
+                    {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <span className="truncate max-w-[80px] hidden sm:inline">{currentUser.name.split(' ')[0]}</span>
+                </>
+              ) : (
+                <>
+                  <LogIn className="size-3.5" />
+                  <span className="hidden sm:inline">Sign In</span>
+                </>
+              )}
             </button>
           </div>
 

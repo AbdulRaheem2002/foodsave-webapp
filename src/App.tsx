@@ -14,7 +14,7 @@ import { BykeaTrackerModal } from './components/ConsumerApp/BykeaTrackerModal';
 import { RetailerDashboard } from './components/RetailerPOS/RetailerDashboard';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
-import { fetchDealsApi, fetchMyReservationsApi } from './services/api';
+import { fetchDealsApi, fetchMyReservationsApi, deleteRetailerItemApi, updateReservationStatusApi } from './services/api';
 import { ArrowRight, CheckCircle2, ShieldCheck, Clock } from 'lucide-react';
 
 const STORAGE_KEYS = {
@@ -159,8 +159,46 @@ export function App() {
     setDeals((prev) => [newItem, ...prev]);
   };
 
-  const handleRemoveItem = (id: string) => {
+  const handleRemoveItem = async (id: string) => {
+    try {
+      await deleteRetailerItemApi(id);
+    } catch (e) {
+      console.warn('API delete item fallback:', e);
+    }
     setDeals((prev) => prev.filter((d) => d.id !== id));
+  };
+
+  const handleCancelReservation = async (reservationId: string) => {
+    try {
+      await updateReservationStatusApi(reservationId, 'cancelled');
+    } catch (e) {
+      console.warn('API cancel reservation fallback:', e);
+    }
+    const target = reservations.find((r) => r.id === reservationId || r.pickupCode === reservationId);
+    if (target) {
+      // restore stock quantity in local state deals
+      setDeals((prev) =>
+        prev.map((d) =>
+          d.id === target.item.id
+            ? { ...d, stockQuantity: d.stockQuantity + target.quantity }
+            : d
+        )
+      );
+    }
+    // Remove reservation from active list
+    setReservations((prev) =>
+      prev.filter((r) => r.id !== reservationId && r.pickupCode !== reservationId)
+    );
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.USER);
+      localStorage.removeItem(STORAGE_KEYS.LEGACY_USER);
+    } catch (e) {
+      console.warn('Logout localStorage clear error:', e);
+    }
   };
 
   const handleConfirmReservation = (res: Reservation) => {
@@ -403,6 +441,8 @@ export function App() {
         onClose={() => setIsPassesDrawerOpen(false)}
         reservations={reservations}
         onOpenBykeaTracker={(res) => setTrackedBykeaReservation(res)}
+        onCancelReservation={handleCancelReservation}
+        onRateDeal={(deal) => setRatingDeal(deal)}
       />
 
       {/* Live Bykea Rider Animated GPS Tracker Modal */}
@@ -440,7 +480,10 @@ export function App() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+        currentUser={currentUser}
         onAuthSuccess={(user) => setCurrentUser(user)}
+        onLogout={handleLogout}
+        onSwitchTab={(tab) => setActiveTab(tab)}
       />
 
       {/* Global Footer */}

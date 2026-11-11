@@ -13,7 +13,7 @@ export async function seedDatabase() {
     return;
   }
 
-  console.log('🌱 Seeding FlashFruit Pakistan dataset...');
+  console.log('🌱 Seeding Foodsave Pakistan dataset...');
 
   // Create Sample Retailer Users
   await User.create({
@@ -195,5 +195,5 @@ export async function seedDatabase() {
     });
   }
 
-  console.log('✅ FlashFruit Pakistan database successfully populated!');
+  console.log('✅ Foodsave Pakistan database successfully populated!');
 }

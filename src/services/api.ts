@@ -133,6 +133,14 @@ export async function addRetailerItemApi(itemData: any) {
   return res.json();
 }
 
+export async function deleteRetailerItemApi(dealId: string) {
+  const res = await fetch(`${API_BASE_URL}/deals/${dealId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete deal');
+  return res.json();
+}
+
 export async function overridePriceApi(dealId: string, manualOverridePricePkr: number) {
   const res = await fetch(`${API_BASE_URL}/retailer/deals/${dealId}/override`, {
     method: 'PUT',

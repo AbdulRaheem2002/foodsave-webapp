@@ -25,7 +25,7 @@ export const createReservation = async (req: Request, res: Response): Promise<vo
     if (!user) {
       user = await User.create({
         name: 'Hamza Khan',
-        email: 'consumer@flashfruit.pk',
+        email: 'consumer@foodsave.pk',
         passwordHash: 'hashed_password',
         role: 'consumer',
         contactPhone: '+92 300 9876543',

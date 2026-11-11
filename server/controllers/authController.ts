@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { User } from '../models/User';
 import { Retailer } from '../models/Retailer';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'flashfruit_pakistan_secret_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'foodsave_pakistan_secret_key_2026';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {

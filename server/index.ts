@@ -27,7 +27,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'flashfruit_pakistan_secret_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'foodsave_pakistan_secret_key_2026';
 
 app.use(cors());
 app.use(express.json());
@@ -39,7 +39,7 @@ const isMongoConnected = (): boolean => mongoose.connection.readyState === 1;
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
-    app: 'FlashFruit Pakistan MERN Stack API',
+    app: 'Foodsave Pakistan MERN Stack API',
     locale: 'PKR (₨)',
     databaseEngine: isMongoConnected() ? 'MongoDB Atlas (Connected)' : 'In-Memory MERN Database (Development Fallback)',
     mongoReadyState: mongoose.connection.readyState,
@@ -62,8 +62,8 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 
   const newUser = {
     id: `usr-${Date.now()}`,
-    name: name || 'FlashFruit User',
-    email: email || 'user@flashfruit.pk',
+    name: name || 'Foodsave User',
+    email: email || 'user@foodsave.pk',
     role: (role as 'consumer' | 'retailer') || 'consumer',
     totalSavedPkr: 0,
     itemsRescuedCount: 0,
@@ -222,6 +222,21 @@ app.post('/api/retailer/items', async (req: Request, res: Response) => {
     item: newItem,
     deal: newDeal,
   });
+});
+
+app.delete('/api/deals/:id', (req: Request, res: Response) => {
+  const { id } = req.params;
+  const dealIdx = memDb.deals.findIndex((d) => d.id === id);
+  if (dealIdx !== -1) {
+    const deletedDeal = memDb.deals.splice(dealIdx, 1)[0];
+    const itemIdx = memDb.items.findIndex((i) => i.id === deletedDeal.itemId);
+    if (itemIdx !== -1) {
+      memDb.items.splice(itemIdx, 1);
+    }
+    res.json({ message: 'Surplus deal and item removed successfully', id });
+    return;
+  }
+  res.json({ message: 'Deal removed from memory', id });
 });
 
 app.put('/api/retailer/deals/:id/override', async (req: Request, res: Response) => {
@@ -445,7 +460,7 @@ const startServer = async () => {
   }
 
   app.listen(PORT, () => {
-    console.log(`🚀 FlashFruit MERN Express API running at http://localhost:${PORT}`);
+    console.log(`🚀 Foodsave Pakistan MERN Express API running at http://localhost:${PORT}`);
     console.log(`📡 Database mode: ${isMongoConnected() ? 'MongoDB Atlas' : 'In-Memory DB'}`);
   });
 };
