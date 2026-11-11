@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { DealItem, Reservation } from '../../types';
-import { X, MapPin, QrCode, CheckCircle2, Sparkles, Wallet, Bike, Users } from 'lucide-react';
+import { X, MapPin, QrCode, CheckCircle2, Sparkles, Wallet, Bike } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
 import confetti from 'canvas-confetti';
 import { createReservationApi } from '../../services/api';
@@ -12,7 +12,6 @@ interface ReservationModalProps {
   onConfirmReservation: (reservation: Reservation) => void;
   onOpenWhatsApp: (reservation: Reservation) => void;
   userWalletBalancePkr?: number;
-  onOpenGroupSlash?: (deal: DealItem) => void;
   onOpenBykeaTracker?: (res: Reservation) => void;
 }
 
@@ -22,7 +21,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   onConfirmReservation,
   onOpenWhatsApp,
   userWalletBalancePkr = 650,
-  onOpenGroupSlash,
   onOpenBykeaTracker,
 }) => {
   const [quantity, setQuantity] = useState<number>(1);
@@ -125,15 +123,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               <span className="px-3.5 py-1 rounded-full text-xs font-black bg-[#FF9800]/15 text-[#FF9800] border border-[#FF9800]/30 shadow-2xs flex items-center gap-1.5">
                 <span>⚡</span> 15-Minute Guaranteed Hold
               </span>
-              {onOpenGroupSlash && (
-                <button
-                  onClick={() => onOpenGroupSlash(deal)}
-                  className="px-3 py-1 rounded-full bg-[#FF9800] text-white text-[11px] font-black flex items-center gap-1 shadow-sm hover:scale-102 transition-all"
-                >
-                  <Users className="size-3" />
-                  <span>Group Slash (-15%)</span>
-                </button>
-              )}
             </div>
 
             {/* Item Summary Card */}

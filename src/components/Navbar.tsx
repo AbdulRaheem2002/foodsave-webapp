@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Store, Leaf, User, LogIn, MapPin, Zap, Sparkles } from 'lucide-react';
+import { ShoppingBag, Store, Leaf, User, LogIn, MapPin, Sparkles } from 'lucide-react';
 import type { AuthUser, PakistanCity, AppTab } from '../types';
 
 interface NavbarProps {
@@ -14,10 +14,6 @@ interface NavbarProps {
   currentUser: AuthUser | null;
   onOpenAuth: () => void;
   rescueWalletBalancePkr?: number;
-  onOpenDutchAuction?: () => void;
-  onOpenCommuteMatcher?: () => void;
-  onOpenColdLocker?: () => void;
-  onOpenCarbonLeague?: () => void;
   onOpenMysteryBags?: () => void;
 }
 
@@ -41,10 +37,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   onOpenAuth,
   rescueWalletBalancePkr = 650,
-  onOpenDutchAuction,
-  onOpenCommuteMatcher,
-  onOpenColdLocker,
-  onOpenCarbonLeague,
   onOpenMysteryBags,
 }) => {
   return (
@@ -134,17 +126,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>🪙 Rs {Math.round((totalSavedPkr + 248000) / 1000)}k Returned • ₨ {rescueWalletBalancePkr}</span>
           </div>
 
-          {/* Flash Market Pill */}
-          {onOpenDutchAuction && (
-            <button
-              onClick={onOpenDutchAuction}
-              className="px-2.5 py-1 rounded-full bg-[#f3f4f6] hover:bg-[#e5e7eb] border border-stone-300 text-[11px] font-bold text-stone-700 flex items-center gap-1 transition-all"
-            >
-              <Zap className="size-3 text-[#FF9800]" />
-              <span className="hidden sm:inline">Flash Market</span>
-            </button>
-          )}
-
           {/* Mystery Bags Orange Button */}
           <button
             onClick={onOpenMysteryBags || onOpenReservations}
@@ -193,49 +174,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         </div>
 
-      </div>
-
-      {/* Innovation Quick-Launch Strip */}
-      <div className="max-w-7xl mx-auto mt-2 pt-2 border-t border-[#ded8cc]/60 flex items-center gap-2 overflow-x-auto text-xs pb-0.5 scrollbar-none">
-        <span className="text-[10px] uppercase font-black text-[#1b4332] flex items-center gap-1 pl-1 flex-shrink-0 tracking-wider">
-          <span>⚡ Innovation Suite:</span>
-        </span>
-
-        {onOpenDutchAuction && (
-          <button
-            onClick={onOpenDutchAuction}
-            className="px-3 py-1 rounded-full bg-[#fff8e1] hover:bg-[#ffecb3] border border-[#ffecb3] text-[#b78103] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
-          >
-            <span>⚡ Dutch Auction Live</span>
-          </button>
-        )}
-
-        {onOpenCommuteMatcher && (
-          <button
-            onClick={onOpenCommuteMatcher}
-            className="px-3 py-1 rounded-full bg-white hover:bg-[#f0ede6] border border-[#ded8cc] text-stone-700 text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
-          >
-            <span>🚗 0-Min Commute Matcher</span>
-          </button>
-        )}
-
-        {onOpenColdLocker && (
-          <button
-            onClick={onOpenColdLocker}
-            className="px-3 py-1 rounded-full bg-white hover:bg-[#f0ede6] border border-[#ded8cc] text-stone-700 text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
-          >
-            <span>🧊 24/7 Smart Cold Locker</span>
-          </button>
-        )}
-
-        {onOpenCarbonLeague && (
-          <button
-            onClick={onOpenCarbonLeague}
-            className="px-3 py-1 rounded-full bg-[#edf7ed] hover:bg-[#c8e6c9] border border-[#c8e6c9] text-[#2e7d32] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
-          >
-            <span>🏆 Campus Carbon League</span>
-          </button>
-        )}
       </div>
     </header>
   );

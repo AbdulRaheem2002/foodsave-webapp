@@ -9,16 +9,9 @@ import { ReservationModal } from './components/ConsumerApp/ReservationModal';
 import { ActivePassesDrawer } from './components/ConsumerApp/ActivePassesDrawer';
 import { WhatsAppModal } from './components/ConsumerApp/WhatsAppModal';
 import { RatingModal } from './components/ConsumerApp/RatingModal';
-import { SpinWheelModal } from './components/ConsumerApp/SpinWheelModal';
 import { StoreProfileModal } from './components/ConsumerApp/StoreProfileModal';
 import { ImpactCalculator } from './components/ConsumerApp/ImpactCalculator';
 import { BykeaTrackerModal } from './components/ConsumerApp/BykeaTrackerModal';
-import { GroupSlashModal } from './components/ConsumerApp/GroupSlashModal';
-import { SocialProofTicker } from './components/ConsumerApp/SocialProofTicker';
-import { DutchAuctionModal } from './components/ConsumerApp/DutchAuctionModal';
-import { CommuteRouteMatcherModal } from './components/ConsumerApp/CommuteRouteMatcherModal';
-import { SmartLockerModal } from './components/ConsumerApp/SmartLockerModal';
-import { CarbonLeagueModal } from './components/ConsumerApp/CarbonLeagueModal';
 import { RetailerDashboard } from './components/RetailerPOS/RetailerDashboard';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
@@ -43,15 +36,9 @@ export function App() {
   const [whatsAppReservation, setWhatsAppReservation] = useState<Reservation | null>(null);
   const [ratingDeal, setRatingDeal] = useState<DealItem | null>(null);
   const [selectedStoreProfile, setSelectedStoreProfile] = useState<RetailerStore | null>(null);
-  const [isSpinModalOpen, setIsSpinModalOpen] = useState<boolean>(false);
   
-  // Advanced Modals State
+  // Bykea Delivery Tracking State
   const [trackedBykeaReservation, setTrackedBykeaReservation] = useState<Reservation | null>(null);
-  const [groupSlashDeal, setGroupSlashDeal] = useState<DealItem | null>(null);
-  const [isDutchAuctionOpen, setIsDutchAuctionOpen] = useState<boolean>(false);
-  const [isCommuteMatcherOpen, setIsCommuteMatcherOpen] = useState<boolean>(false);
-  const [isColdLockerOpen, setIsColdLockerOpen] = useState<boolean>(false);
-  const [isCarbonLeagueOpen, setIsCarbonLeagueOpen] = useState<boolean>(false);
 
   const [reservations, setReservations] = useState<Reservation[]>(() => {
     try {
@@ -230,19 +217,6 @@ export function App() {
     );
   };
 
-  const handleApplySlashDiscount = (dealId: string, slashPercent: number) => {
-    setDeals((prev) =>
-      prev.map((d) => {
-        if (d.id === dealId) {
-          const newPrice = Math.round(d.currentPricePkr * (1 - slashPercent / 100));
-          const discountPercent = Math.round(((d.originalPricePkr - newPrice) / d.originalPricePkr) * 100);
-          return { ...d, currentPricePkr: newPrice, discountPercent };
-        }
-        return d;
-      })
-    );
-  };
-
   const storeDealsForModal = useMemo(() => {
     if (!selectedStoreProfile) return [];
     return deals.filter((d) => d.storeName === selectedStoreProfile.name);
@@ -297,10 +271,6 @@ export function App() {
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         rescueWalletBalancePkr={rescueWalletBalancePkr}
-        onOpenDutchAuction={() => setIsDutchAuctionOpen(true)}
-        onOpenCommuteMatcher={() => setIsCommuteMatcherOpen(true)}
-        onOpenColdLocker={() => setIsColdLockerOpen(true)}
-        onOpenCarbonLeague={() => setIsCarbonLeagueOpen(true)}
         onOpenMysteryBags={scrollToDeals}
       />
 
@@ -442,7 +412,6 @@ export function App() {
         onConfirmReservation={handleConfirmReservation}
         onOpenWhatsApp={(res) => setWhatsAppReservation(res)}
         userWalletBalancePkr={rescueWalletBalancePkr}
-        onOpenGroupSlash={(deal) => setGroupSlashDeal(deal)}
         onOpenBykeaTracker={(res) => setTrackedBykeaReservation(res)}
       />
 
@@ -461,14 +430,6 @@ export function App() {
         reservation={trackedBykeaReservation}
       />
 
-      {/* WhatsApp Group-Slash Modal */}
-      <GroupSlashModal
-        isOpen={!!groupSlashDeal}
-        onClose={() => setGroupSlashDeal(null)}
-        deal={groupSlashDeal}
-        onApplySlashDiscount={handleApplySlashDiscount}
-      />
-
       {/* WhatsApp Pass Dispatch Modal */}
       <WhatsAppModal
         isOpen={!!whatsAppReservation}
@@ -482,12 +443,6 @@ export function App() {
         onClose={() => setRatingDeal(null)}
         deal={ratingDeal}
         onAddReview={handleAddReview}
-      />
-
-      {/* Spin-to-Save Wheel Modal */}
-      <SpinWheelModal
-        isOpen={isSpinModalOpen}
-        onClose={() => setIsSpinModalOpen(false)}
       />
 
       {/* Store Profile Modal */}
@@ -505,36 +460,6 @@ export function App() {
         onClose={() => setIsAuthModalOpen(false)}
         onAuthSuccess={(user) => setCurrentUser(user)}
       />
-
-      {/* Perishable Live Dutch Auction Modal */}
-      <DutchAuctionModal
-        isOpen={isDutchAuctionOpen}
-        onClose={() => setIsDutchAuctionOpen(false)}
-        onConfirmReservation={handleConfirmReservation}
-      />
-
-      {/* Zero-Detour Smart Commute Route Matcher Modal */}
-      <CommuteRouteMatcherModal
-        isOpen={isCommuteMatcherOpen}
-        onClose={() => setIsCommuteMatcherOpen(false)}
-        deals={deals}
-        onReserveDeal={(deal) => setReserveModalDeal(deal)}
-      />
-
-      {/* 24/7 Smart Refrigerated Cold-Locker Network Modal */}
-      <SmartLockerModal
-        isOpen={isColdLockerOpen}
-        onClose={() => setIsColdLockerOpen(false)}
-      />
-
-      {/* Campus & Corporate Zero-Waste Carbon League Modal */}
-      <CarbonLeagueModal
-        isOpen={isCarbonLeagueOpen}
-        onClose={() => setIsCarbonLeagueOpen(false)}
-      />
-
-      {/* Live Social Proof Activity Stream Ticker */}
-      <SocialProofTicker />
 
       {/* Global Footer */}
       <Footer
