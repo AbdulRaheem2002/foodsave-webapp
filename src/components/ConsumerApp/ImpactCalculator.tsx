@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Calculator, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
-
 
 export const ImpactCalculator: React.FC = () => {
   const [weeklySpendPkr, setWeeklySpendPkr] = useState<number>(8000);
@@ -13,70 +12,107 @@ export const ImpactCalculator: React.FC = () => {
   const co2AvoidedKg = Math.round(foodSavedKg * 2.5);
 
   return (
-    <div className="glass-panel p-6 rounded-3xl border border-emerald-800/40 bg-gradient-to-r from-emerald-950/80 via-teal-950/60 to-slate-950 flex flex-col gap-5 shadow-2xl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-900/50 pb-4">
-        <div>
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Calculator className="size-5 text-amber-400" />
-            <span>Interactive Household Savings &amp; Impact Calculator</span>
-          </h3>
-          <p className="text-xs text-emerald-300/70">
-            Estimate how much money you save &amp; food waste you prevent by rescuing surplus meals on FlashFruit.
-          </p>
-        </div>
-
-        <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1.5 self-start sm:self-auto">
-          <Sparkles className="size-3.5" /> 60% Avg Surplus Discount
+    <div className="bg-white dark:bg-[#182230] p-6 sm:p-8 rounded-[1.75rem] border border-[#e5e0d8] dark:border-white/10 shadow-2xs flex flex-col gap-6">
+      
+      {/* Header matching exact Reference Mockup */}
+      <div>
+        <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#edf7ed] dark:bg-[#1b4332]/40 text-[#2e7d32] dark:text-[#81c784] border border-[#c8e6c9] dark:border-[#2e7d32]/30 inline-flex items-center gap-1.5 mb-2.5">
+          <Sparkles className="size-3 text-[#2e7d32] dark:text-[#81c784]" />
+          Interactive Impact Tool
         </span>
+
+        <h3 className="text-xl sm:text-2xl font-black text-stone-900 dark:text-[#F9F6F0] tracking-tight">
+          Calculate Your Household Savings &amp; CO₂ Reduction
+        </h3>
+
+        <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 max-w-2xl">
+          Estimate how much money you save &amp; how much landfill food waste you prevent each month by swapping grocery runs with Foodsave surplus.
+        </p>
       </div>
 
-      {/* Slider Input */}
-      <div>
-        <div className="flex justify-between items-center text-xs mb-2">
-          <span className="text-emerald-300/80 font-medium">Weekly Household Grocery &amp; Food Spend:</span>
-          <span className="font-black text-amber-300 text-sm">{formatCurrency(weeklySpendPkr)} / week</span>
+      {/* Slider Input Box */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-[#f7f5f0] dark:bg-[#1F2937] border border-[#e8e3d8] dark:border-white/10">
+        <div className="flex justify-between items-center text-xs sm:text-sm mb-3">
+          <span className="text-stone-700 dark:text-stone-300 font-bold">
+            Your Weekly Household Grocery &amp; Dining Spend (PKR):
+          </span>
+          <span className="font-black text-stone-900 dark:text-[#F9F6F0] text-base sm:text-lg">
+            {formatCurrency(weeklySpendPkr)} / week
+          </span>
         </div>
+
         <input
           type="range"
-          min="2000"
+          min="1000"
           max="30000"
-          step="1000"
+          step="500"
           value={weeklySpendPkr}
           onChange={(e) => setWeeklySpendPkr(Number(e.target.value))}
-          className="w-full accent-amber-500 cursor-pointer"
+          className="w-full accent-[#1b4332] cursor-pointer h-2 bg-stone-300 dark:bg-stone-700 rounded-lg"
         />
-        <div className="flex justify-between text-[10px] text-emerald-400/60 font-mono mt-1">
-          <span>₨ 2,000/wk</span>
-          <span>₨ 15,000/wk</span>
-          <span>₨ 30,000/wk</span>
+
+        <div className="flex justify-between text-[11px] text-stone-400 font-mono mt-2">
+          <span>Rs 1,000/wk</span>
+          <span>Rs 15,000/wk</span>
+          <span>Rs 30,000/wk</span>
         </div>
       </div>
 
-      {/* Results Output Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-emerald-950/80 border border-amber-500/40">
-          <span className="text-[10px] font-bold text-amber-300/80 uppercase block mb-1">Monthly PKR Saved</span>
-          <span className="text-xl font-black text-amber-300">{formatCurrency(monthlySavingsPkr)}</span>
-          <span className="text-[10px] text-emerald-300/70 block mt-0.5">35% Net Grocery Reduction</span>
+      {/* 4 Metric Cards matching exact colors from the mockup */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* Card 1: Monthly Saved (Soft Green) */}
+        <div className="p-4 rounded-2xl bg-[#edf7ed] border border-[#c8e6c9] dark:bg-[#1b4332]/25 dark:border-[#2e7d32]/40">
+          <span className="text-[10px] font-black uppercase tracking-wider text-[#2e7d32] dark:text-[#81c784] block mb-1">
+            Monthly PKR Saved
+          </span>
+          <span className="text-2xl font-black text-stone-900 dark:text-white">
+            {formatCurrency(monthlySavingsPkr)}
+          </span>
+          <span className="text-[11px] text-stone-600 dark:text-stone-300 block mt-1">
+            ~35% off your regular grocery bill
+          </span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/40">
-          <span className="text-[10px] font-bold text-emerald-300/80 uppercase block mb-1">Annual PKR Saved</span>
-          <span className="text-xl font-black text-emerald-200">{formatCurrency(annualSavingsPkr)}</span>
-          <span className="text-[10px] text-emerald-300/70 block mt-0.5">Per Year Household Surplus</span>
+        {/* Card 2: Annual Saved (Soft Amber) */}
+        <div className="p-4 rounded-2xl bg-[#fff8e1] border border-[#ffecb3] dark:bg-[#b78103]/20 dark:border-[#fbc02d]/40">
+          <span className="text-[10px] font-black uppercase tracking-wider text-[#b78103] dark:text-[#fbc02d] block mb-1">
+            Annual PKR Saved
+          </span>
+          <span className="text-2xl font-black text-stone-900 dark:text-white">
+            {formatCurrency(annualSavingsPkr)}
+          </span>
+          <span className="text-[11px] text-stone-600 dark:text-stone-300 block mt-1">
+            Equivalent to 1 month family vacation
+          </span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-emerald-950/80 border border-teal-500/40">
-          <span className="text-[10px] font-bold text-teal-300/80 uppercase block mb-1">Edible Food Rescued</span>
-          <span className="text-xl font-black text-white">{foodSavedKg} kg</span>
-          <span className="text-[10px] text-teal-300/70 block mt-0.5">Monthly Landfill Prevention</span>
+        {/* Card 3: Edible Food Rescued (Soft Blue/Cyan) */}
+        <div className="p-4 rounded-2xl bg-[#e0f7fa] border border-[#b2ebf2] dark:bg-[#006064]/25 dark:border-[#00838f]/40">
+          <span className="text-[10px] font-black uppercase tracking-wider text-[#00838f] dark:text-[#4dd0e1] block mb-1">
+            Edible Food Rescued
+          </span>
+          <span className="text-2xl font-black text-stone-900 dark:text-white">
+            {foodSavedKg} kg
+          </span>
+          <span className="text-[11px] text-stone-600 dark:text-stone-300 block mt-1">
+            Diverted from peri-urban landfills
+          </span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-emerald-950/80 border border-purple-500/40">
-          <span className="text-[10px] font-bold text-purple-300/80 uppercase block mb-1">CO₂ Emissions Avoided</span>
-          <span className="text-xl font-black text-purple-300">{co2AvoidedKg} kg</span>
-          <span className="text-[10px] text-purple-300/70 block mt-0.5">Clean Environmental Impact</span>
+        {/* Card 4: CO2 Prevented (Soft Mint) */}
+        <div className="p-4 rounded-2xl bg-[#e8f5e9] border border-[#c8e6c9] dark:bg-[#1b4332]/25 dark:border-[#2e7d32]/40">
+          <span className="text-[10px] font-black uppercase tracking-wider text-[#2e7d32] dark:text-[#81c784] block mb-1">
+            CO₂ Emissions Prevented
+          </span>
+          <span className="text-2xl font-black text-stone-900 dark:text-white">
+            {co2AvoidedKg} kg
+          </span>
+          <span className="text-[11px] text-stone-600 dark:text-stone-300 block mt-1">
+            Cleansed 4 indoor tree equivalent
+          </span>
         </div>
+
       </div>
 
     </div>

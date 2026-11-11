@@ -4,6 +4,7 @@ import { INITIAL_DEALS, INITIAL_STORES } from './data/mockData';
 import { Navbar } from './components/Navbar';
 import { DealMap } from './components/ConsumerApp/DealMap';
 import { DealFeed } from './components/ConsumerApp/DealFeed';
+import { MysteryBagsBanner } from './components/ConsumerApp/MysteryBagsBanner';
 import { ReservationModal } from './components/ConsumerApp/ReservationModal';
 import { ActivePassesDrawer } from './components/ConsumerApp/ActivePassesDrawer';
 import { WhatsAppModal } from './components/ConsumerApp/WhatsAppModal';
@@ -24,7 +25,7 @@ import { AiCoreSimulator } from './components/AiCoreSimulator/AiCoreSimulator';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
 import { fetchDealsApi, fetchMyReservationsApi } from './services/api';
-import { Bell, Gift, Sun, Moon } from 'lucide-react';
+import { Sun, Moon, ArrowRight, CheckCircle2, ShieldCheck, Clock } from 'lucide-react';
 
 const STORAGE_KEYS = {
   RESERVATIONS: 'flashfruit_reservations_v2',
@@ -32,13 +33,12 @@ const STORAGE_KEYS = {
   THEME: 'flashfruit_theme_v2',
 };
 
-
 export function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('consumer');
   const [selectedCity, setSelectedCity] = useState<PakistanCity>('All Pakistan');
   
   const [themeMode, setThemeMode] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem(STORAGE_KEYS.THEME) as 'dark' | 'light') || 'dark';
+    return (localStorage.getItem(STORAGE_KEYS.THEME) as 'dark' | 'light') || 'light';
   });
 
   const [deals, setDeals] = useState<DealItem[]>(INITIAL_DEALS);
@@ -80,6 +80,14 @@ export function App() {
     }
   });
 
+  // Synchronize dark class to html document
+  useEffect(() => {
+    if (themeMode === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [themeMode]);
 
   // Save to localStorage when state updates
   useEffect(() => {
@@ -150,8 +158,7 @@ export function App() {
   // Global PKR Impact Stats
   const totalSavedPkr = (currentUser?.totalSavedPkr || 0) + reservations.reduce((sum, r) => sum + r.savedPkr, 0);
   const itemsRescuedCount = (currentUser?.itemsRescuedCount || 0) + reservations.reduce((sum, r) => sum + r.quantity, 0);
-  const rescueWalletBalancePkr = currentUser?.rescueWalletBalancePkr ?? 0;
-
+  const rescueWalletBalancePkr = currentUser?.rescueWalletBalancePkr ?? 650;
 
   const handleAddItem = (partialItem: Partial<DealItem>) => {
     const newItem: DealItem = {
@@ -253,24 +260,50 @@ export function App() {
     return deals.filter((d) => d.storeName === selectedStoreProfile.name);
   }, [deals, selectedStoreProfile]);
 
+  const scrollToDeals = () => {
+    const el = document.getElementById('deals-feed-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className={`min-h-screen ${themeMode === 'dark' ? 'bg-[#0b1510] text-[#e2f1e8]' : 'bg-slate-50 text-slate-900'} flex flex-col font-sans transition-colors duration-300`}>
+    <div className={`min-h-screen ${themeMode === 'dark' ? 'bg-[#0f1722] text-[#F9F6F0]' : 'bg-[#FAFAF7] text-[#1F2937]'} flex flex-col font-sans transition-colors duration-300`}>
       
-      {/* Top Push Alert Simulator Banner */}
-      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-600 text-slate-950 py-1.5 px-4 text-center text-xs font-bold flex items-center justify-between shadow-md">
-        <div className="flex items-center justify-center gap-2 mx-auto">
-          <Bell className="size-3.5 animate-bounce" />
-          <span>🚨 Flash Alert: Tehzeeb Bakery dropped Sourdough Bread to 70% OFF in Blue Area, Islamabad!</span>
+      {/* Top Push Alert Simulator Banner matching Reference Mockup */}
+      <div className="bg-[#0b1d14] text-white py-1.5 px-4 text-xs font-medium flex items-center justify-between border-b border-[#163826] shadow-2xs">
+        <div className="flex items-center gap-2.5 overflow-hidden">
+          <span className="px-2 py-0.5 rounded-full bg-[#fbc02d] text-stone-950 text-[10px] uppercase font-black tracking-wide flex-shrink-0">
+            FLASH ALERT
+          </span>
+          <span className="truncate text-[11px] text-stone-200">
+            Tehzeeb Bakery dropped Sourdough Bread to 75% OFF in Blue Area, Islamabad (Only 4 Bags left)
+          </span>
         </div>
 
-        {/* Theme Switcher Toggle */}
-        <button
-          onClick={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
-          className="px-2.5 py-0.5 rounded-full bg-slate-950/80 text-amber-300 border border-amber-400 text-[10px] font-bold flex items-center gap-1 hover:bg-slate-900"
-        >
-          {themeMode === 'dark' ? <Sun className="size-3 text-amber-400" /> : <Moon className="size-3 text-slate-200" />}
-          <span>{themeMode === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-        </button>
+        <div className="flex items-center gap-4 flex-shrink-0 ml-2">
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-stone-300">
+            <span className="size-1.5 rounded-full bg-[#4CAF50] animate-pulse" />
+            <span>2,400+ Active Bags</span>
+          </div>
+
+          <button
+            onClick={() => setIsPassesDrawerOpen(true)}
+            className="text-[11px] font-bold text-[#81c784] hover:underline"
+          >
+            View Active Passes
+          </button>
+
+          {/* Theme Switcher Toggle */}
+          <button
+            onClick={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+            className="px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold flex items-center gap-1 transition-all"
+            title="Toggle Light/Dark Theme"
+          >
+            {themeMode === 'dark' ? <Sun className="size-3 text-[#fbc02d]" /> : <Moon className="size-3 text-stone-300" />}
+            <span className="hidden md:inline">{themeMode === 'dark' ? 'Light' : 'Dark'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Top Sticky Navigation */}
@@ -291,50 +324,100 @@ export function App() {
         onOpenCommuteMatcher={() => setIsCommuteMatcherOpen(true)}
         onOpenColdLocker={() => setIsColdLockerOpen(true)}
         onOpenCarbonLeague={() => setIsCarbonLeagueOpen(true)}
+        onOpenMysteryBags={scrollToDeals}
       />
 
-
       {/* Main View Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 pt-6 pb-12">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 pt-5 pb-12">
         {activeTab === 'consumer' ? (
           <div className="flex flex-col gap-8 animate-in fade-in duration-300">
             
-            {/* Consumer Hero Banner with Gamified Spin-to-Save Button */}
-            <div className="glass-panel p-6 lg:p-8 rounded-3xl border border-emerald-800/40 bg-gradient-to-r from-emerald-950/90 via-teal-950/70 to-slate-950 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="max-w-2xl">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 inline-flex items-center gap-1.5 mb-3">
-                  <span className="size-2 rounded-full bg-amber-400 animate-pulse" />
-                  🇵🇰 Live Surplus Deals &amp; Mystery Bags in {selectedCity}
+            {/* Hero Section matching exact Reference Mockup */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+              
+              {/* Left Column: Headline & Value Proposition */}
+              <div className="lg:col-span-8 flex flex-col justify-center">
+                
+                {/* Top Location & Hold Pill */}
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#edf7ed] dark:bg-[#1b4332]/40 text-[#2e7d32] dark:text-[#81c784] border border-[#c8e6c9] dark:border-[#2e7d32]/30 inline-flex items-center gap-1.5 self-start mb-3 shadow-2xs">
+                  <span className="size-2 rounded-full bg-[#4CAF50] animate-pulse" />
+                  PK Live Surplus Deals &amp; Surprise Bags Across Pakistan | 15-min Guaranteed Hold
                 </span>
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
-                  Save Delicious Retail Food at <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300 bg-clip-text text-transparent">Up to 85% OFF</span>
+
+                {/* Big Editorial Headline */}
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-stone-900 dark:text-white tracking-tight leading-tight mb-3">
+                  Rescue Delicious Food at <span className="text-[#1b4332] dark:text-[#4CAF50]">Up to 85% OFF</span>
                 </h1>
-                <p className="text-xs sm:text-sm text-emerald-200/70 leading-relaxed">
-                  Pakistani grocery stores, bakeries, and restaurants list surplus items with rule-based time-decay pricing. Pay via <strong>JazzCash, EasyPaisa, Cash on Pickup, or Rescue Wallet</strong> with 15-minute pickup hold codes or <strong>Bykea Express Delivery</strong>!
+
+                {/* Subtitle with Pakistani rails */}
+                <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed max-w-2xl mb-4 font-medium">
+                  Pakistani bakeries, restaurants, and grocery stores list high-quality surplus items with progressive run-based time-decay pricing. Pay seamlessly via <strong>JazzCash, EasyPaisa, Cash on Pickup, or Rescue Wallet</strong> with 15-minute guaranteed hold &amp; <strong>Bykea Express Delivery</strong>.
                 </p>
+
+                {/* Trust Guarantee Badges */}
+                <div className="flex flex-wrap items-center gap-2.5 text-xs text-stone-600 dark:text-stone-300 font-bold">
+                  <span className="flex items-center gap-1.5 bg-white dark:bg-[#182230] px-3 py-1.5 rounded-full border border-stone-200 dark:border-white/10 shadow-2xs">
+                    <CheckCircle2 className="size-3.5 text-[#2e7d32] dark:text-[#4CAF50]" />
+                    100% Halal Verified
+                  </span>
+                  <span className="flex items-center gap-1.5 bg-white dark:bg-[#182230] px-3 py-1.5 rounded-full border border-stone-200 dark:border-white/10 shadow-2xs">
+                    <Clock className="size-3.5 text-[#f37021]" />
+                    15-Min Guaranteed Hold
+                  </span>
+                  <span className="flex items-center gap-1.5 bg-white dark:bg-[#182230] px-3 py-1.5 rounded-full border border-stone-200 dark:border-white/10 shadow-2xs">
+                    <ShieldCheck className="size-3.5 text-[#2e7d32] dark:text-[#4CAF50]" />
+                    Bykea Express 30-min Delivery
+                  </span>
+                </div>
               </div>
 
-              <div className="flex flex-wrap md:flex-col items-center md:items-end gap-2 text-right">
-                <button
-                  onClick={() => setIsSpinModalOpen(true)}
-                  className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-lg flex items-center gap-2 transition-all transform active:scale-95 animate-pulse"
-                >
-                  <Gift className="size-4" />
-                  <span>Spin-to-Save Wheel 🎰</span>
-                </button>
+              {/* Right Column: Daily Milestone KPI Card */}
+              <div className="lg:col-span-4 p-5 sm:p-6 rounded-[1.75rem] bg-[#f7f5f0] dark:bg-[#182230] border border-[#e8e2d8] dark:border-white/10 shadow-2xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
+                      DAILY MILESTONE
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] text-[10px] font-bold">
+                      Active
+                    </span>
+                  </div>
 
-                <button
-                  onClick={() => setIsPassesDrawerOpen(true)}
-                  className="px-4 py-2 rounded-2xl bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 border border-emerald-700 font-bold text-xs shadow transition-all"
-                >
-                  <span>My Reservations ({reservations.length})</span>
-                </button>
+                  <h3 className="text-xl sm:text-2xl font-black text-stone-900 dark:text-white mb-1.5">
+                    1,248 kg of Surplus Rescued Today
+                  </h3>
+
+                  <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed font-medium mb-4">
+                    Diverted equivalent to 3.1 tonnes of greenhouse gases across Karachi, Islamabad &amp; Rawalpindi.
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-stone-200 dark:border-white/10 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-stone-400 block">
+                      Pakistani Household Average
+                    </span>
+                    <span className="text-xs font-black text-stone-800 dark:text-stone-200 font-mono">
+                      Rs 11,200 / mo
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={scrollToDeals}
+                    className="px-4 py-2 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
+                  >
+                    <span>Explore Deals</span>
+                    <ArrowRight className="size-3.5" />
+                  </button>
+                </div>
               </div>
+
             </div>
 
-            {/* Pakistan Geolocation Map View */}
+            {/* Geolocation Radar Map View */}
             <DealMap
               deals={filteredDealsByCity}
+              selectedCity={selectedCity}
               selectedDeal={selectedDeal}
               onSelectDeal={(deal) => setSelectedDeal(deal)}
               onReserveDeal={(deal) => setReserveModalDeal(deal)}
@@ -350,8 +433,15 @@ export function App() {
               }}
             />
 
+            {/* Surprise Mystery Bags: What's Inside? Feature Banner */}
+            <MysteryBagsBanner
+              mysteryDeal={deals.find((d) => d.isMysteryBag)}
+              onClaimMysteryBag={(deal) => setReserveModalDeal(deal)}
+            />
+
             {/* Interactive Household Savings & Impact Calculator */}
             <ImpactCalculator />
+
           </div>
         ) : activeTab === 'retailer' ? (
           <div className="animate-in fade-in duration-300">
@@ -491,5 +581,3 @@ export function App() {
 }
 
 export default App;
-
-

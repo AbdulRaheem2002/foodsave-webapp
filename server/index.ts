@@ -2,10 +2,26 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { connectDB } from './config/db';
 import { seedDatabase } from './seeds/seed';
 import { memDb } from './store/memDb';
 import { calculateTimeDecay } from './utils/decayCalculator';
+
+// Mongoose MongoDB Controllers
+import { register, login } from './controllers/authController';
+import { getDeals } from './controllers/dealController';
+import {
+  createReservation,
+  getMyReservations,
+  verifyPickupCode,
+  updateReservationStatus,
+} from './controllers/reservationController';
+import {
+  getRetailerProfile,
+  addItemAndDeal,
+  overrideDealPrice,
+} from './controllers/retailerController';
 
 dotenv.config();
 
@@ -16,18 +32,32 @@ const JWT_SECRET = process.env.JWT_SECRET || 'flashfruit_pakistan_secret_key_202
 app.use(cors());
 app.use(express.json());
 
+// Helper to determine if MongoDB Atlas is live
+const isMongoConnected = (): boolean => mongoose.connection.readyState === 1;
+
 // 1. Health Check Endpoint
-app.get('/api/health', (req: Request, res: Response) => {
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     app: 'FlashFruit Pakistan MERN Stack API',
     locale: 'PKR (₨)',
+    databaseEngine: isMongoConnected() ? 'MongoDB Atlas (Connected)' : 'In-Memory MERN Database (Development Fallback)',
+    mongoReadyState: mongoose.connection.readyState,
     timestamp: new Date(),
   });
 });
 
 // 2. Auth Endpoints (Register & Login for Consumer & Retailer)
-app.post('/api/auth/register', (req: Request, res: Response) => {
+app.post('/api/auth/register', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await register(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB register fallback to memDb:', mongoErr);
+    }
+  }
+
   const { name, email, role, storeName, storeCategory, storeAddress, city } = req.body;
 
   const newUser = {
@@ -71,7 +101,16 @@ app.post('/api/auth/register', (req: Request, res: Response) => {
   });
 });
 
-app.post('/api/auth/login', (req: Request, res: Response) => {
+app.post('/api/auth/login', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await login(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB login fallback to memDb:', mongoErr);
+    }
+  }
+
   const { email } = req.body;
   const user = memDb.users.find((u) => u.email === email) || memDb.users[0];
   const retailer = user.role === 'retailer' ? memDb.retailers[0] : null;
@@ -86,7 +125,16 @@ app.post('/api/auth/login', (req: Request, res: Response) => {
 });
 
 // 3. Deals Endpoint (Calculate Rule-Based Time Decay & Filter)
-app.get('/api/deals', (req: Request, res: Response) => {
+app.get('/api/deals', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await getDeals(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB getDeals fallback to memDb:', mongoErr);
+    }
+  }
+
   const { category, minDiscount } = req.query;
   const deals = memDb.getPopulatedDeals(
     category ? String(category) : undefined,
@@ -96,7 +144,16 @@ app.get('/api/deals', (req: Request, res: Response) => {
 });
 
 // 4. Retailer Dashboard Endpoints
-app.get('/api/retailer/me', (req: Request, res: Response) => {
+app.get('/api/retailer/me', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await getRetailerProfile(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB getRetailerProfile fallback to memDb:', mongoErr);
+    }
+  }
+
   const retailer = memDb.retailers[0];
   const activeDealsCount = memDb.deals.filter((d) => d.status === 'active').length;
   const reservationsCount = memDb.reservations.length;
@@ -106,13 +163,22 @@ app.get('/api/retailer/me', (req: Request, res: Response) => {
     stats: {
       activeDealsCount,
       totalReservationsCount: reservationsCount,
-      totalRecoveredPkr: retailer.totalRecoveredPkr,
-      totalWastedValueAvoidedPkr: retailer.totalWastedValueAvoidedPkr,
+      totalRecoveredPkr: retailer?.totalRecoveredPkr || 0,
+      totalWastedValueAvoidedPkr: retailer?.totalWastedValueAvoidedPkr || 0,
     },
   });
 });
 
-app.post('/api/retailer/items', (req: Request, res: Response) => {
+app.post('/api/retailer/items', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await addItemAndDeal(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB addItemAndDeal fallback to memDb:', mongoErr);
+    }
+  }
+
   const { name, category, originalPricePkr, quantity, expiryHoursLeft, imageUrl } = req.body;
 
   const retailer = memDb.retailers[0];
@@ -158,7 +224,16 @@ app.post('/api/retailer/items', (req: Request, res: Response) => {
   });
 });
 
-app.put('/api/retailer/deals/:id/override', (req: Request, res: Response) => {
+app.put('/api/retailer/deals/:id/override', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await overrideDealPrice(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB overrideDealPrice fallback to memDb:', mongoErr);
+    }
+  }
+
   const { id } = req.params;
   const { manualOverridePricePkr } = req.body;
 
@@ -181,7 +256,16 @@ app.put('/api/retailer/deals/:id/override', (req: Request, res: Response) => {
 });
 
 // 5. Reservation Endpoints (JazzCash / EasyPaisa / Cash Pickup & Pickup Code Generation)
-app.post('/api/reservations', (req: Request, res: Response) => {
+app.post('/api/reservations', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await createReservation(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB createReservation fallback to memDb:', mongoErr);
+    }
+  }
+
   const { dealId, quantity, paymentMethod } = req.body;
 
   const deal = memDb.deals.find((d) => d.id === dealId);
@@ -244,7 +328,16 @@ app.post('/api/reservations', (req: Request, res: Response) => {
   });
 });
 
-app.get('/api/reservations/me', (req: Request, res: Response) => {
+app.get('/api/reservations/me', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await getMyReservations(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB getMyReservations fallback to memDb:', mongoErr);
+    }
+  }
+
   const result = memDb.reservations.map((resItem) => {
     const deal = memDb.deals.find((d) => d.id === resItem.dealId);
     const item = memDb.items.find((i) => i.id === deal?.itemId);
@@ -264,7 +357,16 @@ app.get('/api/reservations/me', (req: Request, res: Response) => {
 });
 
 // 6. Cashier / Retailer Pickup Pass Verification & Collection
-app.post('/api/reservations/verify', (req: Request, res: Response) => {
+app.post('/api/reservations/verify', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await verifyPickupCode(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB verifyPickupCode fallback to memDb:', mongoErr);
+    }
+  }
+
   const { pickupCode } = req.body;
   if (!pickupCode) {
     res.status(400).json({ error: 'Pickup code is required' });
@@ -295,7 +397,16 @@ app.post('/api/reservations/verify', (req: Request, res: Response) => {
   });
 });
 
-app.put('/api/reservations/:id/status', (req: Request, res: Response) => {
+app.put('/api/reservations/:id/status', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await updateReservationStatus(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB updateReservationStatus fallback to memDb:', mongoErr);
+    }
+  }
+
   const { id } = req.params;
   const { status } = req.body;
 
@@ -335,9 +446,8 @@ const startServer = async () => {
 
   app.listen(PORT, () => {
     console.log(`🚀 FlashFruit MERN Express API running at http://localhost:${PORT}`);
+    console.log(`📡 Database mode: ${isMongoConnected() ? 'MongoDB Atlas' : 'In-Memory DB'}`);
   });
 };
 
-
 startServer();
-

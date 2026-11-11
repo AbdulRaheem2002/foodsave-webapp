@@ -60,7 +60,7 @@ export const getDeals = async (req: Request, res: Response): Promise<void> => {
     // Filter by category if requested
     let filtered = updatedDeals;
     if (category && category !== 'all') {
-      filtered = filtered.filter((d: any) => d.item.category === category);
+      filtered = filtered.filter((d: any) => d.item?.category === category);
     }
 
     if (minDiscount) {

@@ -83,7 +83,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `FlashFruit_Daily_Recovery_Report_${selectedStore.name.replace(/\s+/g, '_')}.csv`);
+    link.setAttribute('download', `Foodsave_Daily_Recovery_Report_${selectedStore.name.replace(/\s+/g, '_')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -249,23 +249,23 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
     <div className="flex flex-col gap-8 pb-12 animate-in fade-in duration-300">
       
       {/* Store Header & Multi-Branch Switcher */}
-      <div className="glass-panel p-6 rounded-3xl border border-slate-700/80 bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-950 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-2xl">
+      <div className="bg-white dark:bg-[#182230] p-6 rounded-[2rem] border border-[#2D6A4F]/15 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">
         <div className="flex items-center gap-4">
-          <div className="size-16 rounded-2xl bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center justify-center text-3xl font-bold shadow-lg">
+          <div className="size-16 rounded-2xl bg-[#2D6A4F]/15 text-[#2D6A4F] dark:text-[#4CAF50] border border-[#2D6A4F]/30 flex items-center justify-center text-3xl font-bold shadow-xs">
             🏪
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black text-white tracking-tight">{selectedStore.name}</h2>
+              <h2 className="text-xl font-black text-[#1F2937] dark:text-[#F9F6F0] tracking-tight">{selectedStore.name}</h2>
               {selectedStore.isVerified && (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                  <ShieldCheck className="size-3.5 text-emerald-400" />
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#4CAF50]/15 text-[#2D6A4F] dark:text-[#4CAF50] border border-[#4CAF50]/30 flex items-center gap-1">
+                  <ShieldCheck className="size-3.5 text-[#4CAF50]" />
                   Verified Store
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5 font-medium">
-              <MapPin className="size-3 text-emerald-400" />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5 font-medium">
+              <MapPin className="size-3 text-[#2D6A4F] dark:text-[#4CAF50]" />
               {selectedStore.address}, {selectedStore.city} (Pakistan)
             </p>
           </div>
@@ -274,15 +274,15 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
         {/* Multi-Branch Selector & Action Controls */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Branch Switcher Dropdown */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs shadow-inner">
-            <span className="text-[10px] uppercase font-bold text-slate-400 px-2">Branch:</span>
+          <div className="flex items-center gap-1 bg-[#F9F6F0] dark:bg-[#1F2937] p-1.5 rounded-full border border-[#2D6A4F]/15 text-xs shadow-2xs">
+            <span className="text-[10px] uppercase font-bold text-slate-500 px-2">Branch:</span>
             <select
               value={selectedStoreId}
               onChange={(e) => setSelectedStoreId(e.target.value)}
-              className="bg-transparent text-amber-300 text-xs font-bold focus:outline-none pr-2 cursor-pointer"
+              className="bg-transparent text-[#2D6A4F] dark:text-[#4CAF50] text-xs font-bold focus:outline-none pr-2 cursor-pointer"
             >
               {stores.map((s) => (
-                <option key={s.id} value={s.id} className="bg-slate-950 text-white">
+                <option key={s.id} value={s.id} className="bg-white dark:bg-[#1F2937] text-slate-900 dark:text-white">
                   {s.name} ({s.city})
                 </option>
               ))}
@@ -291,7 +291,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
           <button
             onClick={() => setIsVerifyPassOpen(true)}
-            className="px-3.5 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-md transition-all active:scale-95"
+            className="btn-claim px-4 py-2.5 text-xs font-black shadow-xs"
           >
             <QrCode className="size-4" />
             <span>Verify Customer Pass</span>
@@ -299,15 +299,15 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
           <button
             onClick={() => setIsBarcodeOpen(true)}
-            className="px-3.5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+            className="px-4 py-2.5 rounded-full bg-[#F9F6F0] dark:bg-[#1F2937] hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-[#2D6A4F]/15 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
           >
-            <Scan className="size-4 text-amber-400" />
+            <Scan className="size-4 text-[#FF9800]" />
             <span>Scan Barcode / OCR</span>
           </button>
 
           <button
             onClick={() => setIsAddItemOpen(true)}
-            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-black text-xs shadow-xl flex items-center gap-1.5 transition-all transform active:scale-95"
+            className="px-4 py-2.5 rounded-full bg-[#FF9800] hover:bg-[#f57c00] text-white font-black text-xs shadow-md shadow-[#FF9800]/25 flex items-center gap-1.5 transition-all transform active:scale-95"
           >
             <Plus className="size-4" />
             <span>List Surplus Item</span>
@@ -319,80 +319,79 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         
         {/* Metric 1: ₨ Recovered */}
-        <div className="glass-panel p-5 rounded-3xl border border-slate-800 bg-slate-900/80 flex items-start justify-between shadow-sm">
+        <div className="bg-white dark:bg-[#182230] p-5 rounded-2xl border border-[#2D6A4F]/15 dark:border-white/10 flex items-start justify-between shadow-2xs">
           <div>
-            <span className="text-xs text-slate-400 font-medium block mb-1">Daily Recovery Total</span>
-            <div className="text-2xl font-black text-amber-400 tracking-tight mb-1">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mb-1">Daily Recovery Total</span>
+            <div className="text-2xl font-black text-[#FF9800] tracking-tight mb-1">
               {formatCurrency(selectedStore.totalRecoveredPkr)}
             </div>
-            <span className="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
+            <span className="text-[11px] text-[#4CAF50] flex items-center gap-1 font-semibold">
               <TrendingUp className="size-3.5" /> Recovered Revenue
             </span>
           </div>
-          <div className="p-3 rounded-2xl bg-amber-500/15 text-amber-300 border border-amber-500/30">
+          <div className="p-3 rounded-2xl bg-[#FF9800]/15 text-[#FF9800]">
             <DollarSign className="size-6" />
           </div>
         </div>
 
         {/* Metric 2: Wasted Value Avoided */}
-        <div className="glass-panel p-5 rounded-3xl border border-slate-800 bg-slate-900/80 flex items-start justify-between shadow-sm">
+        <div className="bg-white dark:bg-[#182230] p-5 rounded-2xl border border-[#2D6A4F]/15 dark:border-white/10 flex items-start justify-between shadow-2xs">
           <div>
-            <span className="text-xs text-slate-400 font-medium block mb-1">Wasted Value Diverted</span>
-            <div className="text-2xl font-black text-emerald-300 tracking-tight mb-1">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mb-1">Wasted Value Diverted</span>
+            <div className="text-2xl font-black text-[#2D6A4F] dark:text-[#4CAF50] tracking-tight mb-1">
               {formatCurrency(selectedStore.totalWastedValueAvoidedPkr)}
             </div>
-            <span className="text-[11px] text-slate-400 flex items-center gap-1 font-medium">
-              <Leaf className="size-3.5 text-emerald-400" /> Edible Food Rescued
+            <span className="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
+              <Leaf className="size-3.5 text-[#4CAF50]" /> Edible Food Rescued
             </span>
           </div>
-          <div className="p-3 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+          <div className="p-3 rounded-2xl bg-[#2D6A4F]/15 text-[#2D6A4F] dark:text-[#4CAF50]">
             <Leaf className="size-6" />
           </div>
         </div>
 
         {/* Metric 3: NGO Charity Donations */}
-        <div className="glass-panel p-5 rounded-3xl border border-slate-800 bg-slate-900/80 flex items-start justify-between shadow-sm">
+        <div className="bg-white dark:bg-[#182230] p-5 rounded-2xl border border-[#2D6A4F]/15 dark:border-white/10 flex items-start justify-between shadow-2xs">
           <div>
-            <span className="text-xs text-slate-400 font-medium block mb-1">NGO Rescue Donations</span>
-            <div className="text-2xl font-black text-rose-400 tracking-tight mb-1">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mb-1">NGO Rescue Donations</span>
+            <div className="text-2xl font-black text-rose-500 tracking-tight mb-1">
               {donationsList.length} Dispatched
             </div>
-            <span className="text-[11px] text-rose-400 flex items-center gap-1 font-semibold">
-              <Heart className="size-3.5 fill-rose-400" /> Saylani / Edhi / JDC
+            <span className="text-[11px] text-rose-500 flex items-center gap-1 font-semibold">
+              <Heart className="size-3.5 fill-rose-500" /> Saylani / Edhi / JDC
             </span>
           </div>
-          <div className="p-3 rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30">
+          <div className="p-3 rounded-2xl bg-rose-500/15 text-rose-500">
             <Heart className="size-6" />
           </div>
         </div>
 
         {/* Metric 4: Rule Decay Proof */}
-        <div className="glass-panel p-5 rounded-3xl border border-slate-800 bg-slate-900/80 flex items-start justify-between shadow-sm">
+        <div className="bg-white dark:bg-[#182230] p-5 rounded-2xl border border-[#2D6A4F]/15 dark:border-white/10 flex items-start justify-between shadow-2xs">
           <div>
-            <span className="text-xs text-slate-400 font-medium block mb-1">Auto Price Decay</span>
-            <div className="text-xl font-black text-white tracking-tight mb-1">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mb-1">Auto Price Decay</span>
+            <div className="text-xl font-black text-[#1F2937] dark:text-[#F9F6F0] tracking-tight mb-1">
               Rule Active
             </div>
-            <p className="text-[11px] text-slate-400 leading-snug">
+            <p className="text-[11px] text-slate-500 leading-snug">
               30% → 50% → 75% steps before expiry.
             </p>
           </div>
-          <div className="p-3 rounded-2xl bg-teal-500/15 text-teal-300 border border-teal-500/30">
+          <div className="p-3 rounded-2xl bg-[#4CAF50]/15 text-[#4CAF50]">
             <Zap className="size-6" />
           </div>
         </div>
 
       </div>
 
-
       {/* Auto-Generated Time-Decay Curve Graph */}
-      <div className="glass-panel p-6 rounded-3xl border border-emerald-800/40">
+      <div className="bg-white dark:bg-[#182230] p-6 rounded-[2rem] border border-[#2D6A4F]/15 dark:border-white/10 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <h3 className="text-base font-black text-[#1F2937] dark:text-[#F9F6F0] flex items-center gap-2">
               <span>Time-Decay Schedule Curve (Formula Decay)</span>
             </h3>
-            <p className="text-xs text-emerald-300/70">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Lowers price dynamically in PKR (₨) as deadline approaches to match willing nearby buyers.
             </p>
           </div>
@@ -403,18 +402,18 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
             <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="timeDecayGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#FF9800" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#FF9800" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e3b2b" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.5} />
               <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} />
               <YAxis stroke="#94a3b8" fontSize={11} unit=" ₨" />
               <Tooltip
-                contentStyle={{ backgroundColor: '#09150e', borderColor: '#2e5c43', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
+                contentStyle={{ backgroundColor: '#1F2937', borderColor: '#2D6A4F', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
                 formatter={(val: any) => [`₨ ${val}`, 'Price']}
               />
-              <Area type="monotone" dataKey="timeDecay" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#timeDecayGradient)" name="Time-Decay Price (₨)" />
+              <Area type="monotone" dataKey="timeDecay" stroke="#FF9800" strokeWidth={3} fillOpacity={1} fill="url(#timeDecayGradient)" name="Time-Decay Price (₨)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -424,11 +423,11 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       <DigitalTwinCockpit />
 
       {/* Active Surplus Listings Table */}
-      <div className="glass-panel p-6 rounded-3xl border border-emerald-800/40">
+      <div className="bg-white dark:bg-[#182230] p-6 rounded-[2rem] border border-[#2D6A4F]/15 dark:border-white/10 shadow-xs">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
+          <h3 className="text-base font-black text-[#1F2937] dark:text-[#F9F6F0] flex items-center gap-2">
             <span>Active Store Surplus Listings ({selectedStore.name.split(' ')[0]})</span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
+            <span className="px-3 py-0.5 rounded-full text-xs bg-[#2D6A4F]/15 text-[#2D6A4F] dark:text-[#4CAF50] border border-[#2D6A4F]/30 font-bold">
               {deals.length} Active
             </span>
           </h3>
@@ -436,14 +435,14 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handleExportCsvReport}
-              className="px-3 py-1.5 rounded-xl bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 text-xs font-semibold flex items-center gap-1"
+              className="px-3.5 py-1.5 rounded-full bg-[#F9F6F0] dark:bg-[#1F2937] hover:bg-slate-200 border border-[#2D6A4F]/20 text-[#1F2937] dark:text-[#F9F6F0] text-xs font-semibold flex items-center gap-1 transition-all"
             >
               <Download className="size-3.5" />
               <span>Download CSV</span>
             </button>
             <button
               onClick={() => setIsAddItemOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-500/30 transition-colors flex items-center gap-1"
+              className="px-4 py-1.5 rounded-full bg-[#FF9800] text-white text-xs font-bold hover:bg-[#f57c00] transition-colors flex items-center gap-1 shadow-xs"
             >
               <Plus className="size-3.5" />
               <span>Add Item</span>
@@ -452,8 +451,8 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-emerald-200">
-            <thead className="bg-emerald-950/80 text-emerald-400/80 uppercase font-semibold text-[10px] tracking-wider border-b border-emerald-800/60">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#F9F6F0] dark:bg-[#1F2937] text-slate-700 dark:text-slate-300 uppercase font-bold text-[10px] tracking-wider border-b border-[#2D6A4F]/15">
               <tr>
                 <th className="p-3">Item Details</th>
                 <th className="p-3">Category</th>
@@ -464,33 +463,33 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-emerald-900/40">
+            <tbody className="divide-y divide-[#2D6A4F]/10 dark:divide-white/10">
               {deals.map((deal) => (
-                <tr key={deal.id} className="hover:bg-emerald-950/40 transition-colors">
-                  <td className="p-3 font-semibold text-white flex items-center gap-3">
-                    <img src={deal.imageUrl} alt={deal.title} className="size-10 rounded-lg object-cover border border-emerald-800" />
+                <tr key={deal.id} className="hover:bg-[#F9F6F0]/60 dark:hover:bg-[#1F2937]/50 transition-colors">
+                  <td className="p-3 font-semibold text-[#1F2937] dark:text-[#F9F6F0] flex items-center gap-3">
+                    <img src={deal.imageUrl} alt={deal.title} className="size-10 rounded-xl object-cover border border-[#2D6A4F]/15" />
                     <div>
                       <p className="font-bold text-xs truncate max-w-xs">{deal.title}</p>
-                      <span className="text-[10px] text-emerald-400/70">{deal.pickupDeadline}</span>
+                      <span className="text-[10px] text-slate-500">{deal.pickupDeadline}</span>
                     </div>
                   </td>
                   <td className="p-3">
-                    <span className="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-[10px] uppercase font-bold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#F9F6F0] dark:bg-[#1F2937] border border-[#2D6A4F]/20 text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300">
                       {deal.category}
                     </span>
                   </td>
-                  <td className="p-3 line-through text-emerald-400/50">
+                  <td className="p-3 line-through text-slate-400">
                     {formatCurrency(deal.originalPricePkr)}
                   </td>
-                  <td className="p-3 font-black text-amber-300 text-sm">
+                  <td className="p-3 font-black text-[#FF9800] text-sm">
                     {formatCurrency(deal.currentPricePkr)}
                   </td>
                   <td className="p-3">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#FF9800]/15 text-[#FF9800] border border-[#FF9800]/30">
                       {deal.discountPercent}% OFF
                     </span>
                   </td>
-                  <td className="p-3 font-bold text-white">
+                  <td className="p-3 font-bold text-[#1F2937] dark:text-[#F9F6F0]">
                     {deal.stockQuantity} pcs
                   </td>
                   <td className="p-3 text-right">
@@ -498,10 +497,10 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                       {/* NGO Donation Button */}
                       <button
                         onClick={() => setDonateDeal(deal)}
-                        className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-[10px] font-bold flex items-center gap-1"
+                        className="px-2.5 py-1 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-500 border border-rose-500/30 text-[10px] font-bold flex items-center gap-1 transition-all"
                         title="Donate to Saylani / Edhi / JDC"
                       >
-                        <Heart className="size-3 fill-rose-400" />
+                        <Heart className="size-3 fill-rose-500" />
                         <span>Donate</span>
                       </button>
 
@@ -512,11 +511,11 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                             placeholder="₨ New"
                             value={overridePriceInput}
                             onChange={(e) => setOverridePriceInput(e.target.value)}
-                            className="w-16 px-2 py-1 rounded bg-slate-950 border border-amber-400 text-amber-300 text-xs font-bold"
+                            className="w-16 px-2 py-1 rounded bg-white dark:bg-[#1F2937] border border-[#FF9800] text-[#FF9800] text-xs font-bold"
                           />
                           <button
                             onClick={() => handleApplyOverride(deal.id)}
-                            className="px-2 py-1 rounded bg-amber-500 text-slate-950 font-bold text-[10px]"
+                            className="px-2.5 py-1 rounded bg-[#FF9800] text-white font-bold text-[10px]"
                           >
                             Set
                           </button>

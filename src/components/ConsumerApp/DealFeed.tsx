@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { DealItem, CategoryType } from '../../types';
 import { DealCard } from './DealCard';
-import { Search, Flame } from 'lucide-react';
-
+import { Search } from 'lucide-react';
 
 interface DealFeedProps {
   deals: DealItem[];
@@ -10,12 +9,12 @@ interface DealFeedProps {
   onSelectDeal: (deal: DealItem) => void;
 }
 
-const CATEGORIES: { key: CategoryType; label: string }[] = [
-  { key: 'All', label: 'All Deals' },
-  { key: 'mystery-bag', label: '🎁 Mystery Bags' },
-  { key: 'grocery', label: 'Grocery' },
-  { key: 'bakery', label: 'Bakery' },
-  { key: 'restaurant', label: 'Restaurant' },
+const CATEGORIES: { key: CategoryType; label: string; icon: string }[] = [
+  { key: 'All', label: 'All Deals', icon: '' },
+  { key: 'mystery-bag', label: 'Surprise Bags', icon: '🔥' },
+  { key: 'grocery', label: 'Fresh Produce', icon: '🥭' },
+  { key: 'bakery', label: 'Bakery', icon: '🥐' },
+  { key: 'restaurant', label: 'Hot Meals', icon: '🍗' },
 ];
 
 export const DealFeed: React.FC<DealFeedProps> = ({
@@ -25,7 +24,7 @@ export const DealFeed: React.FC<DealFeedProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('All');
-  const [minDiscount, setMinDiscount] = useState<number>(30);
+  const [minDiscount, setMinDiscount] = useState<number>(50);
 
   const filteredDeals = useMemo(() => {
     return deals.filter((deal) => {
@@ -47,86 +46,93 @@ export const DealFeed: React.FC<DealFeedProps> = ({
     });
   }, [deals, searchTerm, selectedCategory, minDiscount]);
 
-
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6" id="deals-feed-section">
       
-      {/* Search & Filter Header Bar */}
-      <div className="glass-panel p-4 lg:p-6 rounded-3xl border border-slate-800/80 flex flex-col gap-4 shadow-xl">
+      {/* Search & Filter Header Bar matching Reference Mockup */}
+      <div className="bg-white dark:bg-[#182230] p-3 sm:p-4 rounded-2xl border border-[#e5e0d8] dark:border-white/10 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-emerald-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search biryani, artisan sourdough, chaunsa mangoes, Al-Fatah, Karachi, Lahore..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-slate-900/90 border border-slate-700/80 text-slate-100 placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/30 transition-all"
-            />
-          </div>
-
-          {/* Discount Slider Quick Filter */}
-          <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs shadow-inner">
-            <Flame className="size-4 text-amber-400 animate-pulse" />
-            <span className="text-slate-300 font-semibold whitespace-nowrap">Min Discount:</span>
-            <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min="30"
-                max="80"
-                step="5"
-                value={minDiscount}
-                onChange={(e) => setMinDiscount(Number(e.target.value))}
-                className="w-24 accent-emerald-500 cursor-pointer"
-              />
-              <span className="font-bold text-amber-400 w-12">{minDiscount}%+</span>
-            </div>
-          </div>
+        {/* Search Input */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-stone-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search sourdough, biryani, mango crate, naan..."
+            className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#f7f5f0] dark:bg-[#1F2937] border border-[#e8e3d8] dark:border-white/10 text-stone-900 dark:text-[#F9F6F0] placeholder-stone-400 text-xs sm:text-sm focus:outline-none focus:border-[#1b4332] transition-all"
+          />
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.key}
-              onClick={() => setSelectedCategory(cat.key)}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                selectedCategory === cat.key
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-950/40 scale-102'
-                  : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+        {/* Min Discount Slider */}
+        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[#f7f5f0] dark:bg-[#1F2937] border border-[#e8e3d8] dark:border-white/10 text-xs">
+          <span className="text-stone-600 dark:text-stone-300 font-semibold whitespace-nowrap text-[11px]">
+            Min Discount
+          </span>
+          <input
+            type="range"
+            min="30"
+            max="80"
+            step="5"
+            value={minDiscount}
+            onChange={(e) => setMinDiscount(Number(e.target.value))}
+            className="w-20 accent-[#1b4332] cursor-pointer"
+          />
+          <span className="font-extrabold text-[#1b4332] dark:text-[#4CAF50] font-mono text-[11px] w-9">
+            {minDiscount}%+
+          </span>
+        </div>
+
+        {/* Category Pills matching Mockup */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+          {CATEGORIES.map((cat) => {
+            const isActive = selectedCategory === cat.key;
+            return (
+              <button
+                key={cat.key}
+                onClick={() => setSelectedCategory(cat.key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 ${
+                  isActive
+                    ? 'bg-[#111827] text-white shadow-xs'
+                    : 'bg-[#f7f5f0] dark:bg-[#1F2937] text-stone-600 dark:text-stone-300 hover:text-stone-900 border border-[#e8e3d8] dark:border-white/10'
+                }`}
+              >
+                {cat.icon && <span>{cat.icon}</span>}
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
         </div>
 
       </div>
 
-      {/* Dynamic Deals Grid */}
-      <div className="flex items-center justify-between px-2">
-        <h2 className="text-lg font-black text-white flex items-center gap-2 tracking-tight">
-          <span>Live Surplus Flash Deals</span>
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-            {filteredDeals.length} active
-          </span>
-        </h2>
+      {/* Section Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+        <div>
+          <h2 className="text-lg sm:text-xl font-black text-stone-900 dark:text-[#F9F6F0] tracking-tight">
+            Today's Available Surplus Deals
+          </h2>
+          <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+            Automated time-decay pricing applied. Bag reservation hold for 15 minutes upon selection.
+          </p>
+        </div>
 
-        <span className="text-xs text-slate-400 font-medium">
-          Sorted by Time-Decay & Proximity
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#edf7ed] dark:bg-[#1b4332]/40 text-[#2e7d32] dark:text-[#81c784] border border-[#c8e6c9] dark:border-[#2e7d32]/30 self-start sm:self-auto shadow-2xs">
+          {filteredDeals.length} Active Deals Near You
         </span>
       </div>
 
+      {/* Grid of Deals */}
       {filteredDeals.length === 0 ? (
-        <div className="glass-panel p-12 rounded-3xl text-center border border-slate-800">
-          <div className="size-16 rounded-full bg-slate-900 flex items-center justify-center mx-auto mb-3 text-2xl border border-slate-800">
-            🥭
+        <div className="p-12 rounded-3xl text-center bg-white dark:bg-[#182230] border border-[#e5e0d8] dark:border-white/10">
+          <div className="size-16 rounded-full bg-[#f7f5f0] dark:bg-[#1F2937] flex items-center justify-center mx-auto mb-3 text-3xl">
+            🧺
           </div>
-          <h3 className="text-base font-bold text-white mb-1">No Surplus Deals Match Your Filters</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto mb-4">
-            Try resetting your search query or lowering the minimum discount threshold.
+          <h3 className="text-base font-bold text-stone-900 dark:text-[#F9F6F0] mb-1">
+            No Deals Matching Selected Filter
+          </h3>
+          <p className="text-xs text-stone-500 dark:text-stone-400 max-w-sm mx-auto mb-4">
+            Try adjusting your search query or lowering the minimum discount threshold.
           </p>
           <button
             onClick={() => {
@@ -134,13 +140,13 @@ export const DealFeed: React.FC<DealFeedProps> = ({
               setSelectedCategory('All');
               setMinDiscount(30);
             }}
-            className="px-5 py-2.5 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold hover:bg-emerald-400 transition-all shadow-md"
+            className="px-5 py-2.5 rounded-xl bg-[#1b4332] text-white text-xs font-bold shadow-sm"
           >
             Reset Filters
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredDeals.map((deal) => (
             <DealCard
               key={deal.id}
@@ -153,6 +159,5 @@ export const DealFeed: React.FC<DealFeedProps> = ({
       )}
 
     </div>
-
   );
 };

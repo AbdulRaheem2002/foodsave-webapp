@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, Download, Building2, GraduationCap, Users } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
-
 import { sounds } from '../../lib/soundEffects';
 
 interface CarbonLeagueModalProps {
@@ -49,7 +48,7 @@ export const CarbonLeagueModal: React.FC<CarbonLeagueModalProps> = ({
   const handleDownloadEsgReport = () => {
     sounds.playAlertPing();
     const content = `=====================================================
-FLASHFRUIT PAKISTAN — NATIONAL ZERO-WASTE CARBON AUDIT
+FOODSAVE PAKISTAN — NATIONAL ZERO-WASTE CARBON AUDIT
 =====================================================
 Category: ${activeTab.toUpperCase()} LEAGUE
 Generated: ${new Date().toLocaleDateString('en-PK')}
@@ -68,27 +67,27 @@ ${currentList
   )
   .join('\n')}
 =====================================================
-Issued by FlashFruit Pakistan Sustainable Technology Division
-Contact: esg@flashfruit.pk | www.flashfruit.pk
+Issued by Foodsave Pakistan Sustainable Technology Division
+Contact: esg@foodsave.pk | www.foodsave.pk
 =====================================================`;
 
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `FlashFruit_${activeTab}_ESG_Carbon_Audit_Report.txt`);
+    link.setAttribute('download', `Foodsave_${activeTab}_ESG_Carbon_Audit_Report.txt`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-3xl glass-panel border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto bg-slate-950/95">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-3xl bg-white dark:bg-[#182230] border border-[#e5e0d8] dark:border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
         
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-full bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 transition-colors"
         >
           <X className="size-5" />
         </button>
@@ -96,17 +95,17 @@ Contact: esg@flashfruit.pk | www.flashfruit.pk
         {/* Header */}
         <div className="flex items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="size-12 rounded-2xl bg-gradient-to-br from-amber-400 to-emerald-500 text-slate-950 flex items-center justify-center shadow-lg shadow-emerald-500/20 font-bold text-2xl flex-shrink-0">
+            <div className="size-12 rounded-2xl bg-[#1b4332] text-white flex items-center justify-center shadow-md font-bold text-2xl flex-shrink-0">
               🏆
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-black text-white tracking-tight">National Zero-Waste Carbon League</h2>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                <h2 className="text-xl font-black text-stone-900 dark:text-white tracking-tight">National Zero-Waste Carbon League</h2>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#edf7ed] dark:bg-[#1b4332]/40 text-[#2e7d32] dark:text-[#81c784] border border-[#c8e6c9] dark:border-[#2e7d32]/30">
                   Pakistan Cup
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium">
+              <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">
                 Live sustainability tournament between Pakistan’s top universities and tech enterprises
               </p>
             </div>
@@ -114,9 +113,9 @@ Contact: esg@flashfruit.pk | www.flashfruit.pk
 
           <button
             onClick={handleDownloadEsgReport}
-            className="hidden sm:flex px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold items-center gap-1.5 transition-colors shadow-sm"
+            className="hidden sm:flex px-3.5 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700 text-xs font-bold items-center gap-1.5 transition-colors shadow-2xs"
           >
-            <Download className="size-3.5 text-amber-400" />
+            <Download className="size-3.5 text-[#f37021]" />
             <span>ESG Audit Report</span>
           </button>
         </div>
@@ -130,8 +129,8 @@ Contact: esg@flashfruit.pk | www.flashfruit.pk
             }}
             className={`flex-1 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
               activeTab === 'university'
-                ? 'bg-amber-400 text-slate-950 font-black shadow-md'
-                : 'bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800'
+                ? 'bg-[#1b4332] text-white shadow-xs font-black'
+                : 'bg-[#f7f5f0] dark:bg-stone-900 text-stone-600 dark:text-stone-300 border border-[#e8e2d8] dark:border-stone-800'
             }`}
           >
             <GraduationCap className="size-4" />
@@ -145,8 +144,8 @@ Contact: esg@flashfruit.pk | www.flashfruit.pk
             }}
             className={`flex-1 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
               activeTab === 'corporate'
-                ? 'bg-amber-400 text-slate-950 font-black shadow-md'
-                : 'bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800'
+                ? 'bg-[#1b4332] text-white shadow-xs font-black'
+                : 'bg-[#f7f5f0] dark:bg-stone-900 text-stone-600 dark:text-stone-300 border border-[#e8e2d8] dark:border-stone-800'
             }`}
           >
             <Building2 className="size-4" />
@@ -161,51 +160,51 @@ Contact: esg@flashfruit.pk | www.flashfruit.pk
               key={entry.name}
               className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                 entry.rank === 1
-                  ? 'bg-slate-900/90 border-amber-400/60 shadow-lg'
-                  : 'bg-slate-900/70 border-slate-800 shadow-inner'
+                  ? 'bg-[#edf7ed] dark:bg-[#1b4332]/25 border-[#c8e6c9] dark:border-[#2e7d32]/40 shadow-xs'
+                  : 'bg-[#f7f5f0] dark:bg-stone-900/70 border-[#e8e2d8] dark:border-stone-800'
               }`}
             >
               <div className="flex items-center gap-3.5">
                 <div className={`size-9 rounded-xl flex items-center justify-center font-mono font-black text-sm ${
                   entry.rank === 1
-                    ? 'bg-amber-400 text-slate-950'
+                    ? 'bg-[#f37021] text-white'
                     : entry.rank === 2
-                    ? 'bg-slate-300 text-slate-950'
+                    ? 'bg-stone-300 text-stone-900'
                     : entry.rank === 3
-                    ? 'bg-amber-700 text-white'
-                    : 'bg-slate-800 text-slate-300 border border-slate-700'
+                    ? 'bg-stone-700 text-white'
+                    : 'bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300'
                 }`}>
                   #{entry.rank}
                 </div>
 
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="text-xs font-bold text-white">{entry.name}</h4>
-                    <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    <h4 className="text-xs font-bold text-stone-900 dark:text-white">{entry.name}</h4>
+                    <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-[#edf7ed] dark:bg-[#1b4332]/40 text-[#2e7d32] dark:text-[#81c784] border border-[#c8e6c9] dark:border-[#2e7d32]/30">
                       {entry.badge}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5 font-medium">
-                    {entry.city} • <Users className="size-3 inline mr-1 text-amber-400" />{entry.membersCount} Eco-Members
+                  <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5 font-medium">
+                    {entry.city} • <Users className="size-3 inline mr-1 text-[#f37021]" />{entry.membersCount} Eco-Members
                   </p>
                 </div>
               </div>
 
               {/* Metrics */}
-              <div className="flex items-center justify-between sm:justify-end gap-6 text-xs border-t sm:border-t-0 border-slate-800 pt-2 sm:pt-0">
+              <div className="flex items-center justify-between sm:justify-end gap-6 text-xs border-t sm:border-t-0 border-stone-200 dark:border-stone-800 pt-2 sm:pt-0">
                 <div className="text-left sm:text-right">
-                  <span className="text-[10px] text-slate-400 block uppercase font-semibold">Rescued Food</span>
-                  <span className="font-bold text-white font-mono">{entry.rescuedKg.toLocaleString()} kg</span>
+                  <span className="text-[10px] text-stone-400 block uppercase font-semibold">Rescued Food</span>
+                  <span className="font-bold text-stone-900 dark:text-white font-mono">{entry.rescuedKg.toLocaleString()} kg</span>
                 </div>
 
                 <div className="text-left sm:text-right">
-                  <span className="text-[10px] text-slate-400 block uppercase font-semibold">CO₂ Offset</span>
-                  <span className="font-black text-emerald-400 font-mono">{entry.co2AvoidedKg.toLocaleString()} kg CO₂</span>
+                  <span className="text-[10px] text-stone-400 block uppercase font-semibold">CO₂ Offset</span>
+                  <span className="font-black text-[#2e7d32] dark:text-[#81c784] font-mono">{entry.co2AvoidedKg.toLocaleString()} kg CO₂</span>
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] text-amber-400 block uppercase font-semibold">Value Saved</span>
-                  <span className="font-black text-amber-400 font-mono">{formatCurrency(entry.savedPkr)}</span>
+                  <span className="text-[10px] text-[#f37021] block uppercase font-semibold">Value Saved</span>
+                  <span className="font-black text-[#1b4332] dark:text-[#81c784] font-mono">{formatCurrency(entry.savedPkr)}</span>
                 </div>
               </div>
             </div>
@@ -214,6 +213,5 @@ Contact: esg@flashfruit.pk | www.flashfruit.pk
 
       </div>
     </div>
-
   );
 };

@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { Reservation } from '../models/Reservation';
 import { Deal } from '../models/Deal';
 import { User } from '../models/User';
@@ -114,18 +115,83 @@ export const getMyReservations = async (req: Request, res: Response): Promise<vo
   }
 };
 
+export const verifyPickupCode = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { pickupCode } = req.body;
+    if (!pickupCode) {
+      res.status(400).json({ error: 'Pickup code is required' });
+      return;
+    }
+
+    const cleanCode = String(pickupCode).trim().toUpperCase();
+    let reservation: any = await Reservation.findOne({ pickupCode: cleanCode })
+      .populate({ path: 'dealRef', populate: { path: 'itemRef' } })
+      .populate('retailerRef');
+
+    if (!reservation && mongoose.Types.ObjectId.isValid(pickupCode)) {
+      reservation = await Reservation.findById(pickupCode)
+        .populate({ path: 'dealRef', populate: { path: 'itemRef' } })
+        .populate('retailerRef');
+    }
+
+    if (!reservation) {
+      res.status(404).json({ error: `No active reservation found with code: ${cleanCode}` });
+      return;
+    }
+
+    res.json({
+      message: 'Pass verified successfully',
+      reservation: {
+        id: reservation._id,
+        pickupCode: reservation.pickupCode,
+        status: reservation.status,
+        quantity: reservation.quantity,
+        totalAmountPkr: reservation.totalAmountPkr,
+        paymentMethod: reservation.paymentMethod,
+        paymentStatus: reservation.paymentStatus,
+        pickupWindowEnd: reservation.pickupWindowEnd,
+        deal: {
+          id: reservation.dealRef?._id,
+          currentDiscountedPricePkr: reservation.dealRef?.currentDiscountedPricePkr,
+          discountPercent: reservation.dealRef?.discountPercent,
+          item: reservation.dealRef?.itemRef,
+        },
+        retailer: reservation.retailerRef,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const updateReservationStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    const reservation = await Reservation.findById(id);
+    let reservation: any = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      reservation = await Reservation.findById(id);
+    }
+    if (!reservation) {
+      reservation = await Reservation.findOne({ pickupCode: id.toUpperCase() });
+    }
     if (!reservation) {
       res.status(404).json({ error: 'Reservation not found' });
       return;
     }
 
     reservation.status = status;
+    if (status === 'collected') {
+      reservation.paymentStatus = 'paid';
+    } else if (status === 'no-show' || status === 'cancelled' || status === 'expired') {
+      const deal = await Deal.findById(reservation.dealRef);
+      if (deal) {
+        deal.stockQuantity += reservation.quantity;
+        deal.status = 'active';
+        await deal.save();
+      }
+    }
     await reservation.save();
 
     res.json({ message: `Reservation status updated to ${status}`, reservation });

@@ -1,6 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Store, Leaf, User, LogIn, MapPin, Cpu } from 'lucide-react';
-import { cn, formatCurrency } from '../lib/utils';
+import { ShoppingBag, Store, Leaf, User, LogIn, MapPin, Cpu, Zap, Sparkles } from 'lucide-react';
 import type { AuthUser, PakistanCity, AppTab } from '../types';
 
 interface NavbarProps {
@@ -20,9 +19,16 @@ interface NavbarProps {
   onOpenCommuteMatcher?: () => void;
   onOpenColdLocker?: () => void;
   onOpenCarbonLeague?: () => void;
+  onOpenMysteryBags?: () => void;
 }
 
-const CITIES: PakistanCity[] = ['All Pakistan', 'Lahore', 'Karachi', 'Islamabad', 'Rawalpindi'];
+const CITIES: { label: string; value: PakistanCity }[] = [
+  { label: 'All Cities', value: 'All Pakistan' },
+  { label: 'Karachi', value: 'Karachi' },
+  { label: 'Lahore', value: 'Lahore' },
+  { label: 'Islamabad', value: 'Islamabad' },
+  { label: 'Rawalpindi', value: 'Rawalpindi' },
+];
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
@@ -41,44 +47,53 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCommuteMatcher,
   onOpenColdLocker,
   onOpenCarbonLeague,
+  onOpenMysteryBags,
 }) => {
   return (
-    <header className="sticky top-0 z-50 glass-panel border-b border-slate-800/60 px-4 lg:px-8 py-3 transition-all">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <header className="sticky top-0 z-50 bg-[#FAFAF8]/95 dark:bg-[#182230]/95 backdrop-blur-md border-b border-[#e5e0d8] dark:border-white/10 px-4 lg:px-8 py-3 transition-colors shadow-2xs">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 lg:gap-4">
         
         {/* Brand Logo & Pakistan Market Tagline */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveTab('consumer')}>
-            <div className="size-11 rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-emerald-950/60 ring-1 ring-emerald-300/40 group-hover:scale-105 transition-transform">
-              <span className="text-2xl drop-shadow-md">⚡</span>
+          <div
+            className="flex items-center gap-3 cursor-pointer group"
+            onClick={() => setActiveTab('consumer')}
+          >
+            {/* Circular Green Brand Emblem matching reference design */}
+            <div className="size-10 rounded-full bg-[#1b4332] dark:bg-[#2D6A4F] text-white flex items-center justify-center shadow-md shadow-[#1b4332]/25 group-hover:scale-105 transition-transform">
+              <Leaf className="size-5 text-[#85e3a8]" />
             </div>
+
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-black tracking-tight bg-gradient-to-r from-emerald-300 via-teal-200 to-amber-300 bg-clip-text text-transparent">
-                  FlashFruit
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl font-black tracking-tight text-[#111827] dark:text-[#F9F6F0]">
+                  Foodsave
                 </span>
-                <span className="px-2.5 py-0.5 text-[10px] font-extrabold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-full flex items-center gap-1">
-                  <span>🇵🇰</span> Pakistan
+                <span className="px-1.5 py-0.2 text-[9px] font-black bg-[#1b4332]/10 dark:bg-[#4CAF50]/15 text-[#1b4332] dark:text-[#4CAF50] border border-[#1b4332]/20 dark:border-[#4CAF50]/30 rounded-md">
+                  PK
                 </span>
               </div>
-              <p className="text-xs text-slate-400 hidden sm:block font-medium">
-                Rescuing surplus retail food with smart dynamic pricing
+              <p className="text-[10px] text-stone-500 dark:text-slate-400 font-medium tracking-tight">
+                Surplus Food Marketplace Pakistan
               </p>
             </div>
           </div>
 
-          {/* Mobile Action Buttons */}
+          {/* Mobile Right Quick Action Icons */}
           <div className="flex items-center gap-2 md:hidden">
-            <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs font-bold font-mono shadow-sm">
-              🪙 ₨ {rescueWalletBalancePkr}
-            </span>
+            <button
+              onClick={onOpenMysteryBags}
+              className="px-2.5 py-1 rounded-full bg-[#f37021] text-white font-bold text-[11px] shadow-xs"
+            >
+              Mystery Bags
+            </button>
             <button
               onClick={onOpenReservations}
-              className="relative p-2.5 rounded-xl bg-slate-900/80 border border-slate-700 text-emerald-300 hover:bg-slate-800 transition-colors shadow-md"
+              className="relative p-2 rounded-full bg-[#1b4332] text-white shadow-xs"
             >
-              <ShoppingBag className="size-5" />
+              <ShoppingBag className="size-4" />
               {reservationCount > 0 && (
-                <span className="absolute -top-1 -right-1 size-5 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center animate-bounce shadow-md">
+                <span className="absolute -top-1 -right-1 size-4 rounded-full bg-[#FF9800] text-white font-black text-[10px] flex items-center justify-center">
                   {reservationCount}
                 </span>
               )}
@@ -86,129 +101,132 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Pakistan City Switcher Bar */}
-        <div className="flex items-center gap-1 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 text-xs shadow-inner">
-          <span className="text-slate-400 px-2 flex items-center gap-1 font-semibold text-[11px]">
-            <MapPin className="size-3 text-emerald-400" /> City:
-          </span>
-          {CITIES.map((c) => (
+        {/* Pakistan City Capsule Selector matching exact reference */}
+        <div className="flex items-center gap-0.5 bg-[#f0ebe1] dark:bg-[#1F2937] p-1 rounded-full border border-[#ded8cc] dark:border-white/10 text-xs shadow-2xs self-center md:self-auto overflow-x-auto scrollbar-none">
+          <MapPin className="size-3.5 text-stone-400 dark:text-stone-500 ml-2 mr-1 hidden sm:block" />
+          {CITIES.map((c) => {
+            const isActive = selectedCity === c.value;
+            return (
+              <button
+                key={c.value}
+                onClick={() => setSelectedCity(c.value)}
+                className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[#1b4332] text-white shadow-xs'
+                    : 'text-stone-600 dark:text-stone-300 hover:text-[#1b4332] dark:hover:text-white'
+                }`}
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right Statistics & Action Buttons */}
+        <div className="flex items-center gap-2 lg:gap-2.5 self-center md:self-auto overflow-x-auto scrollbar-none">
+          
+          {/* Bags Saved Eco Chip */}
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#edf7ed] dark:bg-[#1F2937] border border-[#c8e6c9] dark:border-white/10 text-[11px] text-[#2e7d32] dark:text-[#81c784] font-bold shadow-2xs">
+            <Leaf className="size-3.5 text-[#2e7d32] dark:text-[#81c784]" />
+            <span>{itemsRescuedCount > 0 ? `${itemsRescuedCount + 1648} Bags Saved!` : '1,648 Bags Saved!'}</span>
+          </div>
+
+          {/* Value Returned Chip */}
+          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fff8e1] dark:bg-[#1F2937] border border-[#ffecb3] dark:border-white/10 text-[11px] text-[#b78103] dark:text-[#fbc02d] font-bold shadow-2xs">
+            <span>🪙 Rs {Math.round((totalSavedPkr + 248000) / 1000)}k Returned • ₨ {rescueWalletBalancePkr}</span>
+          </div>
+
+          {/* Flash Market Pill */}
+          {onOpenDutchAuction && (
             <button
-              key={c}
-              onClick={() => setSelectedCity(c)}
-              className={`px-3 py-1 rounded-xl text-[11px] font-bold transition-all ${
-                selectedCity === c
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-900/40 scale-105'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-              }`}
+              onClick={onOpenDutchAuction}
+              className="px-2.5 py-1 rounded-full bg-[#f3f4f6] dark:bg-[#1F2937] hover:bg-[#e5e7eb] dark:hover:bg-[#283548] border border-stone-300 dark:border-white/10 text-[11px] font-bold text-stone-700 dark:text-stone-200 flex items-center gap-1 transition-all"
             >
-              {c.replace(' Pakistan', '')}
+              <Zap className="size-3 text-[#FF9800]" />
+              <span className="hidden sm:inline">Flash Market</span>
             </button>
-          ))}
-        </div>
+          )}
 
-        {/* Impact Bar (Total Saved PKR & Wallet Balance) */}
-        <div className="hidden xl:flex items-center gap-4 px-4 py-1.5 rounded-2xl bg-slate-900/80 border border-slate-800/80 text-xs shadow-sm">
-          <div className="flex items-center gap-2">
-            <Leaf className="size-4 text-emerald-400" />
-            <span className="text-slate-400">Rescued:</span>
-            <span className="font-bold text-emerald-300">{itemsRescuedCount} items</span>
-          </div>
-          <div className="h-4 w-px bg-slate-800" />
-          <div className="flex items-center gap-2">
-            <span className="text-amber-400 font-bold">₨</span>
-            <span className="text-slate-400">Total Saved:</span>
-            <span className="font-bold text-amber-300">{formatCurrency(totalSavedPkr)}</span>
-          </div>
-          <div className="h-4 w-px bg-slate-800" />
-          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold shadow-inner">
-            <span>🪙 Wallet:</span>
-            <span>₨ {rescueWalletBalancePkr}</span>
-          </div>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 self-center md:self-auto overflow-x-auto shadow-inner">
+          {/* Mystery Bags Orange Button */}
           <button
-            onClick={() => setActiveTab('consumer')}
-            className={cn(
-              "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap",
-              activeTab === 'consumer'
-                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md shadow-emerald-950/50 scale-102"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-            )}
+            onClick={onOpenMysteryBags || onOpenReservations}
+            className="px-4 py-1.5 rounded-full bg-[#f37021] hover:bg-[#e05f13] text-white font-extrabold text-xs shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
           >
-            <ShoppingBag className="size-4" />
-            <span>Consumer App</span>
+            <Sparkles className="size-3.5" />
+            <span>Mystery Bags</span>
           </button>
 
+          {/* My Bag Dark Green Button */}
           <button
-            onClick={() => setActiveTab('retailer')}
-            className={cn(
-              "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap",
-              activeTab === 'retailer'
-                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-md shadow-amber-950/50 scale-102"
-                : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
-            )}
+            onClick={onOpenReservations}
+            className="px-4 py-1.5 rounded-full bg-[#1b4332] hover:bg-[#133326] text-white font-extrabold text-xs shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
           >
-            <Store className="size-4" />
-            <span>Retailer POS</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('ai-simulator')}
-            className={cn(
-              "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 whitespace-nowrap",
-              activeTab === 'ai-simulator'
-                ? "bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md shadow-purple-950/50 scale-102"
-                : "text-purple-300/80 hover:text-purple-200 hover:bg-purple-950/40"
-            )}
-          >
-            <Cpu className="size-4 text-purple-300" />
-            <span>Dynamic Pricing</span>
-            <span className="px-1.5 py-0.2 rounded-md text-[9px] bg-purple-400/20 text-purple-200 border border-purple-400/30 font-bold">
-              AI
+            <ShoppingBag className="size-3.5" />
+            <span>My Bag</span>
+            <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-[#FF9800] text-white text-[10px] font-black">
+              {reservationCount}
             </span>
           </button>
 
-          {/* User Auth Button */}
-          <button
-            onClick={onOpenAuth}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-200 text-xs sm:text-sm font-semibold transition-all ml-1"
-          >
-            {currentUser ? (
-              <>
-                <User className="size-3.5 text-emerald-400" />
-                <span className="truncate max-w-[70px]">{currentUser.name.split(' ')[0]}</span>
-              </>
-            ) : (
-              <>
-                <LogIn className="size-3.5 text-amber-400" />
-                <span>Login</span>
-              </>
-            )}
-          </button>
+          {/* Role Tabs Switcher (Consumer / Retailer / Pricing AI) */}
+          <div className="flex items-center gap-1 bg-[#ece7dd] dark:bg-[#1F2937] p-1 rounded-full border border-[#ded8cc] dark:border-white/10 text-xs">
+            <button
+              onClick={() => setActiveTab(activeTab === 'retailer' ? 'consumer' : 'retailer')}
+              title={activeTab === 'retailer' ? 'Switch to Consumer View' : 'Merchant POS Portal'}
+              className={`p-1.5 rounded-full transition-all ${
+                activeTab === 'retailer'
+                  ? 'bg-[#FF9800] text-white shadow-xs'
+                  : 'text-stone-600 dark:text-stone-300 hover:text-stone-900'
+              }`}
+            >
+              <Store className="size-3.5" />
+            </button>
+
+            <button
+              onClick={() => setActiveTab(activeTab === 'ai-simulator' ? 'consumer' : 'ai-simulator')}
+              title="Pricing Algorithm Simulator"
+              className={`p-1.5 rounded-full transition-all ${
+                activeTab === 'ai-simulator'
+                  ? 'bg-[#1b4332] text-white shadow-xs'
+                  : 'text-stone-600 dark:text-stone-300 hover:text-stone-900'
+              }`}
+            >
+              <Cpu className="size-3.5" />
+            </button>
+
+            {/* User Auth */}
+            <button
+              onClick={onOpenAuth}
+              className="p-1.5 rounded-full hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 transition-colors"
+              title={currentUser ? currentUser.name : 'Sign In'}
+            >
+              {currentUser ? <User className="size-3.5 text-[#2D6A4F]" /> : <LogIn className="size-3.5" />}
+            </button>
+          </div>
+
         </div>
+
       </div>
 
       {/* Innovation Quick-Launch Strip */}
-      <div className="max-w-7xl mx-auto mt-2.5 pt-2.5 border-t border-slate-800/60 flex items-center gap-2 overflow-x-auto text-xs pb-0.5 scrollbar-none">
-        <span className="text-[10px] uppercase font-black text-amber-400 flex items-center gap-1 pl-1 flex-shrink-0 tracking-wider">
-          <span>⚡ Smart Features:</span>
+      <div className="max-w-7xl mx-auto mt-2 pt-2 border-t border-[#ded8cc]/60 dark:border-white/10 flex items-center gap-2 overflow-x-auto text-xs pb-0.5 scrollbar-none">
+        <span className="text-[10px] uppercase font-black text-[#1b4332] dark:text-[#4CAF50] flex items-center gap-1 pl-1 flex-shrink-0 tracking-wider">
+          <span>⚡ Innovation Suite:</span>
         </span>
 
         {onOpenFlashChef && (
           <button
             onClick={onOpenFlashChef}
-            className="px-3 py-1 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-[11px] font-bold flex items-center gap-1.5 transition-all hover:scale-105 flex-shrink-0 shadow-sm"
+            className="px-3 py-1 rounded-full bg-white dark:bg-[#1F2937] hover:bg-[#f0ede6] border border-[#ded8cc] dark:border-white/10 text-stone-700 dark:text-[#F9F6F0] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
           >
-            <span>👨‍🍳 FlashChef AI™</span>
+            <span>👨‍🍳 FlashChef AI</span>
           </button>
         )}
 
         {onOpenDutchAuction && (
           <button
             onClick={onOpenDutchAuction}
-            className="px-3 py-1 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-[11px] font-bold flex items-center gap-1.5 transition-all hover:scale-105 flex-shrink-0 shadow-sm animate-pulse"
+            className="px-3 py-1 rounded-full bg-[#fff8e1] dark:bg-[#1F2937] hover:bg-[#ffecb3] border border-[#ffecb3] dark:border-white/10 text-[#b78103] dark:text-[#FF9800] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
           >
             <span>⚡ Dutch Auction Live</span>
           </button>
@@ -217,7 +235,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {onOpenCommuteMatcher && (
           <button
             onClick={onOpenCommuteMatcher}
-            className="px-3 py-1 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 text-[11px] font-bold flex items-center gap-1.5 transition-all hover:scale-105 flex-shrink-0 shadow-sm"
+            className="px-3 py-1 rounded-full bg-white dark:bg-[#1F2937] hover:bg-[#f0ede6] border border-[#ded8cc] dark:border-white/10 text-stone-700 dark:text-[#F9F6F0] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
           >
             <span>🚗 0-Min Commute Matcher</span>
           </button>
@@ -226,7 +244,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {onOpenColdLocker && (
           <button
             onClick={onOpenColdLocker}
-            className="px-3 py-1 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-[11px] font-bold flex items-center gap-1.5 transition-all hover:scale-105 flex-shrink-0 shadow-sm"
+            className="px-3 py-1 rounded-full bg-white dark:bg-[#1F2937] hover:bg-[#f0ede6] border border-[#ded8cc] dark:border-white/10 text-stone-700 dark:text-[#F9F6F0] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
           >
             <span>🧊 24/7 Smart Cold Locker</span>
           </button>
@@ -235,7 +253,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {onOpenCarbonLeague && (
           <button
             onClick={onOpenCarbonLeague}
-            className="px-3 py-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold flex items-center gap-1.5 transition-all hover:scale-105 flex-shrink-0 shadow-sm"
+            className="px-3 py-1 rounded-full bg-[#edf7ed] dark:bg-[#1F2937] hover:bg-[#c8e6c9] border border-[#c8e6c9] dark:border-white/10 text-[#2e7d32] dark:text-[#4CAF50] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
           >
             <span>🏆 Campus Carbon League</span>
           </button>

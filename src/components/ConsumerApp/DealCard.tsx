@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { DealItem } from '../../types';
-import { Clock, MapPin, Star, ShieldCheck, Flame, ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Eye } from 'lucide-react';
 import { formatCurrency, formatTimeLeft } from '../../lib/utils';
-
 
 interface DealCardProps {
   deal: DealItem;
@@ -16,145 +15,133 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect })
   );
 
   useEffect(() => {
+    setSecondsRemaining(Math.max(0, Math.floor(deal.expiryHoursLeft * 3600)));
+  }, [deal.id, deal.expiryHoursLeft]);
+
+  useEffect(() => {
     const timer = setInterval(() => {
       setSecondsRemaining((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
+  const savedAmountPkr = Math.max(0, deal.originalPricePkr - deal.currentPricePkr);
+
+  // Approximate decay checkpoints for visual timeline
+  const step1Price = Math.round(deal.originalPricePkr * 0.8);
+  const step2Price = Math.round(deal.originalPricePkr * 0.6);
+  const step3Price = deal.currentPricePkr;
+
   return (
-    <div className="group relative glass-card rounded-3xl overflow-hidden border border-slate-800/80 flex flex-col justify-between transition-all duration-300 hover:border-emerald-500/40">
+    <div className="bg-white dark:bg-[#182230] border border-[#e5e0d8] dark:border-white/10 rounded-[1.4rem] p-3.5 shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group">
       
-      {/* Top Banner Image with Badges */}
-      <div className="relative h-48 w-full overflow-hidden bg-slate-950">
+      {/* Top Image Container */}
+      <div className="relative h-48 w-full rounded-2xl overflow-hidden bg-stone-100 dark:bg-stone-900">
         <img
           src={deal.imageUrl}
           alt={deal.title}
-          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
+          className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-500 ease-out"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/25" />
 
-        {/* Dynamic Discount Floating Pill */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1 rounded-full decay-badge text-white font-black text-xs shadow-lg ring-1 ring-white/20">
-          <Flame className="size-4 animate-bounce" />
-          <span>{deal.discountPercent}% OFF NOW</span>
+        {/* Top-Left: Red Discount Badge matching exact mockup */}
+        <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-[#e53935] text-white font-black text-[11px] shadow-sm tracking-wide">
+          {deal.discountPercent}% OFF
         </div>
 
-        {/* Mystery Bag Pill */}
-        {deal.isMysteryBag && (
-          <div className="absolute top-11 left-3 px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-black text-[10px] shadow-md flex items-center gap-1 animate-pulse">
-            <span>🎁 Mystery Bag</span>
-          </div>
-        )}
-
-        {/* Stock Badge */}
-        <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md text-emerald-300 border border-slate-700/80 font-bold text-[11px] shadow-sm">
-          {deal.stockQuantity} Left
+        {/* Top-Right: Surplus Gold Scarcity Badge */}
+        <div className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-[#f37021] text-white font-extrabold text-[11px] shadow-sm flex items-center gap-1 animate-pulse">
+          <span>Only {deal.stockQuantity} left!</span>
         </div>
 
-        {/* Store Name & Verification Pill */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs text-white">
-          <span className="font-bold flex items-center gap-1.5 bg-slate-950/85 backdrop-blur-md px-3 py-1 rounded-xl border border-slate-800 shadow-sm">
-            <MapPin className="size-3.5 text-emerald-400" />
-            <span className="truncate max-w-[130px]">{deal.storeName}</span>
-            {deal.isVerified && (
-              <ShieldCheck className="size-3.5 text-emerald-400" />
-            )}
-          </span>
-          <span className="bg-slate-950/85 backdrop-blur-md px-2.5 py-1 rounded-xl text-amber-400 font-bold flex items-center gap-1 border border-slate-800 shadow-sm">
-            <Star className="size-3.5 fill-amber-400" />
-            {deal.storeRating}
-          </span>
+        {/* Bottom-Left: Store Name & Rating Capsule */}
+        <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 px-3 py-1 rounded-full bg-black/75 backdrop-blur-md text-white text-[11px] font-bold border border-white/15 shadow-sm">
+          <span className="truncate max-w-[140px]">{deal.storeName}</span>
+          <span className="text-[#fbc02d] ml-1">★ {deal.storeRating}</span>
         </div>
       </div>
 
       {/* Card Content Body */}
-      <div className="p-4 flex-1 flex flex-col justify-between gap-3 bg-slate-950/40">
+      <div className="pt-3 flex-1 flex flex-col justify-between gap-2.5">
         <div>
-          {/* Category Tag & City */}
-          <div className="flex items-center justify-between gap-1.5 mb-2">
-            <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${
-              deal.isMysteryBag
-                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-            }`}>
-              {deal.isMysteryBag ? 'Mystery Box' : deal.category}
+          {/* Category & City on Left, Countdown on Right */}
+          <div className="flex items-center justify-between text-[11px] mb-1">
+            <span className="text-stone-500 dark:text-stone-400 font-medium capitalize">
+              {deal.category} • {deal.location.city || 'Lahore'} ({deal.distanceKm} km)
             </span>
-            <span className="text-[11px] text-slate-400 font-medium">
-              📍 {deal.location.city || 'Lahore'} ({deal.distanceKm} km)
+            <span className="text-[#e53935] font-bold font-mono text-[11px]">
+              Expiring in: {formatTimeLeft(secondsRemaining)}
             </span>
           </div>
 
+          {/* Title */}
           <h3
             onClick={() => onSelect(deal)}
-            className="text-base font-bold text-white hover:text-emerald-300 cursor-pointer line-clamp-2 transition-colors mb-2 leading-snug"
+            className="text-[15px] font-black text-stone-900 dark:text-[#F9F6F0] hover:text-[#1b4332] dark:hover:text-[#4CAF50] cursor-pointer line-clamp-1 transition-colors leading-tight mb-1"
           >
             {deal.title}
           </h3>
 
-          {/* Time Decay Schedule Rule Preview or Mystery Bag Contents */}
-          {deal.isMysteryBag && deal.mysteryBagContents ? (
-            <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200 shadow-inner">
-              <p className="line-clamp-1">
-                🎁 <strong>Includes: </strong>
-                {deal.mysteryBagContents.join(' • ')}
-              </p>
-            </div>
-          ) : (
-            <div className="p-2.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-300 shadow-inner">
-              <p className="line-clamp-1">
-                ⏱️ <strong className="text-amber-400 font-semibold">Auto-Decay: </strong>
-                30% @ 3h → 50% @ 2h → 75% @ 1h before close.
-              </p>
-            </div>
-          )}
-        </div>
+          {/* Short Description */}
+          <p className="text-[11px] text-stone-500 dark:text-stone-400 line-clamp-2 leading-relaxed">
+            {deal.isMysteryBag && deal.mysteryBagContents
+              ? `Surplus mystery bag containing: ${deal.mysteryBagContents.join(', ')}.`
+              : `Fresh bakery & grocery surplus from ${deal.storeName}. Prepared fresh today, rescued before closing.`}
+          </p>
 
-        {/* Real-time Dynamic Pricing & Countdown Section */}
-        <div className="pt-3 border-t border-slate-800/80 flex flex-col gap-3">
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
-                Rescue Price
-              </p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-amber-400 tracking-tight drop-shadow-sm">
-                  {formatCurrency(deal.currentPricePkr)}
-                </span>
-                <span className="text-xs line-through text-slate-500 font-medium">
-                  {formatCurrency(deal.originalPricePkr)}
-                </span>
-              </div>
+          {/* Dynamic Decay Rate Timeline (from mockup) */}
+          <div className="mt-2.5 p-2 rounded-xl bg-[#f7f5f0] dark:bg-[#1f2937]/80 border border-[#e8e3d8] dark:border-white/5">
+            <span className="text-[9px] uppercase font-black text-stone-500 dark:text-stone-400 tracking-wider block mb-1">
+              Dynamic Decay Rate
+            </span>
+            <div className="flex items-center justify-between text-[10px] text-stone-500 dark:text-stone-400 font-mono">
+              <span>00:00 (Rs {step1Price})</span>
+              <span>12:00 (Rs {step2Price})</span>
+              <span className="text-[#e53935] font-bold">18:00 (Rs {step3Price}, {deal.discountPercent}%)</span>
             </div>
-
-            {/* Countdown Clock */}
-            <div className="text-right">
-              <div className="flex items-center gap-1.5 text-xs text-rose-400 font-mono font-bold bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-lg">
-                <Clock className="size-3.5 animate-spin text-rose-400" />
-                <span>{formatTimeLeft(secondsRemaining)}</span>
-              </div>
-              <span className="text-[10px] text-slate-400 block mt-0.5">
-                Guaranteed hold
-              </span>
+            {/* Visual Progress Bar */}
+            <div className="w-full h-1 bg-stone-200 dark:bg-stone-700 rounded-full mt-1.5 overflow-hidden flex">
+              <div className="w-1/3 bg-stone-400" />
+              <div className="w-1/3 bg-[#f37021]" />
+              <div className="w-1/3 bg-[#e53935]" />
             </div>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2">
+        {/* Pricing & Savings Bar */}
+        <div className="pt-1 flex flex-col gap-2">
+          
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs text-stone-400 line-through">
+              {formatCurrency(deal.originalPricePkr)}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-[#edf7ed] dark:bg-[#1b4332]/40 text-[#2e7d32] dark:text-[#81c784] border border-[#c8e6c9] dark:border-[#2e7d32]/30 text-[10px] font-bold">
+              Save {formatCurrency(savedAmountPkr)}
+            </span>
+          </div>
+
+          <div className="flex items-baseline justify-between -mt-1">
+            <span className="text-2xl font-black text-stone-900 dark:text-[#F9F6F0] tracking-tight">
+              {formatCurrency(deal.currentPricePkr)}
+            </span>
+          </div>
+
+          {/* Full-Width Claim Bag Button */}
+          <div className="flex items-center gap-2 pt-1">
             <button
               onClick={() => onSelect(deal)}
-              className="py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-semibold transition-all hover:border-slate-600 shadow-sm"
+              title="Inspect Details"
+              className="p-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 border border-stone-200 dark:border-white/10 transition-colors"
             >
-              View Schedule
+              <Eye className="size-4" />
             </button>
 
             <button
               onClick={() => onReserve(deal)}
-              className="py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-1.5 transition-all transform active:scale-95 hover:scale-102"
+              className="flex-1 py-3 px-4 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-black text-xs shadow-md shadow-[#1b4332]/25 flex items-center justify-center gap-2 transition-all transform active:scale-98"
             >
               <ShoppingBag className="size-4" />
-              <span>Reserve Deal</span>
+              <span>Claim Bag (15m Hold)</span>
             </button>
           </div>
 
@@ -163,6 +150,5 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect })
       </div>
 
     </div>
-
   );
 };
