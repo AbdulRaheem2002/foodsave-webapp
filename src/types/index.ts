@@ -76,11 +76,9 @@ export interface Reservation {
   bykeaRiderName?: string;
   bykeaRiderPhone?: string;
   bykeaEtaMinutes?: number;
-  paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Cash on Pickup' | 'Rescue Wallet';
+  paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Cash on Pickup';
   paymentStatus: 'paid' | 'pending';
   createdAt: string;
-  groupSlashActive?: boolean;
-  groupSlashDiscountPercent?: number;
 }
 
 export interface AuthUser {

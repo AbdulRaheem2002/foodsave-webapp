@@ -11,7 +11,6 @@ interface ReservationModalProps {
   onClose: () => void;
   onConfirmReservation: (reservation: Reservation) => void;
   onOpenWhatsApp: (reservation: Reservation) => void;
-  userWalletBalancePkr?: number;
   onOpenBykeaTracker?: (res: Reservation) => void;
 }
 
@@ -20,13 +19,11 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   onClose,
   onConfirmReservation,
   onOpenWhatsApp,
-  userWalletBalancePkr = 650,
   onOpenBykeaTracker,
 }) => {
   const [quantity, setQuantity] = useState<number>(1);
   const [fulfillmentType, setFulfillmentType] = useState<'self-pickup' | 'bykea-delivery'>('self-pickup');
-  const [paymentMethod, setPaymentMethod] = useState<'JazzCash' | 'EasyPaisa' | 'Cash on Pickup' | 'Rescue Wallet'>('JazzCash');
-  const [useWalletBalance, setUseWalletBalance] = useState<boolean>(false);
+  const [paymentMethod, setPaymentMethod] = useState<'JazzCash' | 'EasyPaisa' | 'Cash on Pickup'>('JazzCash');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
   const [confirmedReservation, setConfirmedReservation] = useState<Reservation | null>(null);
@@ -35,11 +32,9 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
   const deliveryFeePkr = fulfillmentType === 'bykea-delivery' ? 150 : 0;
   const itemTotalPkr = deal.currentPricePkr * quantity;
-  const rawTotalPkr = itemTotalPkr + deliveryFeePkr;
-  const walletDiscountPkr = useWalletBalance ? Math.min(userWalletBalancePkr, rawTotalPkr) : 0;
-  const totalPricePkr = Math.max(0, rawTotalPkr - walletDiscountPkr);
+  const totalPricePkr = itemTotalPkr + deliveryFeePkr;
   const originalTotalPkr = deal.originalPricePkr * quantity;
-  const totalSavingsPkr = originalTotalPkr - itemTotalPkr + walletDiscountPkr;
+  const totalSavingsPkr = originalTotalPkr - itemTotalPkr;
 
   const handleConfirm = async () => {
     setIsSubmitting(true);
@@ -200,7 +195,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   className={`p-3 rounded-2xl border text-center font-bold transition-all ${
                     fulfillmentType === 'bykea-delivery'
                       ? 'bg-[#FF9800] text-white border-[#FF9800] shadow-sm'
-                      : 'bg-[#F9F6F0] dark:bg-[#1F2937] text-slate-700 dark:text-slate-300 border-[#2D6A4F]/15'
+                      : 'bg-[#F9F6F0] text-slate-700 border-[#2D6A4F]/15'
                   }`}
                 >
                   🏍️ Bykea Express (+ ₨ 150)
@@ -208,37 +203,10 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               </div>
             </div>
 
-            {/* Rescue Wallet Balance Deduction */}
-            {userWalletBalancePkr > 0 && (
-              <div className="p-3.5 rounded-2xl bg-[#F9F6F0] dark:bg-[#1F2937] border border-[#2D6A4F]/15 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="size-8 rounded-full bg-[#FF9800] text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                    🪙
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-[#1F2937] dark:text-[#F9F6F0] block">Use Rescue Cashback Wallet</span>
-                    <span className="text-[10px] text-[#FF9800] font-bold">Balance: {formatCurrency(userWalletBalancePkr)} available</span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setUseWalletBalance(!useWalletBalance)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    useWalletBalance
-                      ? 'bg-[#2D6A4F] text-white shadow-xs'
-                      : 'bg-white dark:bg-[#141c27] text-slate-700 dark:text-slate-200 border border-[#2D6A4F]/25'
-                  }`}
-                >
-                  {useWalletBalance ? '✓ Applied' : 'Apply'}
-                </button>
-              </div>
-            )}
-
             {/* Payment Method Selector */}
             <div>
-              <label className="block text-xs font-bold text-[#1F2937] dark:text-[#F9F6F0] mb-1.5 flex items-center gap-1">
-                <Wallet className="size-3.5 text-[#2D6A4F] dark:text-[#4CAF50]" />
+              <label className="block text-xs font-bold text-[#1F2937] mb-1.5 flex items-center gap-1">
+                <Wallet className="size-3.5 text-[#2D6A4F]" />
                 Select Payment Method:
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -248,7 +216,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   className={`p-2.5 rounded-xl border text-center transition-all text-xs font-bold ${
                     paymentMethod === 'JazzCash'
                       ? 'bg-[#d32f2f] text-white border-[#d32f2f] shadow-sm'
-                      : 'bg-[#F9F6F0] dark:bg-[#1F2937] text-slate-700 dark:text-slate-300 border-[#2D6A4F]/15'
+                      : 'bg-[#F9F6F0] text-slate-700 border-[#2D6A4F]/15'
                   }`}
                 >
                   🔴 JazzCash
@@ -259,7 +227,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   className={`p-2.5 rounded-xl border text-center transition-all text-xs font-bold ${
                     paymentMethod === 'EasyPaisa'
                       ? 'bg-[#2e7d32] text-white border-[#2e7d32] shadow-sm'
-                      : 'bg-[#F9F6F0] dark:bg-[#1F2937] text-slate-700 dark:text-slate-300 border-[#2D6A4F]/15'
+                      : 'bg-[#F9F6F0] text-slate-700 border-[#2D6A4F]/15'
                   }`}
                 >
                   🟢 EasyPaisa
@@ -270,7 +238,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   className={`p-2.5 rounded-xl border text-center transition-all text-xs font-bold ${
                     paymentMethod === 'Cash on Pickup'
                       ? 'bg-[#FF9800] text-white border-[#FF9800] shadow-sm'
-                      : 'bg-[#F9F6F0] dark:bg-[#1F2937] text-slate-700 dark:text-slate-300 border-[#2D6A4F]/15'
+                      : 'bg-[#F9F6F0] text-slate-700 border-[#2D6A4F]/15'
                   }`}
                 >
                   💵 Cash
@@ -282,11 +250,11 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-[#FF9800]/10 border border-[#FF9800]/30 flex items-center justify-between text-xs">
               <div>
                 <span className="text-[#FF9800] font-black block text-sm">Savings: {formatCurrency(totalSavingsPkr)}</span>
-                <span className="text-[#2D6A4F] dark:text-[#4CAF50] text-[10px] block font-bold">Includes 5% Instant PKR Rescue Cashback!</span>
+                <span className="text-[#2e7d32] text-[10px] block font-bold">100% Fresh &amp; Halal Verified</span>
               </div>
               <div className="text-right">
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Total Payable</span>
-                <span className="text-2xl font-black text-[#1F2937] dark:text-[#F9F6F0]">{formatCurrency(totalPricePkr)}</span>
+                <span className="text-slate-500 block text-[11px]">Total Payable</span>
+                <span className="text-2xl font-black text-[#1F2937]">{formatCurrency(totalPricePkr)}</span>
               </div>
             </div>
 

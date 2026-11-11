@@ -10,7 +10,6 @@ import { ActivePassesDrawer } from './components/ConsumerApp/ActivePassesDrawer'
 import { WhatsAppModal } from './components/ConsumerApp/WhatsAppModal';
 import { RatingModal } from './components/ConsumerApp/RatingModal';
 import { StoreProfileModal } from './components/ConsumerApp/StoreProfileModal';
-import { ImpactCalculator } from './components/ConsumerApp/ImpactCalculator';
 import { BykeaTrackerModal } from './components/ConsumerApp/BykeaTrackerModal';
 import { RetailerDashboard } from './components/RetailerPOS/RetailerDashboard';
 import { AuthModal } from './components/AuthModal';
@@ -133,7 +132,6 @@ export function App() {
   // Global PKR Impact Stats
   const totalSavedPkr = (currentUser?.totalSavedPkr || 0) + reservations.reduce((sum, r) => sum + r.savedPkr, 0);
   const itemsRescuedCount = (currentUser?.itemsRescuedCount || 0) + reservations.reduce((sum, r) => sum + r.quantity, 0);
-  const rescueWalletBalancePkr = currentUser?.rescueWalletBalancePkr ?? 650;
 
   const handleAddItem = (partialItem: Partial<DealItem>) => {
     const newItem: DealItem = {
@@ -173,17 +171,6 @@ export function App() {
           ? { ...d, stockQuantity: Math.max(0, d.stockQuantity - res.quantity) }
           : d
       )
-    );
-
-    // Award 5% Instant PKR Rescue Cashback to user's wallet
-    const cashbackEarned = Math.round(res.totalPricePkr * 0.05);
-    setCurrentUser((prev) =>
-      prev
-        ? {
-            ...prev,
-            rescueWalletBalancePkr: (prev.rescueWalletBalancePkr || 650) + cashbackEarned,
-          }
-        : null
     );
   };
 
@@ -270,7 +257,6 @@ export function App() {
         itemsRescuedCount={itemsRescuedCount}
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthModalOpen(true)}
-        rescueWalletBalancePkr={rescueWalletBalancePkr}
         onOpenMysteryBags={scrollToDeals}
       />
 
@@ -310,7 +296,7 @@ export function App() {
 
                 {/* Subtitle with Pakistani rails */}
                 <p className="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-2xl mb-4 font-medium">
-                  Pakistani bakeries, restaurants, and grocery stores list high-quality surplus items with progressive run-based time-decay pricing. Pay seamlessly via <strong>JazzCash, EasyPaisa, Cash on Pickup, or Rescue Wallet</strong> with 15-minute guaranteed hold &amp; <strong>Bykea Express Delivery</strong>.
+                  Pakistani bakeries, restaurants, and grocery stores list high-quality surplus items at steep discounts before closing. Pay seamlessly via <strong>JazzCash, EasyPaisa, or Cash on Pickup</strong> with 15-minute guaranteed hold &amp; <strong>Bykea Express Delivery</strong>.
                 </p>
 
                 {/* Trust Guarantee Badges */}
@@ -398,9 +384,6 @@ export function App() {
               onClaimMysteryBag={(deal) => setReserveModalDeal(deal)}
             />
 
-            {/* Interactive Household Savings & Impact Calculator */}
-            <ImpactCalculator />
-
           </div>
         )}
       </main>
@@ -411,7 +394,6 @@ export function App() {
         onClose={() => setReserveModalDeal(null)}
         onConfirmReservation={handleConfirmReservation}
         onOpenWhatsApp={(res) => setWhatsAppReservation(res)}
-        userWalletBalancePkr={rescueWalletBalancePkr}
         onOpenBykeaTracker={(res) => setTrackedBykeaReservation(res)}
       />
 

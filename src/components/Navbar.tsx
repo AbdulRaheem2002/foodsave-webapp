@@ -13,7 +13,6 @@ interface NavbarProps {
   itemsRescuedCount: number;
   currentUser: AuthUser | null;
   onOpenAuth: () => void;
-  rescueWalletBalancePkr?: number;
   onOpenMysteryBags?: () => void;
 }
 
@@ -36,7 +35,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   itemsRescuedCount,
   currentUser,
   onOpenAuth,
-  rescueWalletBalancePkr = 650,
   onOpenMysteryBags,
 }) => {
   return (
@@ -123,7 +121,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Value Returned Chip */}
           <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fff8e1] border border-[#ffecb3] text-[11px] text-[#b78103] font-bold shadow-2xs">
-            <span>🪙 Rs {Math.round((totalSavedPkr + 248000) / 1000)}k Returned • ₨ {rescueWalletBalancePkr}</span>
+            <span>🪙 Rs {Math.round((totalSavedPkr + 248000) / 1000)}k Saved in Pakistan</span>
           </div>
 
           {/* Mystery Bags Orange Button */}
