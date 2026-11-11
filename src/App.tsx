@@ -28,9 +28,12 @@ import { fetchDealsApi, fetchMyReservationsApi } from './services/api';
 import { Sun, Moon, ArrowRight, CheckCircle2, ShieldCheck, Clock } from 'lucide-react';
 
 const STORAGE_KEYS = {
-  RESERVATIONS: 'flashfruit_reservations_v2',
-  USER: 'flashfruit_user_v2',
-  THEME: 'flashfruit_theme_v2',
+  RESERVATIONS: 'foodsave_reservations_v2',
+  USER: 'foodsave_user_v2',
+  THEME: 'foodsave_theme_v2',
+  LEGACY_RESERVATIONS: 'flashfruit_reservations_v2',
+  LEGACY_USER: 'flashfruit_user_v2',
+  LEGACY_THEME: 'flashfruit_theme_v2',
 };
 
 export function App() {
@@ -38,7 +41,9 @@ export function App() {
   const [selectedCity, setSelectedCity] = useState<PakistanCity>('All Pakistan');
   
   const [themeMode, setThemeMode] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem(STORAGE_KEYS.THEME) as 'dark' | 'light') || 'light';
+    return (localStorage.getItem(STORAGE_KEYS.THEME) as 'dark' | 'light') ||
+      (localStorage.getItem(STORAGE_KEYS.LEGACY_THEME) as 'dark' | 'light') ||
+      'light';
   });
 
   const [deals, setDeals] = useState<DealItem[]>(INITIAL_DEALS);
@@ -61,7 +66,7 @@ export function App() {
 
   const [reservations, setReservations] = useState<Reservation[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.RESERVATIONS);
+      const saved = localStorage.getItem(STORAGE_KEYS.RESERVATIONS) || localStorage.getItem(STORAGE_KEYS.LEGACY_RESERVATIONS);
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -73,7 +78,7 @@ export function App() {
   
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.USER);
+      const saved = localStorage.getItem(STORAGE_KEYS.USER) || localStorage.getItem(STORAGE_KEYS.LEGACY_USER);
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
