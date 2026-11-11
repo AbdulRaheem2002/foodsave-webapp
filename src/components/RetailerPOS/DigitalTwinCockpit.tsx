@@ -82,14 +82,14 @@ export const DigitalTwinCockpit: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-200 dark:border-stone-800 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-xl font-black text-stone-900 dark:text-white">Predictive AI Digital Twin &amp; Spoilage Forecaster</h3>
+            <h3 className="text-xl font-black text-stone-900 dark:text-white">Store Aisle Spoilage Risk Forecaster</h3>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#edf7ed] dark:bg-[#1b4332]/40 text-[#2e7d32] dark:text-[#81c784] border border-[#c8e6c9] dark:border-[#2e7d32]/30 flex items-center gap-1">
               <Eye className="size-3 text-[#2e7d32]" />
               24h Advance Prediction
             </span>
           </div>
           <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
-            Simulates supermarket floor inventory dynamics using local weather forecasts and historical footfall models.
+            Simulates supermarket floor inventory dynamics using local weather forecasts and footfall patterns.
           </p>
         </div>
 
@@ -161,7 +161,7 @@ export const DigitalTwinCockpit: React.FC = () => {
             <h4 className="text-sm font-black text-stone-900 dark:text-white">{activeZone.name}</h4>
           </div>
           <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed mb-3">
-            AI Recommendation: <strong className="text-[#f37021]">{activeZone.recommendation}</strong>
+            Smart Recommendation: <strong className="text-[#f37021]">{activeZone.recommendation}</strong>
           </p>
           <div className="flex items-center gap-4 text-xs font-medium">
             <span className="text-stone-600 dark:text-stone-300">Total Store Spoilage Exposure: <strong className="text-stone-900 dark:text-white">{formatCurrency(totalAtRiskPkr)}</strong></span>
@@ -181,7 +181,7 @@ export const DigitalTwinCockpit: React.FC = () => {
               className="px-6 py-3.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-black text-xs shadow-md flex items-center gap-2 transition-transform active:scale-95"
             >
               <Zap className="size-4 text-[#85e3a8]" />
-              <span>Deploy Preemptive AI Schedules</span>
+              <span>Deploy Preemptive Schedules</span>
             </button>
           )}
         </div>

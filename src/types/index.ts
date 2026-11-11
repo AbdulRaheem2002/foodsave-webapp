@@ -61,7 +61,7 @@ export interface RetailerStore {
   totalWastedValueAvoidedPkr: number;
 }
 
-export type AppTab = 'consumer' | 'retailer' | 'ai-simulator';
+export type AppTab = 'consumer' | 'retailer';
 
 export interface Reservation {
   id: string;

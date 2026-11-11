@@ -15,36 +15,26 @@ import { ImpactCalculator } from './components/ConsumerApp/ImpactCalculator';
 import { BykeaTrackerModal } from './components/ConsumerApp/BykeaTrackerModal';
 import { GroupSlashModal } from './components/ConsumerApp/GroupSlashModal';
 import { SocialProofTicker } from './components/ConsumerApp/SocialProofTicker';
-import { FlashChefAiModal } from './components/ConsumerApp/FlashChefAiModal';
 import { DutchAuctionModal } from './components/ConsumerApp/DutchAuctionModal';
 import { CommuteRouteMatcherModal } from './components/ConsumerApp/CommuteRouteMatcherModal';
 import { SmartLockerModal } from './components/ConsumerApp/SmartLockerModal';
 import { CarbonLeagueModal } from './components/ConsumerApp/CarbonLeagueModal';
 import { RetailerDashboard } from './components/RetailerPOS/RetailerDashboard';
-import { AiCoreSimulator } from './components/AiCoreSimulator/AiCoreSimulator';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
 import { fetchDealsApi, fetchMyReservationsApi } from './services/api';
-import { Sun, Moon, ArrowRight, CheckCircle2, ShieldCheck, Clock } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ShieldCheck, Clock } from 'lucide-react';
 
 const STORAGE_KEYS = {
   RESERVATIONS: 'foodsave_reservations_v2',
   USER: 'foodsave_user_v2',
-  THEME: 'foodsave_theme_v2',
   LEGACY_RESERVATIONS: 'flashfruit_reservations_v2',
   LEGACY_USER: 'flashfruit_user_v2',
-  LEGACY_THEME: 'flashfruit_theme_v2',
 };
 
 export function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('consumer');
   const [selectedCity, setSelectedCity] = useState<PakistanCity>('All Pakistan');
-  
-  const [themeMode, setThemeMode] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem(STORAGE_KEYS.THEME) as 'dark' | 'light') ||
-      (localStorage.getItem(STORAGE_KEYS.LEGACY_THEME) as 'dark' | 'light') ||
-      'light';
-  });
 
   const [deals, setDeals] = useState<DealItem[]>(INITIAL_DEALS);
   const [stores] = useState<RetailerStore[]>(INITIAL_STORES);
@@ -58,7 +48,6 @@ export function App() {
   // Advanced Modals State
   const [trackedBykeaReservation, setTrackedBykeaReservation] = useState<Reservation | null>(null);
   const [groupSlashDeal, setGroupSlashDeal] = useState<DealItem | null>(null);
-  const [isFlashChefOpen, setIsFlashChefOpen] = useState<boolean>(false);
   const [isDutchAuctionOpen, setIsDutchAuctionOpen] = useState<boolean>(false);
   const [isCommuteMatcherOpen, setIsCommuteMatcherOpen] = useState<boolean>(false);
   const [isColdLockerOpen, setIsColdLockerOpen] = useState<boolean>(false);
@@ -85,14 +74,16 @@ export function App() {
     }
   });
 
-  // Synchronize dark class to html document
+  // Ensure pure Light Theme permanently
   useEffect(() => {
-    if (themeMode === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    document.documentElement.classList.remove('dark');
+    try {
+      localStorage.removeItem('foodsave_theme_v2');
+      localStorage.removeItem('flashfruit_theme_v2');
+    } catch {
+      // ignore
     }
-  }, [themeMode]);
+  }, []);
 
   // Save to localStorage when state updates
   useEffect(() => {
@@ -112,14 +103,6 @@ export function App() {
       console.warn('LocalStorage user error', e);
     }
   }, [currentUser]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.THEME, themeMode);
-    } catch (e) {
-      console.warn('LocalStorage theme error', e);
-    }
-  }, [themeMode]);
 
   // Fetch initial deals & backend reservations from Express REST API
   useEffect(() => {
@@ -273,7 +256,7 @@ export function App() {
   };
 
   return (
-    <div className={`min-h-screen ${themeMode === 'dark' ? 'bg-[#0f1722] text-[#F9F6F0]' : 'bg-[#FAFAF7] text-[#1F2937]'} flex flex-col font-sans transition-colors duration-300`}>
+    <div className="min-h-screen bg-[#FAFAF7] text-[#1F2937] flex flex-col font-sans">
       
       {/* Top Push Alert Simulator Banner matching Reference Mockup */}
       <div className="bg-[#0b1d14] text-white py-1.5 px-4 text-xs font-medium flex items-center justify-between border-b border-[#163826] shadow-2xs">
@@ -298,16 +281,6 @@ export function App() {
           >
             View Active Passes
           </button>
-
-          {/* Theme Switcher Toggle */}
-          <button
-            onClick={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
-            className="px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold flex items-center gap-1 transition-all"
-            title="Toggle Light/Dark Theme"
-          >
-            {themeMode === 'dark' ? <Sun className="size-3 text-[#fbc02d]" /> : <Moon className="size-3 text-stone-300" />}
-            <span className="hidden md:inline">{themeMode === 'dark' ? 'Light' : 'Dark'}</span>
-          </button>
         </div>
       </div>
 
@@ -324,7 +297,6 @@ export function App() {
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         rescueWalletBalancePkr={rescueWalletBalancePkr}
-        onOpenFlashChef={() => setIsFlashChefOpen(true)}
         onOpenDutchAuction={() => setIsDutchAuctionOpen(true)}
         onOpenCommuteMatcher={() => setIsCommuteMatcherOpen(true)}
         onOpenColdLocker={() => setIsColdLockerOpen(true)}
@@ -334,7 +306,19 @@ export function App() {
 
       {/* Main View Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 pt-5 pb-12">
-        {activeTab === 'consumer' ? (
+        {activeTab === 'retailer' ? (
+          <div className="animate-in fade-in duration-300">
+            <RetailerDashboard
+              stores={stores}
+              deals={deals}
+              reservations={reservations}
+              onAddItem={handleAddItem}
+              onRemoveItem={handleRemoveItem}
+              onUpdateDealPrice={handleUpdateDealPrice}
+              onCollectReservation={handleCollectReservation}
+            />
+          </div>
+        ) : (
           <div className="flex flex-col gap-8 animate-in fade-in duration-300">
             
             {/* Hero Section matching exact Reference Mockup */}
@@ -344,40 +328,40 @@ export function App() {
               <div className="lg:col-span-8 flex flex-col justify-center">
                 
                 {/* Top Location & Hold Pill */}
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#edf7ed] dark:bg-[#1b4332]/40 text-[#2e7d32] dark:text-[#81c784] border border-[#c8e6c9] dark:border-[#2e7d32]/30 inline-flex items-center gap-1.5 self-start mb-3 shadow-2xs">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] inline-flex items-center gap-1.5 self-start mb-3 shadow-2xs">
                   <span className="size-2 rounded-full bg-[#4CAF50] animate-pulse" />
                   PK Live Surplus Deals &amp; Surprise Bags Across Pakistan | 15-min Guaranteed Hold
                 </span>
 
                 {/* Big Editorial Headline */}
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-stone-900 dark:text-white tracking-tight leading-tight mb-3">
-                  Rescue Delicious Food at <span className="text-[#1b4332] dark:text-[#4CAF50]">Up to 85% OFF</span>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-stone-900 tracking-tight leading-tight mb-3">
+                  Rescue Delicious Food at <span className="text-[#1b4332]">Up to 85% OFF</span>
                 </h1>
 
                 {/* Subtitle with Pakistani rails */}
-                <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 leading-relaxed max-w-2xl mb-4 font-medium">
+                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-2xl mb-4 font-medium">
                   Pakistani bakeries, restaurants, and grocery stores list high-quality surplus items with progressive run-based time-decay pricing. Pay seamlessly via <strong>JazzCash, EasyPaisa, Cash on Pickup, or Rescue Wallet</strong> with 15-minute guaranteed hold &amp; <strong>Bykea Express Delivery</strong>.
                 </p>
 
                 {/* Trust Guarantee Badges */}
-                <div className="flex flex-wrap items-center gap-2.5 text-xs text-stone-600 dark:text-stone-300 font-bold">
-                  <span className="flex items-center gap-1.5 bg-white dark:bg-[#182230] px-3 py-1.5 rounded-full border border-stone-200 dark:border-white/10 shadow-2xs">
-                    <CheckCircle2 className="size-3.5 text-[#2e7d32] dark:text-[#4CAF50]" />
+                <div className="flex flex-wrap items-center gap-2.5 text-xs text-stone-600 font-bold">
+                  <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs">
+                    <CheckCircle2 className="size-3.5 text-[#2e7d32]" />
                     100% Halal Verified
                   </span>
-                  <span className="flex items-center gap-1.5 bg-white dark:bg-[#182230] px-3 py-1.5 rounded-full border border-stone-200 dark:border-white/10 shadow-2xs">
+                  <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs">
                     <Clock className="size-3.5 text-[#f37021]" />
                     15-Min Guaranteed Hold
                   </span>
-                  <span className="flex items-center gap-1.5 bg-white dark:bg-[#182230] px-3 py-1.5 rounded-full border border-stone-200 dark:border-white/10 shadow-2xs">
-                    <ShieldCheck className="size-3.5 text-[#2e7d32] dark:text-[#4CAF50]" />
+                  <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs">
+                    <ShieldCheck className="size-3.5 text-[#2e7d32]" />
                     Bykea Express 30-min Delivery
                   </span>
                 </div>
               </div>
 
               {/* Right Column: Daily Milestone KPI Card */}
-              <div className="lg:col-span-4 p-5 sm:p-6 rounded-[1.75rem] bg-[#f7f5f0] dark:bg-[#182230] border border-[#e8e2d8] dark:border-white/10 shadow-2xs flex flex-col justify-between">
+              <div className="lg:col-span-4 p-5 sm:p-6 rounded-[1.75rem] bg-[#f7f5f0] border border-[#e8e2d8] shadow-2xs flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
@@ -388,21 +372,21 @@ export function App() {
                     </span>
                   </div>
 
-                  <h3 className="text-xl sm:text-2xl font-black text-stone-900 dark:text-white mb-1.5">
+                  <h3 className="text-xl sm:text-2xl font-black text-stone-900 mb-1.5">
                     1,248 kg of Surplus Rescued Today
                   </h3>
 
-                  <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed font-medium mb-4">
+                  <p className="text-xs text-stone-500 leading-relaxed font-medium mb-4">
                     Diverted equivalent to 3.1 tonnes of greenhouse gases across Karachi, Islamabad &amp; Rawalpindi.
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-stone-200 dark:border-white/10 flex items-center justify-between">
+                <div className="pt-3 border-t border-stone-200 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-stone-400 block">
                       Pakistani Household Average
                     </span>
-                    <span className="text-xs font-black text-stone-800 dark:text-stone-200 font-mono">
+                    <span className="text-xs font-black text-stone-800 font-mono">
                       Rs 11,200 / mo
                     </span>
                   </div>
@@ -447,22 +431,6 @@ export function App() {
             {/* Interactive Household Savings & Impact Calculator */}
             <ImpactCalculator />
 
-          </div>
-        ) : activeTab === 'retailer' ? (
-          <div className="animate-in fade-in duration-300">
-            <RetailerDashboard
-              stores={stores}
-              deals={deals}
-              reservations={reservations}
-              onAddItem={handleAddItem}
-              onRemoveItem={handleRemoveItem}
-              onUpdateDealPrice={handleUpdateDealPrice}
-              onCollectReservation={handleCollectReservation}
-            />
-          </div>
-        ) : (
-          <div className="animate-in fade-in duration-300">
-            <AiCoreSimulator />
           </div>
         )}
       </main>
@@ -536,13 +504,6 @@ export function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onAuthSuccess={(user) => setCurrentUser(user)}
-      />
-
-      {/* FlashChef AI Conversational Recipe Engine Modal */}
-      <FlashChefAiModal
-        isOpen={isFlashChefOpen}
-        onClose={() => setIsFlashChefOpen(false)}
-        selectedDeal={reserveModalDeal}
       />
 
       {/* Perishable Live Dutch Auction Modal */}

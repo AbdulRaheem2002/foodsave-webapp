@@ -122,27 +122,27 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             }`}
           >
             <Camera className="size-3.5" />
-            <span>AI Expiry OCR</span>
+            <span>Expiry Label OCR</span>
           </button>
         </div>
 
         {/* Scanner Viewport */}
-        <div className="relative w-full h-44 rounded-2xl bg-[#fcfbf9] dark:bg-stone-950 border border-stone-200 dark:border-stone-800 flex flex-col items-center justify-center overflow-hidden mb-4">
+        <div className="relative w-full h-44 rounded-2xl bg-[#fcfbf9] border border-stone-200 flex flex-col items-center justify-center overflow-hidden mb-4">
           {isScanning ? (
-            <div className="flex flex-col items-center gap-2 text-[#1b4332] dark:text-[#81c784]">
+            <div className="flex flex-col items-center gap-2 text-[#1b4332]">
               <Scan className="size-12 animate-pulse text-[#f37021]" />
               <span className="text-xs font-mono font-bold animate-bounce">
-                {scanMode === 'barcode' ? 'Scanning EAN Barcode...' : 'AI Vision OCR Parsing Label...'}
+                {scanMode === 'barcode' ? 'Scanning EAN Barcode...' : 'Camera OCR Parsing Label...'}
               </span>
             </div>
           ) : scannedResult ? (
             <div className="p-4 text-center">
-              <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-[#edf7ed] dark:bg-[#1b4332]/40 text-[#2e7d32] dark:text-[#81c784] border border-[#c8e6c9] dark:border-[#2e7d32]/30 mb-2 inline-block">
-                ✓ {scanMode === 'barcode' ? 'Barcode Matched' : 'AI OCR Parsed Successfully'}
+              <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] mb-2 inline-block">
+                ✓ {scanMode === 'barcode' ? 'Barcode Matched' : 'OCR Parsed Successfully'}
               </span>
-              <p className="text-sm font-bold text-stone-900 dark:text-white">{scannedResult.title}</p>
+              <p className="text-sm font-bold text-stone-900">{scannedResult.title}</p>
               {scannedResult.ocrText && (
-                <p className="text-[10px] font-mono text-purple-600 dark:text-purple-300 mt-0.5">{scannedResult.ocrText}</p>
+                <p className="text-[10px] font-mono text-purple-600 mt-0.5">{scannedResult.ocrText}</p>
               )}
               <p className="text-xs text-[#f37021] font-mono mt-1 font-bold">
                 Original Price: {formatCurrency(scannedResult.originalPricePkr)} • {scannedResult.stockQuantity} pcs
@@ -151,7 +151,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
           ) : (
             <div className="flex flex-col items-center gap-2 text-stone-400">
               {scanMode === 'barcode' ? <QrCode className="size-12 opacity-60 text-stone-500" /> : <Camera className="size-12 opacity-60 text-[#f37021]" />}
-              <p className="text-xs text-center max-w-xs px-4 text-stone-500 dark:text-stone-400">
+              <p className="text-xs text-center max-w-xs px-4 text-stone-500">
                 {scanMode === 'barcode'
                   ? 'Point barcode scanner or camera at packaging'
                   : 'Point camera at perishable expiry timestamp label'}
@@ -161,7 +161,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 className="mt-2 px-4 py-1.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1"
               >
                 <Sparkles className="size-3.5 text-[#85e3a8]" />
-                <span>Simulate {scanMode === 'barcode' ? 'Scan Barcode' : 'AI Expiry OCR'}</span>
+                <span>Simulate {scanMode === 'barcode' ? 'Scan Barcode' : 'Expiry OCR'}</span>
               </button>
             </div>
           )}

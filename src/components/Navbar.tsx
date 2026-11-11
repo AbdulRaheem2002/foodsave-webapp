@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Store, Leaf, User, LogIn, MapPin, Cpu, Zap, Sparkles } from 'lucide-react';
+import { ShoppingBag, Store, Leaf, User, LogIn, MapPin, Zap, Sparkles } from 'lucide-react';
 import type { AuthUser, PakistanCity, AppTab } from '../types';
 
 interface NavbarProps {
@@ -14,7 +14,6 @@ interface NavbarProps {
   currentUser: AuthUser | null;
   onOpenAuth: () => void;
   rescueWalletBalancePkr?: number;
-  onOpenFlashChef?: () => void;
   onOpenDutchAuction?: () => void;
   onOpenCommuteMatcher?: () => void;
   onOpenColdLocker?: () => void;
@@ -42,7 +41,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   onOpenAuth,
   rescueWalletBalancePkr = 650,
-  onOpenFlashChef,
   onOpenDutchAuction,
   onOpenCommuteMatcher,
   onOpenColdLocker,
@@ -50,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenMysteryBags,
 }) => {
   return (
-    <header className="sticky top-0 z-50 bg-[#FAFAF8]/95 dark:bg-[#182230]/95 backdrop-blur-md border-b border-[#e5e0d8] dark:border-white/10 px-4 lg:px-8 py-3 transition-colors shadow-2xs">
+    <header className="sticky top-0 z-50 bg-[#FAFAF8]/95 backdrop-blur-md border-b border-[#e5e0d8] px-4 lg:px-8 py-3 transition-colors shadow-2xs">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 lg:gap-4">
         
         {/* Brand Logo & Pakistan Market Tagline */}
@@ -60,20 +58,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setActiveTab('consumer')}
           >
             {/* Circular Green Brand Emblem matching reference design */}
-            <div className="size-10 rounded-full bg-[#1b4332] dark:bg-[#2D6A4F] text-white flex items-center justify-center shadow-md shadow-[#1b4332]/25 group-hover:scale-105 transition-transform">
+            <div className="size-10 rounded-full bg-[#1b4332] text-white flex items-center justify-center shadow-md shadow-[#1b4332]/25 group-hover:scale-105 transition-transform">
               <Leaf className="size-5 text-[#85e3a8]" />
             </div>
 
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xl font-black tracking-tight text-[#111827] dark:text-[#F9F6F0]">
+                <span className="text-xl font-black tracking-tight text-[#111827]">
                   Foodsave
                 </span>
-                <span className="px-1.5 py-0.2 text-[9px] font-black bg-[#1b4332]/10 dark:bg-[#4CAF50]/15 text-[#1b4332] dark:text-[#4CAF50] border border-[#1b4332]/20 dark:border-[#4CAF50]/30 rounded-md">
+                <span className="px-1.5 py-0.2 text-[9px] font-black bg-[#1b4332]/10 text-[#1b4332] border border-[#1b4332]/20 rounded-md">
                   PK
                 </span>
               </div>
-              <p className="text-[10px] text-stone-500 dark:text-slate-400 font-medium tracking-tight">
+              <p className="text-[10px] text-stone-500 font-medium tracking-tight">
                 Surplus Food Marketplace Pakistan
               </p>
             </div>
@@ -102,8 +100,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Pakistan City Capsule Selector matching exact reference */}
-        <div className="flex items-center gap-0.5 bg-[#f0ebe1] dark:bg-[#1F2937] p-1 rounded-full border border-[#ded8cc] dark:border-white/10 text-xs shadow-2xs self-center md:self-auto overflow-x-auto scrollbar-none">
-          <MapPin className="size-3.5 text-stone-400 dark:text-stone-500 ml-2 mr-1 hidden sm:block" />
+        <div className="flex items-center gap-0.5 bg-[#f0ebe1] p-1 rounded-full border border-[#ded8cc] text-xs shadow-2xs self-center md:self-auto overflow-x-auto scrollbar-none">
+          <MapPin className="size-3.5 text-stone-400 ml-2 mr-1 hidden sm:block" />
           {CITIES.map((c) => {
             const isActive = selectedCity === c.value;
             return (
@@ -113,7 +111,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all whitespace-nowrap ${
                   isActive
                     ? 'bg-[#1b4332] text-white shadow-xs'
-                    : 'text-stone-600 dark:text-stone-300 hover:text-[#1b4332] dark:hover:text-white'
+                    : 'text-stone-600 hover:text-[#1b4332]'
                 }`}
               >
                 {c.label}
@@ -126,13 +124,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-2 lg:gap-2.5 self-center md:self-auto overflow-x-auto scrollbar-none">
           
           {/* Bags Saved Eco Chip */}
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#edf7ed] dark:bg-[#1F2937] border border-[#c8e6c9] dark:border-white/10 text-[11px] text-[#2e7d32] dark:text-[#81c784] font-bold shadow-2xs">
-            <Leaf className="size-3.5 text-[#2e7d32] dark:text-[#81c784]" />
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#edf7ed] border border-[#c8e6c9] text-[11px] text-[#2e7d32] font-bold shadow-2xs">
+            <Leaf className="size-3.5 text-[#2e7d32]" />
             <span>{itemsRescuedCount > 0 ? `${itemsRescuedCount + 1648} Bags Saved!` : '1,648 Bags Saved!'}</span>
           </div>
 
           {/* Value Returned Chip */}
-          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fff8e1] dark:bg-[#1F2937] border border-[#ffecb3] dark:border-white/10 text-[11px] text-[#b78103] dark:text-[#fbc02d] font-bold shadow-2xs">
+          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fff8e1] border border-[#ffecb3] text-[11px] text-[#b78103] font-bold shadow-2xs">
             <span>🪙 Rs {Math.round((totalSavedPkr + 248000) / 1000)}k Returned • ₨ {rescueWalletBalancePkr}</span>
           </div>
 
@@ -140,7 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {onOpenDutchAuction && (
             <button
               onClick={onOpenDutchAuction}
-              className="px-2.5 py-1 rounded-full bg-[#f3f4f6] dark:bg-[#1F2937] hover:bg-[#e5e7eb] dark:hover:bg-[#283548] border border-stone-300 dark:border-white/10 text-[11px] font-bold text-stone-700 dark:text-stone-200 flex items-center gap-1 transition-all"
+              className="px-2.5 py-1 rounded-full bg-[#f3f4f6] hover:bg-[#e5e7eb] border border-stone-300 text-[11px] font-bold text-stone-700 flex items-center gap-1 transition-all"
             >
               <Zap className="size-3 text-[#FF9800]" />
               <span className="hidden sm:inline">Flash Market</span>
@@ -168,36 +166,25 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </button>
 
-          {/* Role Tabs Switcher (Consumer / Retailer / Pricing AI) */}
-          <div className="flex items-center gap-1 bg-[#ece7dd] dark:bg-[#1F2937] p-1 rounded-full border border-[#ded8cc] dark:border-white/10 text-xs">
+          {/* Role Tabs Switcher (Consumer / Merchant POS) */}
+          <div className="flex items-center gap-1 bg-[#ece7dd] p-1 rounded-full border border-[#ded8cc] text-xs">
             <button
               onClick={() => setActiveTab(activeTab === 'retailer' ? 'consumer' : 'retailer')}
               title={activeTab === 'retailer' ? 'Switch to Consumer View' : 'Merchant POS Portal'}
-              className={`p-1.5 rounded-full transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full transition-all text-[11px] font-bold ${
                 activeTab === 'retailer'
                   ? 'bg-[#FF9800] text-white shadow-xs'
-                  : 'text-stone-600 dark:text-stone-300 hover:text-stone-900'
+                  : 'text-stone-600 hover:text-stone-900'
               }`}
             >
               <Store className="size-3.5" />
-            </button>
-
-            <button
-              onClick={() => setActiveTab(activeTab === 'ai-simulator' ? 'consumer' : 'ai-simulator')}
-              title="Pricing Algorithm Simulator"
-              className={`p-1.5 rounded-full transition-all ${
-                activeTab === 'ai-simulator'
-                  ? 'bg-[#1b4332] text-white shadow-xs'
-                  : 'text-stone-600 dark:text-stone-300 hover:text-stone-900'
-              }`}
-            >
-              <Cpu className="size-3.5" />
+              <span>{activeTab === 'retailer' ? 'Consumer' : 'Merchant POS'}</span>
             </button>
 
             {/* User Auth */}
             <button
               onClick={onOpenAuth}
-              className="p-1.5 rounded-full hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 transition-colors"
+              className="p-1.5 rounded-full hover:bg-stone-200 text-stone-700 transition-colors"
               title={currentUser ? currentUser.name : 'Sign In'}
             >
               {currentUser ? <User className="size-3.5 text-[#2D6A4F]" /> : <LogIn className="size-3.5" />}
@@ -209,24 +196,15 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Innovation Quick-Launch Strip */}
-      <div className="max-w-7xl mx-auto mt-2 pt-2 border-t border-[#ded8cc]/60 dark:border-white/10 flex items-center gap-2 overflow-x-auto text-xs pb-0.5 scrollbar-none">
-        <span className="text-[10px] uppercase font-black text-[#1b4332] dark:text-[#4CAF50] flex items-center gap-1 pl-1 flex-shrink-0 tracking-wider">
+      <div className="max-w-7xl mx-auto mt-2 pt-2 border-t border-[#ded8cc]/60 flex items-center gap-2 overflow-x-auto text-xs pb-0.5 scrollbar-none">
+        <span className="text-[10px] uppercase font-black text-[#1b4332] flex items-center gap-1 pl-1 flex-shrink-0 tracking-wider">
           <span>⚡ Innovation Suite:</span>
         </span>
-
-        {onOpenFlashChef && (
-          <button
-            onClick={onOpenFlashChef}
-            className="px-3 py-1 rounded-full bg-white dark:bg-[#1F2937] hover:bg-[#f0ede6] border border-[#ded8cc] dark:border-white/10 text-stone-700 dark:text-[#F9F6F0] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
-          >
-            <span>👨‍🍳 FlashChef AI</span>
-          </button>
-        )}
 
         {onOpenDutchAuction && (
           <button
             onClick={onOpenDutchAuction}
-            className="px-3 py-1 rounded-full bg-[#fff8e1] dark:bg-[#1F2937] hover:bg-[#ffecb3] border border-[#ffecb3] dark:border-white/10 text-[#b78103] dark:text-[#FF9800] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
+            className="px-3 py-1 rounded-full bg-[#fff8e1] hover:bg-[#ffecb3] border border-[#ffecb3] text-[#b78103] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
           >
             <span>⚡ Dutch Auction Live</span>
           </button>
@@ -235,7 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {onOpenCommuteMatcher && (
           <button
             onClick={onOpenCommuteMatcher}
-            className="px-3 py-1 rounded-full bg-white dark:bg-[#1F2937] hover:bg-[#f0ede6] border border-[#ded8cc] dark:border-white/10 text-stone-700 dark:text-[#F9F6F0] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
+            className="px-3 py-1 rounded-full bg-white hover:bg-[#f0ede6] border border-[#ded8cc] text-stone-700 text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
           >
             <span>🚗 0-Min Commute Matcher</span>
           </button>
@@ -244,7 +222,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {onOpenColdLocker && (
           <button
             onClick={onOpenColdLocker}
-            className="px-3 py-1 rounded-full bg-white dark:bg-[#1F2937] hover:bg-[#f0ede6] border border-[#ded8cc] dark:border-white/10 text-stone-700 dark:text-[#F9F6F0] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
+            className="px-3 py-1 rounded-full bg-white hover:bg-[#f0ede6] border border-[#ded8cc] text-stone-700 text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
           >
             <span>🧊 24/7 Smart Cold Locker</span>
           </button>
@@ -253,7 +231,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {onOpenCarbonLeague && (
           <button
             onClick={onOpenCarbonLeague}
-            className="px-3 py-1 rounded-full bg-[#edf7ed] dark:bg-[#1F2937] hover:bg-[#c8e6c9] border border-[#c8e6c9] dark:border-white/10 text-[#2e7d32] dark:text-[#4CAF50] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
+            className="px-3 py-1 rounded-full bg-[#edf7ed] hover:bg-[#c8e6c9] border border-[#c8e6c9] text-[#2e7d32] text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs"
           >
             <span>🏆 Campus Carbon League</span>
           </button>

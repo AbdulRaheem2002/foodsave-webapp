@@ -31,28 +31,6 @@
     --ring: 153 40% 30%;
     --radius: 1.25rem;
   }
-
-  .dark {
-    --background: 217 33% 12%; /* #141c27 Dark Ground deep */
-    --foreground: 40 33% 97%; /* #F9F6F0 Loft Neutral text */
-    --card: 217 33% 17%; /* #1F2937 */
-    --card-foreground: 40 33% 97%;
-    --popover: 217 33% 17%;
-    --popover-foreground: 40 33% 97%;
-    --primary: 153 40% 38%; /* #378261 */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 36 100% 50%; /* #FF9800 Surplus Gold */
-    --secondary-foreground: 0 0% 100%;
-    --muted: 217 25% 22%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 122 39% 49%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 217 25% 24%;
-    --input: 217 25% 24%;
-    --ring: 153 40% 45%;
-  }
 }
 
 body {
@@ -62,7 +40,6 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   letter-spacing: -0.015em;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Custom Sleek Scrollbars */
@@ -77,9 +54,6 @@ body {
   background: #cbd5e1;
   border-radius: 9999px;
 }
-.dark ::-webkit-scrollbar-thumb {
-  background: #334155;
-}
 ::-webkit-scrollbar-thumb:hover {
   background: #2D6A4F;
 }
@@ -93,21 +67,10 @@ body {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.dark .card-foodsave {
-  background-color: #1F2937;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.4);
-}
-
 .card-foodsave:hover {
   border-color: #2D6A4F;
   transform: translateY(-3px);
   box-shadow: 0 16px 36px -10px rgba(45, 106, 79, 0.16);
-}
-
-.dark .card-foodsave:hover {
-  border-color: #4CAF50;
-  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6);
 }
 
 /* Warm Loft Panels */
@@ -116,12 +79,6 @@ body {
   border: 1px solid rgba(45, 106, 79, 0.14);
   border-radius: 1.5rem;
   box-shadow: 0 4px 16px -2px rgba(31, 41, 55, 0.05);
-}
-
-.dark .loft-panel {
-  background-color: #182230;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
 }
 
 /* Primary "Claim Bag" Action Button */
@@ -184,22 +141,12 @@ body {
   padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
 }
-.dark .badge-rescued {
-  background-color: rgba(45, 106, 79, 0.25);
-  color: #6ee7b7;
-  border-color: rgba(45, 106, 79, 0.5);
-}
 
 /* Glass panel compatibility fallback */
 .glass-panel {
   background-color: #FFFFFF;
   border: 1px solid rgba(45, 106, 79, 0.14);
   box-shadow: 0 10px 30px -10px rgba(31, 41, 55, 0.08);
-}
-.dark .glass-panel {
-  background-color: #1a2330;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
 }
 
 .glass-card {
@@ -208,17 +155,10 @@ body {
   box-shadow: 0 8px 24px -6px rgba(31, 41, 55, 0.06);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.dark .glass-card {
-  background-color: #1F2937;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.4);
-}
+
 .glass-card:hover {
   border-color: #2D6A4F;
   transform: translateY(-3px);
-}
-.dark .glass-card:hover {
-  border-color: #4CAF50;
 }
 
 /* Map radar scan */
