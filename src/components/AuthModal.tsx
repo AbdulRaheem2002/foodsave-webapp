@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, User, Store, LogOut, CheckCircle2, ShoppingBag, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, User, Store, LogOut, CheckCircle2, ShoppingBag, ArrowRight, AlertCircle } from 'lucide-react';
 import { loginAuthApi, registerAuthApi } from '../services/api';
 import type { AuthUser } from '../types';
 import { formatCurrency } from '../lib/utils';
@@ -8,6 +8,7 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: AuthUser | null;
+  initialRole?: 'consumer' | 'retailer';
   onAuthSuccess: (user: AuthUser, token: string) => void;
   onLogout: () => void;
   onSwitchTab?: (tab: 'consumer' | 'retailer') => void;
@@ -17,43 +18,70 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   currentUser,
+  initialRole = 'consumer',
   onAuthSuccess,
   onLogout,
   onSwitchTab,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [role, setRole] = useState<'consumer' | 'retailer'>('consumer');
+  const [role, setRole] = useState<'consumer' | 'retailer'>(initialRole);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [storeName, setStoreName] = useState('');
   const [city, setCity] = useState('Lahore');
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setRole(initialRole);
+      setError(null);
+    }
+  }, [isOpen, initialRole]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsSubmitting(true);
-    const fallbackName = name.trim() || (email ? email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Food Saver');
+
+    const trimmedName =
+      name.trim() ||
+      (email
+        ? email
+            .split('@')[0]
+            .replace(/[._-]/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase())
+        : 'Food Saver');
+
     try {
       if (mode === 'register') {
         const res = await registerAuthApi({
-          name: fallbackName,
-          email,
+          name: trimmedName,
+          email: email.trim(),
+          password,
           role,
-          storeName,
+          storeName: storeName.trim(),
           city,
         });
-        onAuthSuccess(res.user || { id: `usr-${Date.now()}`, name: fallbackName, email, role, totalSavedPkr: 0, itemsRescuedCount: 0 }, res.token || 'real_jwt_token');
+        if (!res.user || !res.token) {
+          throw new Error(res.error || 'Registration failed. Please try again.');
+        }
+        onAuthSuccess(res.user, res.token);
       } else {
-        const res = await loginAuthApi(email);
-        onAuthSuccess(res.user || { id: `usr-${Date.now()}`, name: fallbackName, email, role, totalSavedPkr: 0, itemsRescuedCount: 0 }, res.token || 'real_jwt_token');
+        const res = await loginAuthApi(email.trim(), password);
+        if (!res.user || !res.token) {
+          throw new Error(res.error || 'Invalid email or password.');
+        }
+        onAuthSuccess(res.user, res.token);
       }
+      setPassword('');
       onClose();
-    } catch (err) {
-      console.warn('Auth API fallback:', err);
-      onAuthSuccess({ id: `usr-${Date.now()}`, name: fallbackName, email: email || 'user@foodsave.pk', role, totalSavedPkr: 0, itemsRescuedCount: 0 }, 'jwt_token');
-      onClose();
+    } catch (err: any) {
+      const message = err?.message || 'Unable to sign in. Please check your credentials and server connection.';
+      setError(message.includes('Failed to fetch') ? 'Cannot reach server. Please make sure the backend API is running.' : message);
     } finally {
       setIsSubmitting(false);
     }
@@ -187,7 +215,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div className="grid grid-cols-2 gap-2 mb-4 p-1.5 rounded-full bg-[#F9F6F0] border border-[#2D6A4F]/15 shadow-2xs">
               <button
                 type="button"
-                onClick={() => setRole('consumer')}
+                onClick={() => {
+                  setRole('consumer');
+                  setError(null);
+                }}
                 className={`py-2 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   role === 'consumer' ? 'bg-[#2D6A4F] text-white shadow-xs font-black' : 'text-slate-600 hover:text-[#2D6A4F]'
                 }`}
@@ -197,7 +228,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setRole('retailer')}
+                onClick={() => {
+                  setRole('retailer');
+                  setError(null);
+                }}
                 className={`py-2 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   role === 'retailer' ? 'bg-[#FF9800] text-white shadow-xs font-black' : 'text-slate-600 hover:text-[#FF9800]'
                 }`}
@@ -206,6 +240,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <span>Retailer</span>
               </button>
             </div>
+
+            {error && (
+              <div className="mb-3 p-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-2">
+                <AlertCircle className="size-4 text-red-500 flex-shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               {mode === 'register' && (
@@ -268,8 +309,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <input
                   type="password"
                   required
-                  placeholder="••••••••"
-                  defaultValue="password123"
+                  minLength={6}
+                  placeholder="At least 6 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-full bg-[#F9F6F0] border border-[#2D6A4F]/20 text-[#1F2937] text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
                 />
               </div>
@@ -279,13 +322,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 disabled={isSubmitting}
                 className="btn-claim w-full py-3.5 text-xs font-black shadow-md mt-2"
               >
-                {isSubmitting ? 'Authenticating...' : mode === 'login' ? `Login as ${role.toUpperCase()}` : `Create ${role.toUpperCase()} Account`}
+                {isSubmitting ? 'Authenticating...' : mode === 'login' ? 'Sign In' : `Create ${role.toUpperCase()} Account`}
               </button>
             </form>
 
             <div className="text-center mt-4 pt-3 border-t border-[#2D6A4F]/15 text-xs">
               <button
-                onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                type="button"
+                onClick={() => {
+                  setMode(mode === 'login' ? 'register' : 'login');
+                  setError(null);
+                }}
                 className="text-[#2D6A4F] hover:underline font-bold"
               >
                 {mode === 'login' ? "Don't have an account? Register here" : 'Already registered? Login here'}

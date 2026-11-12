@@ -1,6 +1,33 @@
 import type { DealItem, Reservation } from '../types';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+export const TOKEN_STORAGE_KEY = 'foodsave_token_v2';
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+
+function getAuthHeaders(includeJson = true): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (includeJson) {
+    headers['Content-Type'] = 'application/json';
+  }
+  try {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return headers;
+}
+
+async function parseErrorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const data = await res.json();
+    return data?.error || data?.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 export async function fetchDealsApi(category?: string, minDiscount?: number): Promise<DealItem[]> {
   try {
@@ -93,22 +120,21 @@ export async function fetchMyReservationsApi(): Promise<Reservation[]> {
 export async function createReservationApi(dealId: string, quantity: number, paymentMethod: string) {
   const res = await fetch(`${API_BASE_URL}/reservations`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ dealId, quantity, paymentMethod }),
   });
-  if (!res.ok) throw new Error('Failed to create reservation');
+  if (!res.ok) throw new Error(await parseErrorMessage(res, 'Failed to create reservation'));
   return res.json();
 }
 
 export async function verifyPickupCodeApi(pickupCode: string) {
   const res = await fetch(`${API_BASE_URL}/reservations/verify`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ pickupCode }),
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || 'Failed to verify pickup code');
+    throw new Error(await parseErrorMessage(res, 'Failed to verify pickup code'));
   }
   return res.json();
 }
@@ -116,56 +142,72 @@ export async function verifyPickupCodeApi(pickupCode: string) {
 export async function updateReservationStatusApi(id: string, status: string) {
   const res = await fetch(`${API_BASE_URL}/reservations/${id}/status`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ status }),
   });
-  if (!res.ok) throw new Error('Failed to update reservation status');
+  if (!res.ok) throw new Error(await parseErrorMessage(res, 'Failed to update reservation status'));
   return res.json();
 }
 
 export async function addRetailerItemApi(itemData: any) {
   const res = await fetch(`${API_BASE_URL}/retailer/items`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify(itemData),
   });
-  if (!res.ok) throw new Error('Failed to add item');
+  if (!res.ok) throw new Error(await parseErrorMessage(res, 'Failed to add item'));
   return res.json();
 }
 
 export async function deleteRetailerItemApi(dealId: string) {
   const res = await fetch(`${API_BASE_URL}/deals/${dealId}`, {
     method: 'DELETE',
+    headers: getAuthHeaders(false),
   });
-  if (!res.ok) throw new Error('Failed to delete deal');
+  if (!res.ok) throw new Error(await parseErrorMessage(res, 'Failed to delete deal'));
   return res.json();
 }
 
 export async function overridePriceApi(dealId: string, manualOverridePricePkr: number) {
   const res = await fetch(`${API_BASE_URL}/retailer/deals/${dealId}/override`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ manualOverridePricePkr }),
   });
-  if (!res.ok) throw new Error('Failed to override price');
+  if (!res.ok) throw new Error(await parseErrorMessage(res, 'Failed to override price'));
   return res.json();
 }
 
-export async function registerAuthApi(userData: any) {
+export async function registerAuthApi(userData: {
+  name: string;
+  email: string;
+  password: string;
+  role: 'consumer' | 'retailer';
+  storeName?: string;
+  city?: string;
+}) {
   const res = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(userData),
   });
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Registration failed');
+  }
+  return data;
 }
 
-export async function loginAuthApi(email: string) {
+export async function loginAuthApi(email: string, password: string) {
   const res = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password: 'password123' }),
+    body: JSON.stringify({ email, password }),
   });
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Invalid email or password');
+  }
+  return data;
 }
 

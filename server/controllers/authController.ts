@@ -3,32 +3,37 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { User } from '../models/User';
 import { Retailer } from '../models/Retailer';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'foodsave_pakistan_secret_key_2026';
+import { getJwtSecret } from '../middleware/auth';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password, role, storeName, storeCategory, storeAddress, city } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      res.status(400).json({ error: 'Email already registered' });
+    if (!normalizedEmail || !password || String(password).length < 6) {
+      res.status(400).json({ error: 'Valid email and password (at least 6 characters) are required.' });
       return;
     }
 
-    const passwordHash = await bcrypt.hash(password || 'password123', 10);
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      res.status(400).json({ error: 'Email already registered. Please sign in instead.' });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(String(password), 10);
 
     const user = await User.create({
-      name,
-      email,
+      name: String(name || '').trim() || 'Foodsave User',
+      email: normalizedEmail,
       passwordHash,
-      role: role || 'consumer',
+      role: role === 'retailer' ? 'retailer' : 'consumer',
     });
 
     let retailerProfile = null;
-    if (role === 'retailer') {
+    if (user.role === 'retailer') {
       retailerProfile = await Retailer.create({
-        name: storeName || `${name}'s Store`,
+        name: String(storeName || '').trim() || `${user.name}'s Store`,
         category: storeCategory || 'grocery',
         location: {
           lat: 31.5204 + (Math.random() * 0.05 - 0.025),
@@ -41,7 +46,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id.toString(), role: user.role }, getJwtSecret(), { expiresIn: '7d' });
 
     res.status(201).json({
       message: 'Registration successful',
@@ -64,15 +69,21 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
 
-    const user = await User.findOne({ email });
+    if (!normalizedEmail || !password) {
+      res.status(400).json({ error: 'Email and password are required.' });
+      return;
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       res.status(401).json({ error: 'Invalid email or password' });
       return;
     }
 
-    const isMatch = await bcrypt.compare(password || '', user.passwordHash);
-    if (!isMatch && password !== 'password123') {
+    const isMatch = await bcrypt.compare(String(password), user.passwordHash);
+    if (!isMatch) {
       res.status(401).json({ error: 'Invalid email or password' });
       return;
     }
@@ -82,7 +93,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       retailerProfile = await Retailer.findOne({ userRef: user._id });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user._id.toString(), role: user.role }, getJwtSecret(), { expiresIn: '7d' });
 
     res.json({
       token,

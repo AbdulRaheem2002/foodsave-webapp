@@ -1,12 +1,14 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import { connectDB } from './config/db';
 import { seedDatabase } from './seeds/seed';
 import { memDb } from './store/memDb';
 import { calculateTimeDecay } from './utils/decayCalculator';
+import { authenticateToken, optionalAuth, requireRetailer, getJwtSecret, type AuthRequest } from './middleware/auth';
 
 // Mongoose MongoDB Controllers
 import { register, login } from './controllers/authController';
@@ -21,15 +23,22 @@ import {
   getRetailerProfile,
   addItemAndDeal,
   overrideDealPrice,
+  deleteDeal,
 } from './controllers/retailerController';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'foodsave_pakistan_secret_key_2026';
 
-app.use(cors());
+const allowedOrigins = process.env.CLIENT_URL
+  ? [...process.env.CLIENT_URL.split(',').map((s) => s.trim()), 'http://localhost:5173', 'http://localhost:4173']
+  : undefined;
+
+app.use(
+  cors({
+    origin: allowedOrigins || true,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Helper to determine if MongoDB Atlas is live
@@ -58,13 +67,27 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     }
   }
 
-  const { name, email, role, storeName, storeCategory, storeAddress, city } = req.body;
+  const { name, email, password, role, storeName, storeCategory, storeAddress, city } = req.body;
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+
+  if (!normalizedEmail || !password || String(password).length < 6) {
+    res.status(400).json({ error: 'Valid email and password (at least 6 characters) are required.' });
+    return;
+  }
+
+  if (memDb.users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
+    res.status(400).json({ error: 'Email already registered. Please sign in instead.' });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(String(password), 10);
 
   const newUser = {
     id: `usr-${Date.now()}`,
-    name: name || 'Foodsave User',
-    email: email || 'user@foodsave.pk',
-    role: (role as 'consumer' | 'retailer') || 'consumer',
+    name: String(name || '').trim() || 'Foodsave User',
+    email: normalizedEmail,
+    passwordHash,
+    role: role === 'retailer' ? ('retailer' as const) : ('consumer' as const),
     totalSavedPkr: 0,
     itemsRescuedCount: 0,
   };
@@ -74,7 +97,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
   if (newUser.role === 'retailer') {
     newRetailer = {
       id: `ret-${Date.now()}`,
-      name: storeName || 'New Pakistan Store',
+      name: String(storeName || '').trim() || 'New Pakistan Store',
       category: (storeCategory as 'grocery' | 'bakery' | 'restaurant') || 'grocery',
       location: {
         lat: 31.5204 + (Math.random() * 0.04 - 0.02),
@@ -91,12 +114,19 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     memDb.retailers.push(newRetailer);
   }
 
-  const token = jwt.sign({ id: newUser.id, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ id: newUser.id, role: newUser.role }, getJwtSecret(), { expiresIn: '7d' });
 
   res.status(201).json({
     message: 'Registration successful',
     token,
-    user: newUser,
+    user: {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      totalSavedPkr: newUser.totalSavedPkr,
+      itemsRescuedCount: newUser.itemsRescuedCount,
+    },
     retailer: newRetailer,
   });
 });
@@ -111,15 +141,39 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     }
   }
 
-  const { email } = req.body;
-  const user = memDb.users.find((u) => u.email === email) || memDb.users[0];
-  const retailer = user.role === 'retailer' ? memDb.retailers[0] : null;
+  const { email, password } = req.body;
+  const normalizedEmail = String(email || '').trim().toLowerCase();
 
-  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+  if (!normalizedEmail || !password) {
+    res.status(400).json({ error: 'Email and password are required.' });
+    return;
+  }
+
+  const user = memDb.users.find((u) => u.email.toLowerCase() === normalizedEmail);
+  if (!user || !user.passwordHash) {
+    res.status(401).json({ error: 'Invalid email or password' });
+    return;
+  }
+
+  const isMatch = await bcrypt.compare(String(password), user.passwordHash);
+  if (!isMatch) {
+    res.status(401).json({ error: 'Invalid email or password' });
+    return;
+  }
+
+  const retailer = user.role === 'retailer' ? memDb.retailers[0] : null;
+  const token = jwt.sign({ id: user.id, role: user.role }, getJwtSecret(), { expiresIn: '7d' });
 
   res.json({
     token,
-    user,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      totalSavedPkr: user.totalSavedPkr,
+      itemsRescuedCount: user.itemsRescuedCount,
+    },
     retailer,
   });
 });
@@ -143,8 +197,8 @@ app.get('/api/deals', async (req: Request, res: Response) => {
   res.json(deals);
 });
 
-// 4. Retailer Dashboard Endpoints
-app.get('/api/retailer/me', async (req: Request, res: Response) => {
+// 4. Retailer Dashboard Endpoints (Protected by JWT + Retailer Role)
+app.get('/api/retailer/me', authenticateToken, requireRetailer, async (req: AuthRequest, res: Response) => {
   if (isMongoConnected()) {
     try {
       await getRetailerProfile(req, res);
@@ -169,7 +223,7 @@ app.get('/api/retailer/me', async (req: Request, res: Response) => {
   });
 });
 
-app.post('/api/retailer/items', async (req: Request, res: Response) => {
+app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: AuthRequest, res: Response) => {
   if (isMongoConnected()) {
     try {
       await addItemAndDeal(req, res);
@@ -218,13 +272,22 @@ app.post('/api/retailer/items', async (req: Request, res: Response) => {
   memDb.deals.unshift(newDeal);
 
   res.status(201).json({
-    message: 'Surplus item listed with AI time-decay schedule',
+    message: 'Surplus item listed with time-decay schedule',
     item: newItem,
     deal: newDeal,
   });
 });
 
-app.delete('/api/deals/:id', (req: Request, res: Response) => {
+app.delete('/api/deals/:id', authenticateToken, requireRetailer, async (req: AuthRequest, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await deleteDeal(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB deleteDeal fallback to memDb:', mongoErr);
+    }
+  }
+
   const { id } = req.params;
   const dealIdx = memDb.deals.findIndex((d) => d.id === id);
   if (dealIdx !== -1) {
@@ -239,7 +302,7 @@ app.delete('/api/deals/:id', (req: Request, res: Response) => {
   res.json({ message: 'Deal removed from memory', id });
 });
 
-app.put('/api/retailer/deals/:id/override', async (req: Request, res: Response) => {
+app.put('/api/retailer/deals/:id/override', authenticateToken, requireRetailer, async (req: AuthRequest, res: Response) => {
   if (isMongoConnected()) {
     try {
       await overrideDealPrice(req, res);
@@ -372,7 +435,7 @@ app.get('/api/reservations/me', async (req: Request, res: Response) => {
 });
 
 // 6. Cashier / Retailer Pickup Pass Verification & Collection
-app.post('/api/reservations/verify', async (req: Request, res: Response) => {
+app.post('/api/reservations/verify', authenticateToken, requireRetailer, async (req: AuthRequest, res: Response) => {
   if (isMongoConnected()) {
     try {
       await verifyPickupCode(req, res);
@@ -412,7 +475,13 @@ app.post('/api/reservations/verify', async (req: Request, res: Response) => {
   });
 });
 
-app.put('/api/reservations/:id/status', async (req: Request, res: Response) => {
+app.put('/api/reservations/:id/status', optionalAuth, async (req: AuthRequest, res: Response) => {
+  const { status } = req.body;
+  if (status === 'collected' && req.user?.role !== 'retailer') {
+    res.status(403).json({ error: 'Only a verified Merchant Partner can mark orders as collected.' });
+    return;
+  }
+
   if (isMongoConnected()) {
     try {
       await updateReservationStatus(req, res);
@@ -423,7 +492,6 @@ app.put('/api/reservations/:id/status', async (req: Request, res: Response) => {
   }
 
   const { id } = req.params;
-  const { status } = req.body;
 
   const reservation = memDb.reservations.find((r) => r.id === id || r.pickupCode === id);
   if (!reservation) {

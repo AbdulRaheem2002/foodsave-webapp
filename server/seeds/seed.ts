@@ -1,3 +1,4 @@
+import bcrypt from 'bcryptjs';
 import { User } from '../models/User';
 import { Retailer } from '../models/Retailer';
 import { Item } from '../models/Item';
@@ -15,12 +16,13 @@ export async function seedDatabase() {
 
   console.log('🌱 Seeding Foodsave Pakistan dataset...');
 
-  // Create Sample Retailer Users
-  await User.create({
+  const defaultPasswordHash = await bcrypt.hash('foodsave123', 10);
 
+  // Create Sample Consumer & Retailer Users
+  await User.create({
     name: 'Hamza Khan',
     email: 'hamza@example.com',
-    passwordHash: 'hashed_password_123',
+    passwordHash: defaultPasswordHash,
     role: 'consumer',
     contactPhone: '+92 300 9876543',
     totalSavedPkr: 4250,
@@ -30,7 +32,7 @@ export async function seedDatabase() {
   const userRetailer = await User.create({
     name: 'Al-Fatah Store Manager',
     email: 'alfatah@example.com',
-    passwordHash: 'hashed_password_123',
+    passwordHash: defaultPasswordHash,
     role: 'retailer',
     contactPhone: '+92 321 4445556',
   });

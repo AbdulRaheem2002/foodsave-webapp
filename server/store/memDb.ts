@@ -1,9 +1,11 @@
+import bcrypt from 'bcryptjs';
 import { calculateTimeDecay } from '../utils/decayCalculator';
 
 export interface MemUser {
   id: string;
   name: string;
   email: string;
+  passwordHash?: string;
   role: 'consumer' | 'retailer';
   contactPhone?: string;
   totalSavedPkr: number;
@@ -76,16 +78,31 @@ class MemoryDatabase {
   seed() {
     if (this.retailers.length > 0) return;
 
-    // Seed Consumer User
-    this.users.push({
-      id: 'usr-1',
-      name: 'Hamza Khan',
-      email: 'hamza@example.com',
-      role: 'consumer',
-      contactPhone: '+92 300 9876543',
-      totalSavedPkr: 4250,
-      itemsRescuedCount: 7,
-    });
+    const defaultPasswordHash = bcrypt.hashSync('foodsave123', 10);
+
+    // Seed Consumer & Retailer Users
+    this.users.push(
+      {
+        id: 'usr-1',
+        name: 'Hamza Khan',
+        email: 'hamza@example.com',
+        passwordHash: defaultPasswordHash,
+        role: 'consumer',
+        contactPhone: '+92 300 9876543',
+        totalSavedPkr: 4250,
+        itemsRescuedCount: 7,
+      },
+      {
+        id: 'usr-2',
+        name: 'Al-Fatah Store Manager',
+        email: 'alfatah@example.com',
+        passwordHash: defaultPasswordHash,
+        role: 'retailer',
+        contactPhone: '+92 321 4445556',
+        totalSavedPkr: 0,
+        itemsRescuedCount: 0,
+      }
+    );
 
     // Seed 6 Retailers in Pakistan
     this.retailers.push(

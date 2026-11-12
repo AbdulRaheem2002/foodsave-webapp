@@ -14,8 +14,14 @@ import { BykeaTrackerModal } from './components/ConsumerApp/BykeaTrackerModal';
 import { RetailerDashboard } from './components/RetailerPOS/RetailerDashboard';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
-import { fetchDealsApi, fetchMyReservationsApi, deleteRetailerItemApi, updateReservationStatusApi } from './services/api';
-import { ArrowRight, CheckCircle2, ShieldCheck, Clock } from 'lucide-react';
+import {
+  fetchDealsApi,
+  fetchMyReservationsApi,
+  deleteRetailerItemApi,
+  updateReservationStatusApi,
+  TOKEN_STORAGE_KEY,
+} from './services/api';
+import { ArrowRight, CheckCircle2, ShieldCheck, Clock, Store, Lock } from 'lucide-react';
 
 const STORAGE_KEYS = {
   RESERVATIONS: 'foodsave_reservations_v2',
@@ -50,6 +56,7 @@ export function App() {
 
   const [isPassesDrawerOpen, setIsPassesDrawerOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [authInitialRole, setAuthInitialRole] = useState<'consumer' | 'retailer'>('consumer');
   
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
@@ -135,7 +142,7 @@ export function App() {
 
   const handleAddItem = (partialItem: Partial<DealItem>) => {
     const newItem: DealItem = {
-      id: `dl-${Date.now()}`,
+      id: partialItem.id || `dl-${Date.now()}`,
       storeId: 'ret-1',
       storeName: 'Al-Fatah Gourmet Supermarket',
       storeType: 'grocery',
@@ -191,11 +198,26 @@ export function App() {
     );
   };
 
+  const handleAuthSuccess = (user: AuthUser, token: string) => {
+    setCurrentUser(user);
+    try {
+      if (token) {
+        localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      }
+    } catch (e) {
+      console.warn('LocalStorage token error:', e);
+    }
+  };
+
   const handleLogout = () => {
     setCurrentUser(null);
+    if (activeTab === 'retailer') {
+      setActiveTab('consumer');
+    }
     try {
       localStorage.removeItem(STORAGE_KEYS.USER);
       localStorage.removeItem(STORAGE_KEYS.LEGACY_USER);
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
     } catch (e) {
       console.warn('Logout localStorage clear error:', e);
     }
@@ -294,24 +316,66 @@ export function App() {
         totalSavedPkr={totalSavedPkr}
         itemsRescuedCount={itemsRescuedCount}
         currentUser={currentUser}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenAuth={() => {
+          setAuthInitialRole('consumer');
+          setIsAuthModalOpen(true);
+        }}
         onOpenMysteryBags={scrollToDeals}
       />
 
       {/* Main View Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 pt-5 pb-12">
         {activeTab === 'retailer' ? (
-          <div className="animate-in fade-in duration-300">
-            <RetailerDashboard
-              stores={stores}
-              deals={deals}
-              reservations={reservations}
-              onAddItem={handleAddItem}
-              onRemoveItem={handleRemoveItem}
-              onUpdateDealPrice={handleUpdateDealPrice}
-              onCollectReservation={handleCollectReservation}
-            />
-          </div>
+          currentUser?.role === 'retailer' ? (
+            <div className="animate-in fade-in duration-300">
+              <RetailerDashboard
+                stores={stores}
+                deals={deals}
+                reservations={reservations}
+                onAddItem={handleAddItem}
+                onRemoveItem={handleRemoveItem}
+                onUpdateDealPrice={handleUpdateDealPrice}
+                onCollectReservation={handleCollectReservation}
+              />
+            </div>
+          ) : (
+            <div className="max-w-lg mx-auto my-12 p-8 rounded-3xl bg-white border border-[#2D6A4F]/20 shadow-lg text-center flex flex-col items-center gap-4 animate-in fade-in duration-300">
+              <div className="size-16 rounded-2xl bg-[#fff3e0] text-[#e65100] border border-[#ffe0b2] flex items-center justify-center shadow-xs">
+                <Lock className="size-8" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-stone-900 tracking-tight">
+                  Merchant Partner Access Required
+                </h2>
+                <p className="text-xs text-stone-500 mt-1.5 leading-relaxed">
+                  {currentUser
+                    ? `You are signed in as ${currentUser.name} (Consumer). Only verified partner stores can manage surplus listings and verify pickup passes.`
+                    : 'Only verified store partners can access the Merchant POS dashboard to list surplus food and verify customer pickup codes.'}
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2.5 w-full mt-2">
+                <button
+                  onClick={() => {
+                    if (currentUser) handleLogout();
+                    setActiveTab('retailer');
+                    setAuthInitialRole('retailer');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#FF9800] hover:bg-[#e68900] text-white font-black text-xs shadow-md flex items-center justify-center gap-2 transition-all"
+                >
+                  <Store className="size-4" />
+                  <span>{currentUser ? 'Switch to Merchant Account' : 'Merchant Sign In / Register'}</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('consumer')}
+                  className="py-3 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 font-bold text-xs transition-colors"
+                >
+                  ← Back to Deals
+                </button>
+              </div>
+            </div>
+          )
         ) : (
           <div className="flex flex-col gap-8 animate-in fade-in duration-300">
             
@@ -481,7 +545,8 @@ export function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         currentUser={currentUser}
-        onAuthSuccess={(user) => setCurrentUser(user)}
+        initialRole={authInitialRole}
+        onAuthSuccess={handleAuthSuccess}
         onLogout={handleLogout}
         onSwitchTab={(tab) => setActiveTab(tab)}
       />

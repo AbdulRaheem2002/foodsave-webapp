@@ -1,13 +1,23 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import mongoose from 'mongoose';
 import { Retailer } from '../models/Retailer';
 import { Item } from '../models/Item';
 import { Deal } from '../models/Deal';
 import { Reservation } from '../models/Reservation';
 import { calculateTimeDecay } from '../utils/decayCalculator';
+import type { AuthRequest } from '../middleware/auth';
 
-export const getRetailerProfile = async (req: Request, res: Response): Promise<void> => {
+async function resolveRetailerForUser(userId?: string) {
+  if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+    const owned = await Retailer.findOne({ userRef: userId });
+    if (owned) return owned;
+  }
+  return Retailer.findOne();
+}
+
+export const getRetailerProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const retailer = await Retailer.findOne();
+    const retailer = await resolveRetailerForUser(req.user?.id);
     if (!retailer) {
       res.status(404).json({ error: 'Retailer profile not found' });
       return;
@@ -30,17 +40,18 @@ export const getRetailerProfile = async (req: Request, res: Response): Promise<v
   }
 };
 
-export const addItemAndDeal = async (req: Request, res: Response): Promise<void> => {
+export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { name, category, originalPricePkr, quantity, expiryHoursLeft, imageUrl } = req.body;
 
-    let retailer = await Retailer.findOne();
+    let retailer = await resolveRetailerForUser(req.user?.id);
     if (!retailer) {
       retailer = await Retailer.create({
         name: 'Al-Fatah Gourmet Supermarket',
         category: 'grocery',
         location: { lat: 31.5204, lng: 74.3587, address: 'Main Boulevard, Gulberg III', city: 'Lahore' },
         isVerified: true,
+        userRef: req.user?.id && mongoose.Types.ObjectId.isValid(req.user.id) ? req.user.id : undefined,
       });
     }
 
@@ -66,23 +77,43 @@ export const addItemAndDeal = async (req: Request, res: Response): Promise<void>
       decaySchedule: decay.decaySchedule,
       status: 'active',
       stockQuantity: Number(quantity || 1),
-      pickupWindowText: `Pick up within ${(expiryHoursLeft || 2).toFixed(1)} hrs`,
+      pickupWindowText: `Pick up within ${Number(expiryHoursLeft || 2).toFixed(1)} hrs`,
     });
 
     res.status(201).json({
       message: 'Item and Deal listed successfully',
-      item,
-      deal,
+      item: {
+        id: item._id.toString(),
+        name: item.name,
+        category: item.category,
+        originalPricePkr: item.originalPricePkr,
+        quantity: item.quantity,
+        imageUrl: item.imageUrl,
+      },
+      deal: {
+        id: deal._id.toString(),
+        currentDiscountedPricePkr: deal.currentDiscountedPricePkr,
+        discountPercent: deal.discountPercent,
+        decaySchedule: deal.decaySchedule,
+        status: deal.status,
+        stockQuantity: deal.stockQuantity,
+        pickupWindowText: deal.pickupWindowText,
+      },
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 };
 
-export const overrideDealPrice = async (req: Request, res: Response): Promise<void> => {
+export const overrideDealPrice = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { manualOverridePricePkr } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(String(id))) {
+      res.status(404).json({ error: 'Deal not found' });
+      return;
+    }
 
     const deal = await Deal.findById(id).populate('itemRef');
     if (!deal) {
@@ -99,6 +130,31 @@ export const overrideDealPrice = async (req: Request, res: Response): Promise<vo
     await deal.save();
 
     res.json({ message: 'Price manually overridden', deal });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const deleteDeal = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(String(id))) {
+      res.status(404).json({ error: 'Deal not found' });
+      return;
+    }
+
+    const deal = await Deal.findByIdAndDelete(id);
+    if (!deal) {
+      res.status(404).json({ error: 'Deal not found' });
+      return;
+    }
+
+    if (deal.itemRef) {
+      await Item.findByIdAndDelete(deal.itemRef);
+    }
+
+    res.json({ message: 'Deal and item deleted successfully', id });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

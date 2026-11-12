@@ -48,6 +48,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
   const [overrideDealId, setOverrideDealId] = useState<string | null>(null);
   const [overridePriceInput, setOverridePriceInput] = useState<string>('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [addItemError, setAddItemError] = useState<string | null>(null);
 
   // Cashier Pass Redemption State
   const [verifyCodeInput, setVerifyCodeInput] = useState<string>('');
@@ -93,11 +94,12 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
     e.preventDefault();
     if (!newItemName) return;
 
+    setAddItemError(null);
     sounds.playAlertPing();
     const imgUrl = newItemImageUrl || PRESET_IMAGES[newItemCategory];
 
     try {
-      await addRetailerItemApi({
+      const apiRes = await addRetailerItemApi({
         name: newItemName,
         category: newItemCategory,
         originalPricePkr: newItemPrice,
@@ -106,47 +108,30 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
         imageUrl: imgUrl,
       });
 
+      const createdDeal = apiRes?.deal;
+
       onAddItem({
+        id: createdDeal?.id || createdDeal?._id,
         title: newItemName,
         category: newItemCategory,
         originalPricePkr: newItemPrice,
-        currentPricePkr: Math.round(newItemPrice * 0.4),
-        discountPercent: 60,
+        currentPricePkr: createdDeal?.currentDiscountedPricePkr ?? Math.round(newItemPrice * 0.4),
+        discountPercent: createdDeal?.discountPercent ?? 60,
         expiryHoursLeft: newItemExpiryHours,
         stockQuantity: newItemQuantity,
-        pickupDeadline: `Pick up within ${newItemExpiryHours} hrs`,
+        pickupDeadline: createdDeal?.pickupWindowText || `Pick up within ${newItemExpiryHours} hrs`,
         distanceKm: 0.5,
         imageUrl: imgUrl,
         isVerified: true,
         location: { x: 50, y: 50, address: selectedStore.address, city: selectedStore.city },
-        decaySchedule: [
-          { hoursRemaining: 4, discountPercent: 30, pricePkr: Math.round(newItemPrice * 0.7) },
-          { hoursRemaining: 2, discountPercent: 50, pricePkr: Math.round(newItemPrice * 0.5) },
-          { hoursRemaining: 1, discountPercent: 75, pricePkr: Math.round(newItemPrice * 0.25) },
-        ],
+        decaySchedule: createdDeal?.decaySchedule || [],
         hoursRemaining: newItemExpiryHours,
       });
 
       setIsAddItemOpen(false);
       setNewItemName('');
-    } catch {
-      onAddItem({
-        title: newItemName,
-        category: newItemCategory,
-        originalPricePkr: newItemPrice,
-        currentPricePkr: Math.round(newItemPrice * 0.4),
-        discountPercent: 60,
-        expiryHoursLeft: newItemExpiryHours,
-        stockQuantity: newItemQuantity,
-        pickupDeadline: `Pick up within ${newItemExpiryHours} hrs`,
-        distanceKm: 0.5,
-        imageUrl: imgUrl,
-        isVerified: true,
-        location: { x: 50, y: 50, address: selectedStore.address, city: selectedStore.city },
-        decaySchedule: [],
-        hoursRemaining: newItemExpiryHours,
-      });
-      setIsAddItemOpen(false);
+    } catch (err: any) {
+      setAddItemError(err?.message || 'Could not save listing. Please make sure you are signed in as a Retailer.');
     }
   };
 
@@ -667,6 +652,11 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
             </button>
 
             <h3 className="text-base font-bold text-stone-900 mb-4">List New Surplus Item</h3>
+            {addItemError && (
+              <div className="mb-3 p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
+                {addItemError}
+              </div>
+            )}
             <form onSubmit={handleCreateSurplusItem} className="flex flex-col gap-3">
               <div>
                 <label className="block text-xs text-stone-600 mb-1 font-medium">Item Name:</label>
