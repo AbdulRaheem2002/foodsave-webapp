@@ -279,28 +279,22 @@ export function App() {
   return (
     <div className="min-h-screen bg-[#FAFAF7] text-[#1F2937] flex flex-col font-sans">
       
-      {/* Top Push Alert Simulator Banner matching Reference Mockup */}
-      <div className="bg-[#0b1d14] text-white py-1.5 px-4 text-xs font-medium flex items-center justify-between border-b border-[#163826] shadow-2xs">
-        <div className="flex items-center gap-2.5 overflow-hidden">
-          <span className="px-2 py-0.5 rounded-full bg-[#fbc02d] text-stone-950 text-[10px] uppercase font-black tracking-wide flex-shrink-0">
-            FLASH ALERT
-          </span>
-          <span className="truncate text-[11px] text-stone-200">
-            Tehzeeb Bakery dropped Sourdough Bread to 75% OFF in Blue Area, Islamabad (Only 4 Bags left)
-          </span>
-        </div>
-
-        <div className="flex items-center gap-4 flex-shrink-0 ml-2">
-          <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-stone-300">
-            <span className="size-1.5 rounded-full bg-[#4CAF50] animate-pulse" />
-            <span>2,400+ Active Bags</span>
+      {/* Top Utility Bar */}
+      <div className="bg-[#1b4332] text-white py-1.5 px-4 sm:px-6 lg:px-8 text-xs border-b border-[#143527]">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <span className="size-1.5 rounded-full bg-[#85e3a8] shrink-0" />
+            <span className="truncate text-[11px] font-medium text-stone-100">
+              {filteredDealsByCity.length} live surplus {filteredDealsByCity.length === 1 ? 'bag' : 'bags'} available{selectedCity === 'All Pakistan' ? ' across Pakistan' : ` in ${selectedCity}`} • 15-min pickup hold
+            </span>
           </div>
 
           <button
+            type="button"
             onClick={() => setIsPassesDrawerOpen(true)}
-            className="text-[11px] font-bold text-[#81c784] hover:underline"
+            className="text-[11px] font-bold text-[#a7f3d0] hover:text-white hover:underline shrink-0 whitespace-nowrap"
           >
-            View Active Passes
+            Active Passes ({reservations.length})
           </button>
         </div>
       </div>
@@ -313,14 +307,11 @@ export function App() {
         setSelectedCity={setSelectedCity}
         reservationCount={reservations.length}
         onOpenReservations={() => setIsPassesDrawerOpen(true)}
-        totalSavedPkr={totalSavedPkr}
-        itemsRescuedCount={itemsRescuedCount}
         currentUser={currentUser}
         onOpenAuth={() => {
           setAuthInitialRole('consumer');
           setIsAuthModalOpen(true);
         }}
-        onOpenMysteryBags={scrollToDeals}
       />
 
       {/* Main View Container */}

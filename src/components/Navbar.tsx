@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Store, Leaf, LogIn, MapPin, Sparkles } from 'lucide-react';
+import { ShoppingBag, Store, Leaf, LogIn, MapPin, ArrowLeft } from 'lucide-react';
 import type { AuthUser, PakistanCity, AppTab } from '../types';
 
 interface NavbarProps {
@@ -9,11 +9,8 @@ interface NavbarProps {
   setSelectedCity: (city: PakistanCity) => void;
   reservationCount: number;
   onOpenReservations: () => void;
-  totalSavedPkr: number;
-  itemsRescuedCount: number;
   currentUser: AuthUser | null;
   onOpenAuth: () => void;
-  onOpenMysteryBags?: () => void;
 }
 
 const CITIES: { label: string; value: PakistanCity }[] = [
@@ -31,151 +28,124 @@ export const Navbar: React.FC<NavbarProps> = ({
   setSelectedCity,
   reservationCount,
   onOpenReservations,
-  totalSavedPkr,
-  itemsRescuedCount,
   currentUser,
   onOpenAuth,
-  onOpenMysteryBags,
 }) => {
   return (
-    <header className="sticky top-0 z-50 bg-[#FAFAF8]/95 backdrop-blur-md border-b border-[#e5e0d8] px-4 lg:px-8 py-3 transition-colors shadow-2xs">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 lg:gap-4">
-        
-        {/* Brand Logo & Pakistan Market Tagline */}
-        <div className="flex items-center justify-between">
-          <div
-            className="flex items-center gap-3 cursor-pointer group"
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-2xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="h-16 flex items-center justify-between gap-4">
+          
+          {/* Brand Logo */}
+          <button
+            type="button"
             onClick={() => setActiveTab('consumer')}
+            className="flex items-center gap-2.5 text-left group shrink-0"
           >
-            {/* Circular Green Brand Emblem matching reference design */}
-            <div className="size-10 rounded-full bg-[#1b4332] text-white flex items-center justify-center shadow-md shadow-[#1b4332]/25 group-hover:scale-105 transition-transform">
-              <Leaf className="size-5 text-[#85e3a8]" />
+            <div className="size-9 rounded-xl bg-[#1b4332] text-white flex items-center justify-center shadow-sm group-hover:bg-[#143527] transition-colors">
+              <Leaf className="size-4 text-[#85e3a8]" />
             </div>
-
-            <div>
+            <div className="leading-tight">
               <div className="flex items-center gap-1.5">
-                <span className="text-xl font-black tracking-tight text-[#111827]">
+                <span className="text-lg font-black tracking-tight text-stone-900">
                   Foodsave
                 </span>
-                <span className="px-1.5 py-0.2 text-[9px] font-black bg-[#1b4332]/10 text-[#1b4332] border border-[#1b4332]/20 rounded-md">
+                <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-[#edf7ed] text-[#1b4332] border border-[#c8e6c9] rounded">
                   PK
                 </span>
               </div>
-              <p className="text-[10px] text-stone-500 font-medium tracking-tight">
-                Surplus Food Marketplace Pakistan
+              <p className="text-[11px] text-stone-500 font-medium hidden sm:block whitespace-nowrap">
+                Surplus Food Marketplace
               </p>
             </div>
-          </div>
+          </button>
 
-          {/* Mobile Right Quick Action Icons */}
-          <div className="flex items-center gap-2 md:hidden">
+          {/* Center City Selector (Desktop) */}
+          <nav
+            aria-label="City filter"
+            className="hidden lg:flex items-center gap-0.5 bg-stone-100 p-1 rounded-full border border-stone-200/80"
+          >
+            <MapPin className="size-3.5 text-stone-400 ml-2.5 mr-1 shrink-0" />
+            {CITIES.map((c) => {
+              const isActive = selectedCity === c.value;
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setSelectedCity(c.value)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+                    isActive
+                      ? 'bg-[#1b4332] text-white shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            
+            {/* Merchant / Consumer Switch */}
             <button
-              onClick={onOpenMysteryBags}
-              className="px-2.5 py-1 rounded-full bg-[#f37021] text-white font-bold text-[11px] shadow-xs"
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'retailer' ? 'consumer' : 'retailer')}
+              title={activeTab === 'retailer' ? 'Back to Consumer Marketplace' : 'Partner Store Portal'}
+              className={`px-3 sm:px-3.5 py-2 rounded-full text-xs font-semibold border flex items-center gap-1.5 transition-all whitespace-nowrap ${
+                activeTab === 'retailer'
+                  ? 'bg-[#fff3e0] border-[#ffcc80] text-[#e65100] hover:bg-[#ffe0b2]'
+                  : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300'
+              }`}
             >
-              Mystery Bags
+              {activeTab === 'retailer' ? (
+                <>
+                  <ArrowLeft className="size-3.5" />
+                  <span className="hidden sm:inline">Marketplace</span>
+                </>
+              ) : (
+                <>
+                  <Store className="size-3.5 text-stone-500" />
+                  <span className="hidden sm:inline">Merchant Portal</span>
+                </>
+              )}
             </button>
+
+            {/* My Bag Button */}
             <button
+              type="button"
               onClick={onOpenReservations}
-              className="relative p-2 rounded-full bg-[#1b4332] text-white shadow-xs"
+              className="px-3.5 py-2 rounded-full bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-xs shadow-xs flex items-center gap-2 transition-all whitespace-nowrap active:scale-95"
             >
-              <ShoppingBag className="size-4" />
+              <ShoppingBag className="size-3.5" />
+              <span>My Bag</span>
               {reservationCount > 0 && (
-                <span className="absolute -top-1 -right-1 size-4 rounded-full bg-[#FF9800] text-white font-black text-[10px] flex items-center justify-center">
+                <span className="px-1.5 py-0.5 min-w-[18px] text-center rounded-full bg-[#f37021] text-white text-[10px] font-black leading-none">
                   {reservationCount}
                 </span>
               )}
             </button>
-          </div>
-        </div>
 
-        {/* Pakistan City Capsule Selector matching exact reference */}
-        <div className="flex items-center gap-0.5 bg-[#f0ebe1] p-1 rounded-full border border-[#ded8cc] text-xs shadow-2xs self-center md:self-auto overflow-x-auto scrollbar-none">
-          <MapPin className="size-3.5 text-stone-400 ml-2 mr-1 hidden sm:block" />
-          {CITIES.map((c) => {
-            const isActive = selectedCity === c.value;
-            return (
-              <button
-                key={c.value}
-                onClick={() => setSelectedCity(c.value)}
-                className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all whitespace-nowrap ${
-                  isActive
-                    ? 'bg-[#1b4332] text-white shadow-xs'
-                    : 'text-stone-600 hover:text-[#1b4332]'
-                }`}
-              >
-                {c.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Right Statistics & Action Buttons */}
-        <div className="flex items-center gap-2 lg:gap-2.5 self-center md:self-auto overflow-x-auto scrollbar-none">
-          
-          {/* Bags Saved Eco Chip */}
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#edf7ed] border border-[#c8e6c9] text-[11px] text-[#2e7d32] font-bold shadow-2xs">
-            <Leaf className="size-3.5 text-[#2e7d32]" />
-            <span>{itemsRescuedCount > 0 ? `${itemsRescuedCount + 1648} Bags Saved!` : '1,648 Bags Saved!'}</span>
-          </div>
-
-          {/* Value Returned Chip */}
-          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fff8e1] border border-[#ffecb3] text-[11px] text-[#b78103] font-bold shadow-2xs">
-            <span>🪙 Rs {Math.round((totalSavedPkr + 248000) / 1000)}k Saved in Pakistan</span>
-          </div>
-
-          {/* Mystery Bags Orange Button */}
-          <button
-            onClick={onOpenMysteryBags || onOpenReservations}
-            className="px-4 py-1.5 rounded-full bg-[#f37021] hover:bg-[#e05f13] text-white font-extrabold text-xs shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
-          >
-            <Sparkles className="size-3.5" />
-            <span>Mystery Bags</span>
-          </button>
-
-          {/* My Bag Dark Green Button */}
-          <button
-            onClick={onOpenReservations}
-            className="px-4 py-1.5 rounded-full bg-[#1b4332] hover:bg-[#133326] text-white font-extrabold text-xs shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
-          >
-            <ShoppingBag className="size-3.5" />
-            <span>My Bag</span>
-            <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-[#FF9800] text-white text-[10px] font-black">
-              {reservationCount}
-            </span>
-          </button>
-
-          {/* Role Tabs Switcher (Consumer / Merchant POS) */}
-          <div className="flex items-center gap-1 bg-[#ece7dd] p-1 rounded-full border border-[#ded8cc] text-xs">
+            {/* User Account / Sign In */}
             <button
-              onClick={() => setActiveTab(activeTab === 'retailer' ? 'consumer' : 'retailer')}
-              title={activeTab === 'retailer' ? 'Switch to Consumer View' : 'Merchant POS Portal'}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-full transition-all text-[11px] font-bold ${
-                activeTab === 'retailer'
-                  ? 'bg-[#FF9800] text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900'
-              }`}
-            >
-              <Store className="size-3.5" />
-              <span>{activeTab === 'retailer' ? 'Consumer' : 'Merchant POS'}</span>
-            </button>
-
-            {/* User Auth */}
-            <button
+              type="button"
               onClick={onOpenAuth}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
+              className={`px-3 sm:px-3.5 py-2 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all whitespace-nowrap ${
                 currentUser
-                  ? 'bg-[#1b4332]/10 hover:bg-[#1b4332]/20 text-[#1b4332]'
-                  : 'hover:bg-stone-200 text-stone-700'
+                  ? 'bg-[#edf7ed] border-[#c8e6c9] text-[#1b4332] hover:bg-[#dcf2dc]'
+                  : 'bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100'
               }`}
-              title={currentUser ? `Logged in as ${currentUser.name}` : 'Sign In'}
+              title={currentUser ? `Signed in as ${currentUser.name}` : 'Sign In or Create Account'}
             >
               {currentUser ? (
                 <>
-                  <div className="size-4 rounded-full bg-[#1b4332] text-white flex items-center justify-center text-[9px] font-black">
+                  <div className="size-5 rounded-full bg-[#1b4332] text-white flex items-center justify-center text-[10px] font-black">
                     {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                   </div>
-                  <span className="truncate max-w-[80px] hidden sm:inline">{currentUser.name.split(' ')[0]}</span>
+                  <span className="truncate max-w-[90px] hidden sm:inline">
+                    {currentUser.name.split(' ')[0]}
+                  </span>
                 </>
               ) : (
                 <>
@@ -184,10 +154,31 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </>
               )}
             </button>
-          </div>
 
+          </div>
         </div>
 
+        {/* Mobile / Tablet City Selector Row */}
+        <div className="flex lg:hidden items-center gap-1.5 pb-2.5 pt-1 overflow-x-auto scrollbar-none">
+          <MapPin className="size-3.5 text-stone-400 shrink-0" />
+          {CITIES.map((c) => {
+            const isActive = selectedCity === c.value;
+            return (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setSelectedCity(c.value)}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? 'bg-[#1b4332] text-white'
+                    : 'bg-stone-100 text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                {c.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </header>
   );
