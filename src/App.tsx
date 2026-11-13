@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { DealItem, Reservation, RetailerStore, AuthUser, PakistanCity, AppTab } from './types';
-import { INITIAL_DEALS, INITIAL_STORES } from './data/mockData';
 import { Navbar } from './components/Navbar';
 import { DealMap } from './components/ConsumerApp/DealMap';
 import { DealFeed } from './components/ConsumerApp/DealFeed';
@@ -10,12 +9,12 @@ import { ActivePassesDrawer } from './components/ConsumerApp/ActivePassesDrawer'
 import { WhatsAppModal } from './components/ConsumerApp/WhatsAppModal';
 import { RatingModal } from './components/ConsumerApp/RatingModal';
 import { StoreProfileModal } from './components/ConsumerApp/StoreProfileModal';
-import { BykeaTrackerModal } from './components/ConsumerApp/BykeaTrackerModal';
 import { RetailerDashboard } from './components/RetailerPOS/RetailerDashboard';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
 import {
   fetchDealsApi,
+  fetchStoresApi,
   fetchMyReservationsApi,
   deleteRetailerItemApi,
   updateReservationStatusApi,
@@ -34,25 +33,16 @@ export function App() {
   const [activeTab, setActiveTab] = useState<AppTab>('consumer');
   const [selectedCity, setSelectedCity] = useState<PakistanCity>('All Pakistan');
 
-  const [deals, setDeals] = useState<DealItem[]>(INITIAL_DEALS);
-  const [stores] = useState<RetailerStore[]>(INITIAL_STORES);
+  const [deals, setDeals] = useState<DealItem[]>([]);
+  const [stores, setStores] = useState<RetailerStore[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<DealItem | null>(null);
   const [reserveModalDeal, setReserveModalDeal] = useState<DealItem | null>(null);
+  const [pendingReserveDeal, setPendingReserveDeal] = useState<DealItem | null>(null);
   const [whatsAppReservation, setWhatsAppReservation] = useState<Reservation | null>(null);
   const [ratingDeal, setRatingDeal] = useState<DealItem | null>(null);
   const [selectedStoreProfile, setSelectedStoreProfile] = useState<RetailerStore | null>(null);
-  
-  // Bykea Delivery Tracking State
-  const [trackedBykeaReservation, setTrackedBykeaReservation] = useState<Reservation | null>(null);
 
-  const [reservations, setReservations] = useState<Reservation[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.RESERVATIONS) || localStorage.getItem(STORAGE_KEYS.LEGACY_RESERVATIONS);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
   const [isPassesDrawerOpen, setIsPassesDrawerOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -60,8 +50,9 @@ export function App() {
   
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.USER) || localStorage.getItem(STORAGE_KEYS.LEGACY_USER);
-      return saved ? JSON.parse(saved) : null;
+      const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEYS.USER);
+      return token && saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
@@ -97,35 +88,25 @@ export function App() {
     }
   }, [currentUser]);
 
-  // Fetch initial deals & backend reservations from Express REST API
-  useEffect(() => {
-    async function loadInitialData() {
-      try {
-        const [apiDeals, apiReservations] = await Promise.all([
-          fetchDealsApi(),
-          fetchMyReservationsApi(),
-        ]);
+  // Fetch live deals, stores & authenticated reservations from Express REST API
+  const refreshMarketplaceData = async () => {
+    try {
+      const [apiDeals, apiStores, apiReservations] = await Promise.all([
+        fetchDealsApi(),
+        fetchStoresApi(),
+        fetchMyReservationsApi(),
+      ]);
 
-        if (apiDeals && apiDeals.length > 0) {
-          setDeals(apiDeals);
-        }
-
-        if (apiReservations && apiReservations.length > 0) {
-          setReservations((prev) => {
-            const combined = [...prev];
-            apiReservations.forEach((ar) => {
-              if (!combined.some((p) => p.id === ar.id || p.pickupCode === ar.pickupCode)) {
-                combined.push(ar);
-              }
-            });
-            return combined;
-          });
-        }
-      } catch (err) {
-        console.warn('Using seed data fallback:', err);
-      }
+      setDeals(apiDeals);
+      setStores(apiStores);
+      setReservations(apiReservations);
+    } catch (err) {
+      console.warn('Could not load marketplace data:', err);
     }
-    loadInitialData();
+  };
+
+  useEffect(() => {
+    refreshMarketplaceData();
   }, []);
 
   // Filter Deals by Selected City
@@ -141,29 +122,55 @@ export function App() {
   const itemsRescuedCount = (currentUser?.itemsRescuedCount || 0) + reservations.reduce((sum, r) => sum + r.quantity, 0);
 
   const handleAddItem = (partialItem: Partial<DealItem>) => {
+    const merchantStore =
+      currentUser?.retailer ||
+      stores[0] || {
+        id: 'store',
+        name: `${currentUser?.name || 'Partner'}'s Store`,
+        category: partialItem.category || 'grocery',
+        address: '',
+        city: selectedCity === 'All Pakistan' ? 'Lahore' : selectedCity,
+        rating: 5.0,
+      };
+
     const newItem: DealItem = {
       id: partialItem.id || `dl-${Date.now()}`,
-      storeId: 'ret-1',
-      storeName: 'Al-Fatah Gourmet Supermarket',
-      storeType: 'grocery',
-      storeRating: 4.9,
+      storeId: merchantStore.id,
+      storeName: merchantStore.name,
+      storeType: merchantStore.category,
+      storeRating: merchantStore.rating || 5.0,
       title: partialItem.title || 'Surplus Item',
-      category: partialItem.category || 'grocery',
-      originalPricePkr: partialItem.originalPricePkr || 1200,
-      currentPricePkr: partialItem.currentPricePkr || 480,
-      discountPercent: partialItem.discountPercent || 60,
+      category: partialItem.category || merchantStore.category || 'grocery',
+      originalPricePkr: partialItem.originalPricePkr || 0,
+      currentPricePkr: partialItem.currentPricePkr || 0,
+      discountPercent: partialItem.discountPercent || 0,
       expiryHoursLeft: partialItem.expiryHoursLeft || 2,
-      stockQuantity: partialItem.stockQuantity || 5,
-      pickupDeadline: `Pick up within ${partialItem.expiryHoursLeft || 2} hrs`,
+      stockQuantity: partialItem.stockQuantity || 1,
+      pickupDeadline: partialItem.pickupDeadline || `Pick up within ${partialItem.expiryHoursLeft || 2} hrs`,
       distanceKm: 0.5,
-      imageUrl: partialItem.imageUrl || 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=800&q=80',
+      imageUrl: partialItem.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
       isVerified: true,
-      location: { x: 50, y: 50, address: 'Main Boulevard, Gulberg III', city: selectedCity === 'All Pakistan' ? 'Lahore' : selectedCity },
+      location: {
+        x: 50,
+        y: 50,
+        address: merchantStore.address || '',
+        city: merchantStore.city || 'Lahore',
+      },
       decaySchedule: partialItem.decaySchedule || [],
       hoursRemaining: partialItem.expiryHoursLeft || 2,
     };
 
     setDeals((prev) => [newItem, ...prev]);
+  };
+
+  const handleOpenReserveModal = (deal: DealItem) => {
+    if (!currentUser) {
+      setPendingReserveDeal(deal);
+      setAuthInitialRole('consumer');
+      setIsAuthModalOpen(true);
+      return;
+    }
+    setReserveModalDeal(deal);
   };
 
   const handleRemoveItem = async (id: string) => {
@@ -207,16 +214,25 @@ export function App() {
     } catch (e) {
       console.warn('LocalStorage token error:', e);
     }
+    refreshMarketplaceData();
+    if (pendingReserveDeal) {
+      setReserveModalDeal(pendingReserveDeal);
+      setPendingReserveDeal(null);
+    }
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
+    setReservations([]);
+    setPendingReserveDeal(null);
     if (activeTab === 'retailer') {
       setActiveTab('consumer');
     }
     try {
       localStorage.removeItem(STORAGE_KEYS.USER);
       localStorage.removeItem(STORAGE_KEYS.LEGACY_USER);
+      localStorage.removeItem(STORAGE_KEYS.RESERVATIONS);
+      localStorage.removeItem(STORAGE_KEYS.LEGACY_RESERVATIONS);
       localStorage.removeItem(TOKEN_STORAGE_KEY);
     } catch (e) {
       console.warn('Logout localStorage clear error:', e);
@@ -321,6 +337,7 @@ export function App() {
             <div className="animate-in fade-in duration-300">
               <RetailerDashboard
                 stores={stores}
+                currentStore={currentUser?.retailer || null}
                 deals={deals}
                 reservations={reservations}
                 onAddItem={handleAddItem}
@@ -389,14 +406,14 @@ export function App() {
 
                 {/* Subtitle with Pakistani rails */}
                 <p className="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-2xl mb-4 font-medium">
-                  Pakistani bakeries, restaurants, and grocery stores list high-quality surplus items at steep discounts before closing. Pay seamlessly via <strong>JazzCash, EasyPaisa, or Cash on Pickup</strong> with 15-minute guaranteed hold &amp; <strong>Bykea Express Delivery</strong>.
+                  Pakistani bakeries, restaurants, and grocery stores list fresh daily surplus items at steep discounts before closing. Pay easily via <strong>JazzCash, EasyPaisa, or Cash on Pickup</strong> with a 15-minute counter hold.
                 </p>
 
                 {/* Trust Guarantee Badges */}
                 <div className="flex flex-wrap items-center gap-2.5 text-xs text-stone-600 font-bold">
                   <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs">
                     <CheckCircle2 className="size-3.5 text-[#2e7d32]" />
-                    100% Halal Verified
+                    Verified Store Surplus
                   </span>
                   <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs">
                     <Clock className="size-3.5 text-[#f37021]" />
@@ -404,39 +421,43 @@ export function App() {
                   </span>
                   <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs">
                     <ShieldCheck className="size-3.5 text-[#2e7d32]" />
-                    Bykea Express 30-min Delivery
+                    Direct Counter Pickup
                   </span>
                 </div>
               </div>
 
-              {/* Right Column: Daily Milestone KPI Card */}
+              {/* Right Column: Live Marketplace Status Card */}
               <div className="lg:col-span-4 p-5 sm:p-6 rounded-[1.75rem] bg-[#f7f5f0] border border-[#e8e2d8] shadow-2xs flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
-                      DAILY MILESTONE
+                      LIVE MARKETPLACE
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] text-[10px] font-bold">
-                      Active
+                      {deals.length > 0 ? 'Live' : 'Ready'}
                     </span>
                   </div>
 
                   <h3 className="text-xl sm:text-2xl font-black text-stone-900 mb-1.5">
-                    1,248 kg of Surplus Rescued Today
+                    {deals.length > 0
+                      ? `${deals.length} Active Surplus Deal${deals.length === 1 ? '' : 's'}`
+                      : 'Fresh Surplus Listed Daily'}
                   </h3>
 
                   <p className="text-xs text-stone-500 leading-relaxed font-medium mb-4">
-                    Diverted equivalent to 3.1 tonnes of greenhouse gases across Karachi, Islamabad &amp; Rawalpindi.
+                    {stores.length > 0
+                      ? `Connecting ${stores.length} registered partner store${stores.length === 1 ? '' : 's'} with local customers before closing.`
+                      : 'Sign in as a customer to claim deals or register your bakery, restaurant, or grocery store to start listing.'}
                   </p>
                 </div>
 
                 <div className="pt-3 border-t border-stone-200 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-stone-400 block">
-                      Pakistani Household Average
+                      Registered Stores
                     </span>
                     <span className="text-xs font-black text-stone-800 font-mono">
-                      Rs 11,200 / mo
+                      {stores.length} Verified Partner{stores.length === 1 ? '' : 's'}
                     </span>
                   </div>
 
@@ -458,15 +479,26 @@ export function App() {
               selectedCity={selectedCity}
               selectedDeal={selectedDeal}
               onSelectDeal={(deal) => setSelectedDeal(deal)}
-              onReserveDeal={(deal) => setReserveModalDeal(deal)}
+              onReserveDeal={handleOpenReserveModal}
             />
 
             {/* Filterable Deal Feed Grid */}
             <DealFeed
               deals={filteredDealsByCity}
-              onReserveDeal={(deal) => setReserveModalDeal(deal)}
+              onReserveDeal={handleOpenReserveModal}
               onSelectDeal={(deal) => {
-                const store = stores.find((s) => s.name === deal.storeName) || stores[0];
+                const store =
+                  stores.find((s) => s.id === deal.storeId || s.name === deal.storeName) || {
+                    id: deal.storeId || deal.id,
+                    name: deal.storeName,
+                    category: deal.storeType,
+                    address: deal.location.address,
+                    city: deal.location.city,
+                    isVerified: deal.isVerified,
+                    rating: deal.storeRating,
+                    totalRecoveredPkr: 0,
+                    totalWastedValueAvoidedPkr: 0,
+                  };
                 setSelectedStoreProfile(store);
               }}
             />
@@ -474,7 +506,7 @@ export function App() {
             {/* Surprise Mystery Bags: What's Inside? Feature Banner */}
             <MysteryBagsBanner
               mysteryDeal={deals.find((d) => d.isMysteryBag)}
-              onClaimMysteryBag={(deal) => setReserveModalDeal(deal)}
+              onClaimMysteryBag={handleOpenReserveModal}
             />
 
           </div>
@@ -487,7 +519,6 @@ export function App() {
         onClose={() => setReserveModalDeal(null)}
         onConfirmReservation={handleConfirmReservation}
         onOpenWhatsApp={(res) => setWhatsAppReservation(res)}
-        onOpenBykeaTracker={(res) => setTrackedBykeaReservation(res)}
       />
 
       {/* Active Pickup Passes Drawer */}
@@ -495,16 +526,8 @@ export function App() {
         isOpen={isPassesDrawerOpen}
         onClose={() => setIsPassesDrawerOpen(false)}
         reservations={reservations}
-        onOpenBykeaTracker={(res) => setTrackedBykeaReservation(res)}
         onCancelReservation={handleCancelReservation}
         onRateDeal={(deal) => setRatingDeal(deal)}
-      />
-
-      {/* Live Bykea Rider Animated GPS Tracker Modal */}
-      <BykeaTrackerModal
-        isOpen={!!trackedBykeaReservation}
-        onClose={() => setTrackedBykeaReservation(null)}
-        reservation={trackedBykeaReservation}
       />
 
       {/* WhatsApp Pass Dispatch Modal */}
@@ -528,7 +551,7 @@ export function App() {
         onClose={() => setSelectedStoreProfile(null)}
         store={selectedStoreProfile}
         storeDeals={storeDealsForModal}
-        onReserveDeal={(deal) => setReserveModalDeal(deal)}
+        onReserveDeal={handleOpenReserveModal}
       />
 
       {/* Auth Modal */}

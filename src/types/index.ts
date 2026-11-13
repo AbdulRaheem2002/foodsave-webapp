@@ -86,9 +86,11 @@ export interface AuthUser {
   name: string;
   email: string;
   role: 'consumer' | 'retailer';
+  contactPhone?: string;
   totalSavedPkr: number;
   itemsRescuedCount: number;
   rescueWalletBalancePkr?: number;
+  retailer?: RetailerStore | null;
 }
 
 export interface DonationRecord {

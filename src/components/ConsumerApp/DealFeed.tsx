@@ -124,26 +124,39 @@ export const DealFeed: React.FC<DealFeedProps> = ({
 
       {/* Grid of Deals */}
       {filteredDeals.length === 0 ? (
-        <div className="p-12 rounded-3xl text-center bg-white dark:bg-[#182230] border border-[#e5e0d8] dark:border-white/10">
-          <div className="size-16 rounded-full bg-[#f7f5f0] dark:bg-[#1F2937] flex items-center justify-center mx-auto mb-3 text-3xl">
+        <div className="p-12 rounded-3xl text-center bg-white border border-[#e5e0d8]">
+          <div className="size-16 rounded-full bg-[#f7f5f0] flex items-center justify-center mx-auto mb-3 text-3xl">
             🧺
           </div>
-          <h3 className="text-base font-bold text-stone-900 dark:text-[#F9F6F0] mb-1">
-            No Deals Matching Selected Filter
-          </h3>
-          <p className="text-xs text-stone-500 dark:text-stone-400 max-w-sm mx-auto mb-4">
-            Try adjusting your search query or lowering the minimum discount threshold.
-          </p>
-          <button
-            onClick={() => {
-              setSearchTerm('');
-              setSelectedCategory('All');
-              setMinDiscount(30);
-            }}
-            className="px-5 py-2.5 rounded-xl bg-[#1b4332] text-white text-xs font-bold shadow-sm"
-          >
-            Reset Filters
-          </button>
+          {deals.length === 0 ? (
+            <>
+              <h3 className="text-base font-bold text-stone-900 mb-1">
+                No Surplus Deals Listed Yet
+              </h3>
+              <p className="text-xs text-stone-500 max-w-md mx-auto">
+                No verified stores have published active surplus bags in this area yet. Check back before evening closing hours or register a store to list your first surplus deal.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3 className="text-base font-bold text-stone-900 mb-1">
+                No Deals Matching Selected Filter
+              </h3>
+              <p className="text-xs text-stone-500 max-w-sm mx-auto mb-4">
+                Try adjusting your search query or lowering the minimum discount threshold.
+              </p>
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('All');
+                  setMinDiscount(30);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-[#1b4332] text-white text-xs font-bold shadow-sm"
+              >
+                Reset Filters
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

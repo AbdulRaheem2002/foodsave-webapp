@@ -8,18 +8,17 @@ import { calculateTimeDecay } from '../utils/decayCalculator';
 import type { AuthRequest } from '../middleware/auth';
 
 async function resolveRetailerForUser(userId?: string) {
-  if (userId && mongoose.Types.ObjectId.isValid(userId)) {
-    const owned = await Retailer.findOne({ userRef: userId });
-    if (owned) return owned;
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    return null;
   }
-  return Retailer.findOne();
+  return Retailer.findOne({ userRef: userId });
 }
 
 export const getRetailerProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const retailer = await resolveRetailerForUser(req.user?.id);
     if (!retailer) {
-      res.status(404).json({ error: 'Retailer profile not found' });
+      res.status(404).json({ error: 'Retailer profile not found for this account.' });
       return;
     }
 
@@ -44,15 +43,15 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
   try {
     const { name, category, originalPricePkr, quantity, expiryHoursLeft, imageUrl } = req.body;
 
-    let retailer = await resolveRetailerForUser(req.user?.id);
+    const retailer = await resolveRetailerForUser(req.user?.id);
     if (!retailer) {
-      retailer = await Retailer.create({
-        name: 'Al-Fatah Gourmet Supermarket',
-        category: 'grocery',
-        location: { lat: 31.5204, lng: 74.3587, address: 'Main Boulevard, Gulberg III', city: 'Lahore' },
-        isVerified: true,
-        userRef: req.user?.id && mongoose.Types.ObjectId.isValid(req.user.id) ? req.user.id : undefined,
-      });
+      res.status(404).json({ error: 'Merchant store profile not found. Please register a merchant account.' });
+      return;
+    }
+
+    if (!String(name || '').trim() || Number(originalPricePkr) <= 0 || Number(quantity) < 1) {
+      res.status(400).json({ error: 'Valid item title, original price (> 0), and quantity (>= 1) are required.' });
+      return;
     }
 
     const expiryDeadline = new Date(Date.now() + (expiryHoursLeft || 2) * 3600 * 1000);
@@ -115,9 +114,15 @@ export const overrideDealPrice = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    const deal = await Deal.findById(id).populate('itemRef');
+    const retailer = await resolveRetailerForUser(req.user?.id);
+    if (!retailer) {
+      res.status(404).json({ error: 'Merchant store profile not found.' });
+      return;
+    }
+
+    const deal = await Deal.findOne({ _id: id, retailerRef: retailer._id }).populate('itemRef');
     if (!deal) {
-      res.status(404).json({ error: 'Deal not found' });
+      res.status(404).json({ error: 'Deal not found for your store.' });
       return;
     }
 
@@ -144,9 +149,15 @@ export const deleteDeal = async (req: AuthRequest, res: Response): Promise<void>
       return;
     }
 
-    const deal = await Deal.findByIdAndDelete(id);
+    const retailer = await resolveRetailerForUser(req.user?.id);
+    if (!retailer) {
+      res.status(404).json({ error: 'Merchant store profile not found.' });
+      return;
+    }
+
+    const deal = await Deal.findOneAndDelete({ _id: id, retailerRef: retailer._id });
     if (!deal) {
-      res.status(404).json({ error: 'Deal not found' });
+      res.status(404).json({ error: 'Deal not found for your store.' });
       return;
     }
 

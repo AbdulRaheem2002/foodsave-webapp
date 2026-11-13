@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { DealItem, RetailerStore, Reservation, DonationRecord } from '../../types';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { ShieldCheck, DollarSign, Leaf, Zap, Plus, TrendingUp, Edit3, Download, Scan, CheckCircle2, QrCode, X, Image as ImageIcon, Heart, MapPin } from 'lucide-react';
+import { ShieldCheck, DollarSign, Leaf, Zap, Plus, TrendingUp, Edit3, Download, CheckCircle2, QrCode, X, Image as ImageIcon, Heart, MapPin } from 'lucide-react';
 
 import { formatCurrency } from '../../lib/utils';
 import { addRetailerItemApi, overridePriceApi, verifyPickupCodeApi, updateReservationStatusApi } from '../../services/api';
-import { BarcodeScannerModal } from './BarcodeScannerModal';
 import { DonationModal } from './DonationModal';
 import { CsrCertificateModal } from './CsrCertificateModal';
 import { sounds } from '../../lib/soundEffects';
 
 interface RetailerDashboardProps {
   stores: RetailerStore[];
+  currentStore?: RetailerStore | null;
   deals: DealItem[];
   reservations?: Reservation[];
   onAddItem: (item: Partial<DealItem>) => void;
@@ -28,6 +28,7 @@ const PRESET_IMAGES = {
 
 export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
   stores,
+  currentStore,
   deals,
   reservations = [],
   onAddItem,
@@ -35,11 +36,31 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
   onUpdateDealPrice,
   onCollectReservation,
 }) => {
-  const [selectedStoreId, setSelectedStoreId] = useState<string>(stores[0]?.id || 'ret-1');
-  const selectedStore = stores.find((s) => s.id === selectedStoreId) || stores[0];
+  const availableStores = useMemo(
+    () => (currentStore ? [currentStore, ...stores.filter((s) => s.id !== currentStore.id)] : stores),
+    [currentStore, stores]
+  );
+
+  const [selectedStoreId, setSelectedStoreId] = useState<string>(
+    currentStore?.id || availableStores[0]?.id || ''
+  );
+
+  useEffect(() => {
+    if (currentStore?.id) {
+      setSelectedStoreId(currentStore.id);
+    } else if (!selectedStoreId && availableStores[0]?.id) {
+      setSelectedStoreId(availableStores[0].id);
+    }
+  }, [currentStore?.id, availableStores, selectedStoreId]);
+
+  const selectedStore =
+    availableStores.find((s) => s.id === selectedStoreId) || currentStore || availableStores[0] || null;
+
+  const storeDeals = selectedStore
+    ? deals.filter((d) => d.storeId === selectedStore.id || d.storeName === selectedStore.name)
+    : deals;
 
   const [isAddItemOpen, setIsAddItemOpen] = useState<boolean>(false);
-  const [isBarcodeOpen, setIsBarcodeOpen] = useState<boolean>(false);
   const [isVerifyPassOpen, setIsVerifyPassOpen] = useState<boolean>(false);
   const [donateDeal, setDonateDeal] = useState<DealItem | null>(null);
   const [activeCsrCertificate, setActiveCsrCertificate] = useState<DonationRecord | null>(null);
@@ -67,8 +88,9 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
   // CSV Report Generator
   const handleExportCsvReport = () => {
+    const storeLabel = (selectedStore?.name || 'Foodsave_Store').replace(/\s+/g, '_');
     const headers = ['Listing ID', 'Item Name', 'Category', 'Original Price (PKR)', 'Discount Price (PKR)', 'Discount %', 'Quantity', 'Store City'];
-    const rows = deals.map((d) => [
+    const rows = storeDeals.map((d) => [
       d.id,
       `"${d.title}"`,
       d.category,
@@ -76,7 +98,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       d.currentPricePkr,
       `${d.discountPercent}%`,
       d.stockQuantity,
-      d.location.city || 'Lahore',
+      d.location.city || selectedStore?.city || 'Lahore',
     ]);
 
     const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -84,7 +106,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `Foodsave_Daily_Recovery_Report_${selectedStore.name.replace(/\s+/g, '_')}.csv`);
+    link.setAttribute('download', `Foodsave_Daily_Recovery_Report_${storeLabel}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -123,7 +145,12 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
         distanceKm: 0.5,
         imageUrl: imgUrl,
         isVerified: true,
-        location: { x: 50, y: 50, address: selectedStore.address, city: selectedStore.city },
+        location: {
+          x: 50,
+          y: 50,
+          address: selectedStore?.address || '',
+          city: selectedStore?.city || 'Lahore',
+        },
         decaySchedule: createdDeal?.decaySchedule || [],
         hoursRemaining: newItemExpiryHours,
       });
@@ -144,10 +171,8 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       if (onUpdateDealPrice) onUpdateDealPrice(dealId, num);
       setOverrideDealId(null);
       setOverridePriceInput('');
-    } catch {
-      if (onUpdateDealPrice) onUpdateDealPrice(dealId, num);
-      setOverrideDealId(null);
-      setOverridePriceInput('');
+    } catch (err: any) {
+      setVerifyError(err?.message || 'Could not apply price override.');
     }
   };
 
@@ -201,17 +226,14 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
   const handleConfirmCollection = async () => {
     if (!verifiedPass) return;
     try {
-      sounds.playSuccessFanfare();
       await updateReservationStatusApi(verifiedPass.id, 'collected');
+      sounds.playSuccessFanfare();
       setIsSuccessCollected(true);
       if (onCollectReservation) {
         onCollectReservation(verifiedPass.id);
       }
-    } catch {
-      setIsSuccessCollected(true);
-      if (onCollectReservation) {
-        onCollectReservation(verifiedPass.id);
-      }
+    } catch (err: any) {
+      setVerifyError(err?.message || 'Failed to mark reservation as collected.');
     }
   };
 
@@ -221,58 +243,73 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
     onRemoveItem(record.dealId);
   };
 
-  const chartData = [
-    { time: '4h left', timeDecay: 1200, flatPrice: 1200 },
-    { time: '3h left', timeDecay: 900, flatPrice: 1200 },
-    { time: '2h left', timeDecay: 600, flatPrice: 1200 },
-    { time: '1h left', timeDecay: 350, flatPrice: 1200 },
-    { time: '30m left', timeDecay: 180, flatPrice: 1200 },
-    { time: 'Close', timeDecay: 100, flatPrice: 1200 },
-  ];
+  const primaryDeal = storeDeals[0];
+  const chartData = primaryDeal?.decaySchedule?.length
+    ? [
+        { time: 'Full Retail', timeDecay: primaryDeal.originalPricePkr },
+        ...primaryDeal.decaySchedule.map((step) => ({
+          time: `${step.hoursRemaining}h left`,
+          timeDecay: step.pricePkr,
+        })),
+      ]
+    : [];
+
+  if (!selectedStore) {
+    return (
+      <div className="bg-white p-10 rounded-3xl border border-stone-200 text-center max-w-lg mx-auto my-8">
+        <div className="text-4xl mb-3">🏪</div>
+        <h3 className="text-lg font-black text-stone-900">Store Profile Not Loaded</h3>
+        <p className="text-xs text-stone-500 mt-1">
+          Please register or sign in with a verified Merchant Partner account to manage store listings.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8 pb-12 animate-in fade-in duration-300">
       
-      {/* Store Header & Multi-Branch Switcher */}
-      <div className="bg-white dark:bg-[#182230] p-6 rounded-[2rem] border border-[#2D6A4F]/15 dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">
+      {/* Store Header & Branch Selector */}
+      <div className="bg-white p-6 rounded-[2rem] border border-[#2D6A4F]/15 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">
         <div className="flex items-center gap-4">
-          <div className="size-16 rounded-2xl bg-[#2D6A4F]/15 text-[#2D6A4F] dark:text-[#4CAF50] border border-[#2D6A4F]/30 flex items-center justify-center text-3xl font-bold shadow-xs">
+          <div className="size-16 rounded-2xl bg-[#2D6A4F]/15 text-[#2D6A4F] border border-[#2D6A4F]/30 flex items-center justify-center text-3xl font-bold shadow-xs">
             🏪
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black text-[#1F2937] dark:text-[#F9F6F0] tracking-tight">{selectedStore.name}</h2>
+              <h2 className="text-xl font-black text-[#1F2937] tracking-tight">{selectedStore.name}</h2>
               {selectedStore.isVerified && (
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#4CAF50]/15 text-[#2D6A4F] dark:text-[#4CAF50] border border-[#4CAF50]/30 flex items-center gap-1">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#4CAF50]/15 text-[#2D6A4F] border border-[#4CAF50]/30 flex items-center gap-1">
                   <ShieldCheck className="size-3.5 text-[#4CAF50]" />
                   Verified Store
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5 font-medium">
-              <MapPin className="size-3 text-[#2D6A4F] dark:text-[#4CAF50]" />
-              {selectedStore.address}, {selectedStore.city} (Pakistan)
+            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5 font-medium">
+              <MapPin className="size-3 text-[#2D6A4F]" />
+              {selectedStore.address}, {selectedStore.city}
             </p>
           </div>
         </div>
 
-        {/* Multi-Branch Selector & Action Controls */}
+        {/* Branch Selector & Action Controls */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Branch Switcher Dropdown */}
-          <div className="flex items-center gap-1 bg-[#F9F6F0] dark:bg-[#1F2937] p-1.5 rounded-full border border-[#2D6A4F]/15 text-xs shadow-2xs">
-            <span className="text-[10px] uppercase font-bold text-slate-500 px-2">Branch:</span>
-            <select
-              value={selectedStoreId}
-              onChange={(e) => setSelectedStoreId(e.target.value)}
-              className="bg-transparent text-[#2D6A4F] dark:text-[#4CAF50] text-xs font-bold focus:outline-none pr-2 cursor-pointer"
-            >
-              {stores.map((s) => (
-                <option key={s.id} value={s.id} className="bg-white dark:bg-[#1F2937] text-slate-900 dark:text-white">
-                  {s.name} ({s.city})
-                </option>
-              ))}
-            </select>
-          </div>
+          {availableStores.length > 1 && (
+            <div className="flex items-center gap-1 bg-[#F9F6F0] p-1.5 rounded-full border border-[#2D6A4F]/15 text-xs shadow-2xs">
+              <span className="text-[10px] uppercase font-bold text-slate-500 px-2">Branch:</span>
+              <select
+                value={selectedStoreId}
+                onChange={(e) => setSelectedStoreId(e.target.value)}
+                className="bg-transparent text-[#2D6A4F] text-xs font-bold focus:outline-none pr-2 cursor-pointer"
+              >
+                {availableStores.map((s) => (
+                  <option key={s.id} value={s.id} className="bg-white text-slate-900">
+                    {s.name} ({s.city})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <button
             onClick={() => setIsVerifyPassOpen(true)}
@@ -280,14 +317,6 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
           >
             <QrCode className="size-4" />
             <span>Verify Customer Pass</span>
-          </button>
-
-          <button
-            onClick={() => setIsBarcodeOpen(true)}
-            className="px-4 py-2.5 rounded-full bg-[#F9F6F0] dark:bg-[#1F2937] hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-[#2D6A4F]/15 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
-          >
-            <Scan className="size-4 text-[#FF9800]" />
-            <span>Scan Barcode / OCR</span>
           </button>
 
           <button
@@ -370,54 +399,64 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       </div>
 
       {/* Auto-Generated Time-Decay Curve Graph */}
-      <div className="bg-white dark:bg-[#182230] p-6 rounded-[2rem] border border-[#2D6A4F]/15 dark:border-white/10 shadow-xs">
+      <div className="bg-white p-6 rounded-[2rem] border border-[#2D6A4F]/15 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
           <div>
-            <h3 className="text-base font-black text-[#1F2937] dark:text-[#F9F6F0] flex items-center gap-2">
-              <span>Time-Decay Schedule Curve (Formula Decay)</span>
+            <h3 className="text-base font-black text-[#1F2937] flex items-center gap-2">
+              <span>Time-Decay Schedule Curve{primaryDeal ? ` — ${primaryDeal.title}` : ''}</span>
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Lowers price dynamically in PKR (₨) as deadline approaches to match willing nearby buyers.
+            <p className="text-xs text-slate-500">
+              Lowers price automatically in PKR (₨) as expiry approaches to match nearby buyers.
             </p>
           </div>
         </div>
 
-        <div className="h-64 w-full pt-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="timeDecayGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#FF9800" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="#FF9800" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.5} />
-              <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} />
-              <YAxis stroke="#94a3b8" fontSize={11} unit=" ₨" />
-              <Tooltip
-                contentStyle={{ backgroundColor: '#1F2937', borderColor: '#2D6A4F', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                formatter={(val: any) => [`₨ ${val}`, 'Price']}
-              />
-              <Area type="monotone" dataKey="timeDecay" stroke="#FF9800" strokeWidth={3} fillOpacity={1} fill="url(#timeDecayGradient)" name="Time-Decay Price (₨)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        {chartData.length > 0 ? (
+          <div className="h-64 w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="timeDecayGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#FF9800" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#FF9800" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.5} />
+                <XAxis dataKey="time" stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} unit=" ₨" />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#1F2937', borderColor: '#2D6A4F', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
+                  formatter={(val: any) => [`₨ ${val}`, 'Price']}
+                />
+                <Area type="monotone" dataKey="timeDecay" stroke="#FF9800" strokeWidth={3} fillOpacity={1} fill="url(#timeDecayGradient)" name="Time-Decay Price (₨)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-44 rounded-2xl bg-[#F9F6F0] border border-stone-200 flex flex-col items-center justify-center text-center p-6">
+            <p className="text-xs font-bold text-stone-700">No active listings yet for {selectedStore.name}</p>
+            <p className="text-[11px] text-stone-500 mt-1">
+              List your first surplus item to generate a live time-decay pricing schedule.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Active Surplus Listings Table */}
-      <div className="bg-white dark:bg-[#182230] p-6 rounded-[2rem] border border-[#2D6A4F]/15 dark:border-white/10 shadow-xs">
+      <div className="bg-white p-6 rounded-[2rem] border border-[#2D6A4F]/15 shadow-xs">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-black text-[#1F2937] dark:text-[#F9F6F0] flex items-center gap-2">
+          <h3 className="text-base font-black text-[#1F2937] flex items-center gap-2">
             <span>Active Store Surplus Listings ({selectedStore.name.split(' ')[0]})</span>
-            <span className="px-3 py-0.5 rounded-full text-xs bg-[#2D6A4F]/15 text-[#2D6A4F] dark:text-[#4CAF50] border border-[#2D6A4F]/30 font-bold">
-              {deals.length} Active
+            <span className="px-3 py-0.5 rounded-full text-xs bg-[#2D6A4F]/15 text-[#2D6A4F] border border-[#2D6A4F]/30 font-bold">
+              {storeDeals.length} Active
             </span>
           </h3>
 
           <div className="flex items-center gap-2">
             <button
               onClick={handleExportCsvReport}
-              className="px-3.5 py-1.5 rounded-full bg-[#F9F6F0] dark:bg-[#1F2937] hover:bg-slate-200 border border-[#2D6A4F]/20 text-[#1F2937] dark:text-[#F9F6F0] text-xs font-semibold flex items-center gap-1 transition-all"
+              disabled={storeDeals.length === 0}
+              className="px-3.5 py-1.5 rounded-full bg-[#F9F6F0] hover:bg-slate-200 disabled:opacity-40 border border-[#2D6A4F]/20 text-[#1F2937] text-xs font-semibold flex items-center gap-1 transition-all"
             >
               <Download className="size-3.5" />
               <span>Download CSV</span>
@@ -432,9 +471,23 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
           </div>
         </div>
 
+        {storeDeals.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-[#F9F6F0] border border-stone-200 text-center">
+            <p className="text-sm font-bold text-stone-800">No surplus deals listed right now</p>
+            <p className="text-xs text-stone-500 mt-1 mb-4">
+              Click "List Surplus Item" above to publish discounted food items before closing time.
+            </p>
+            <button
+              onClick={() => setIsAddItemOpen(true)}
+              className="px-4 py-2 rounded-full bg-[#FF9800] hover:bg-[#f57c00] text-white font-bold text-xs shadow-xs"
+            >
+              + List Your First Item
+            </button>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#F9F6F0] dark:bg-[#1F2937] text-slate-700 dark:text-slate-300 uppercase font-bold text-[10px] tracking-wider border-b border-[#2D6A4F]/15">
+            <thead className="bg-[#F9F6F0] text-slate-700 uppercase font-bold text-[10px] tracking-wider border-b border-[#2D6A4F]/15">
               <tr>
                 <th className="p-3">Item Details</th>
                 <th className="p-3">Category</th>
@@ -445,8 +498,8 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#2D6A4F]/10 dark:divide-white/10">
-              {deals.map((deal) => (
+            <tbody className="divide-y divide-[#2D6A4F]/10">
+              {storeDeals.map((deal) => (
                 <tr key={deal.id} className="hover:bg-[#F9F6F0]/60 dark:hover:bg-[#1F2937]/50 transition-colors">
                   <td className="p-3 font-semibold text-[#1F2937] dark:text-[#F9F6F0] flex items-center gap-3">
                     <img src={deal.imageUrl} alt={deal.title} className="size-10 rounded-xl object-cover border border-[#2D6A4F]/15" />
@@ -549,6 +602,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       {/* Cashier Verification Modal */}
@@ -769,13 +823,6 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
           </div>
         </div>
       )}
-
-      {/* POS Barcode Scanner Modal */}
-      <BarcodeScannerModal
-        isOpen={isBarcodeOpen}
-        onClose={() => setIsBarcodeOpen(false)}
-        onAddItem={onAddItem}
-      />
 
       {/* NGO Food Rescue Donation Modal */}
       <DonationModal

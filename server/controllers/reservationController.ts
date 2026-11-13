@@ -1,13 +1,24 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import mongoose from 'mongoose';
 import { Reservation } from '../models/Reservation';
 import { Deal } from '../models/Deal';
 import { User } from '../models/User';
 import { Retailer } from '../models/Retailer';
+import type { AuthRequest } from '../middleware/auth';
 
-export const createReservation = async (req: Request, res: Response): Promise<void> => {
+export const createReservation = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    if (!req.user?.id || !mongoose.Types.ObjectId.isValid(req.user.id)) {
+      res.status(401).json({ error: 'Please sign in to reserve a surplus deal.' });
+      return;
+    }
+
     const { dealId, quantity, paymentMethod } = req.body;
+
+    if (!dealId || !mongoose.Types.ObjectId.isValid(String(dealId))) {
+      res.status(400).json({ error: 'Valid dealId is required.' });
+      return;
+    }
 
     const deal: any = await Deal.findById(dealId).populate('itemRef').populate('retailerRef');
     if (!deal || deal.status !== 'active') {
@@ -16,20 +27,15 @@ export const createReservation = async (req: Request, res: Response): Promise<vo
     }
 
     const qty = Number(quantity || 1);
-    if (deal.stockQuantity < qty) {
+    if (!Number.isInteger(qty) || qty < 1 || deal.stockQuantity < qty) {
       res.status(400).json({ error: 'Insufficient stock remaining' });
       return;
     }
 
-    let user = await User.findOne({ role: 'consumer' });
+    const user = await User.findById(req.user.id);
     if (!user) {
-      user = await User.create({
-        name: 'Hamza Khan',
-        email: 'consumer@foodsave.pk',
-        passwordHash: 'hashed_password',
-        role: 'consumer',
-        contactPhone: '+92 300 9876543',
-      });
+      res.status(401).json({ error: 'Authenticated user account not found.' });
+      return;
     }
 
     // Generate unique pickup code (e.g. PK-84920)
@@ -85,9 +91,14 @@ export const createReservation = async (req: Request, res: Response): Promise<vo
   }
 };
 
-export const getMyReservations = async (req: Request, res: Response): Promise<void> => {
+export const getMyReservations = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const reservations = await Reservation.find()
+    if (!req.user?.id || !mongoose.Types.ObjectId.isValid(req.user.id)) {
+      res.status(401).json({ error: 'Authentication required to view reservations.' });
+      return;
+    }
+
+    const reservations = await Reservation.find({ userRef: req.user.id })
       .populate({ path: 'dealRef', populate: { path: 'itemRef' } })
       .populate('retailerRef')
       .sort({ createdAt: -1 });

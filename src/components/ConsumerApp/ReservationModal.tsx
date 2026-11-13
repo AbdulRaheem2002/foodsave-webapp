@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { DealItem, Reservation } from '../../types';
-import { X, MapPin, QrCode, CheckCircle2, Sparkles, Wallet, Bike } from 'lucide-react';
+import { X, MapPin, QrCode, CheckCircle2, Sparkles, Wallet, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
 import confetti from 'canvas-confetti';
 import { createReservationApi } from '../../services/api';
@@ -11,7 +11,6 @@ interface ReservationModalProps {
   onClose: () => void;
   onConfirmReservation: (reservation: Reservation) => void;
   onOpenWhatsApp: (reservation: Reservation) => void;
-  onOpenBykeaTracker?: (res: Reservation) => void;
 }
 
 export const ReservationModal: React.FC<ReservationModalProps> = ({
@@ -19,43 +18,39 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   onClose,
   onConfirmReservation,
   onOpenWhatsApp,
-  onOpenBykeaTracker,
 }) => {
   const [quantity, setQuantity] = useState<number>(1);
-  const [fulfillmentType, setFulfillmentType] = useState<'self-pickup' | 'bykea-delivery'>('self-pickup');
-  const [paymentMethod, setPaymentMethod] = useState<'JazzCash' | 'EasyPaisa' | 'Cash on Pickup'>('JazzCash');
+  const [paymentMethod, setPaymentMethod] = useState<'JazzCash' | 'EasyPaisa' | 'Cash on Pickup'>('Cash on Pickup');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [reserveError, setReserveError] = useState<string | null>(null);
   const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
   const [confirmedReservation, setConfirmedReservation] = useState<Reservation | null>(null);
 
   if (!deal) return null;
 
-  const deliveryFeePkr = fulfillmentType === 'bykea-delivery' ? 150 : 0;
   const itemTotalPkr = deal.currentPricePkr * quantity;
-  const totalPricePkr = itemTotalPkr + deliveryFeePkr;
+  const totalPricePkr = itemTotalPkr;
   const originalTotalPkr = deal.originalPricePkr * quantity;
-  const totalSavingsPkr = originalTotalPkr - itemTotalPkr;
+  const totalSavingsPkr = Math.max(0, originalTotalPkr - itemTotalPkr);
 
   const handleConfirm = async () => {
     setIsSubmitting(true);
+    setReserveError(null);
     sounds.playCashChime();
 
     try {
       const apiRes = await createReservationApi(deal.id, quantity, paymentMethod);
-      
+
       const newReservation: Reservation = {
-        id: apiRes.reservation?.id || `res-${Date.now()}`,
+        id: apiRes.reservation?.id || apiRes.reservation?._id || `res-${Date.now()}`,
         item: deal,
         quantity,
         totalPricePkr,
-        savedPkr: totalSavingsPkr,
+        savedPkr: apiRes.savedPkr ?? totalSavingsPkr,
         pickupWindowEnd: apiRes.pickupWindowEnd || new Date(Date.now() + 15 * 60 * 1000).toISOString(),
         status: 'pending',
-        pickupCode: apiRes.pickupCode || `PK-${Math.floor(10000 + Math.random() * 90000)}`,
-        fulfillmentType,
-        bykeaRiderName: fulfillmentType === 'bykea-delivery' ? 'Tariq Mahmood (Suzuki GD110)' : undefined,
-        bykeaRiderPhone: fulfillmentType === 'bykea-delivery' ? '+92 312 8889900' : undefined,
-        bykeaEtaMinutes: fulfillmentType === 'bykea-delivery' ? 12 : undefined,
+        pickupCode: apiRes.pickupCode,
+        fulfillmentType: 'self-pickup',
         paymentMethod,
         paymentStatus: paymentMethod === 'Cash on Pickup' ? 'pending' : 'paid',
         createdAt: new Date().toISOString(),
@@ -71,30 +66,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         origin: { y: 0.6 },
         colors: ['#2D6A4F', '#4CAF50', '#FF9800', '#F9F6F0'],
       });
-    } catch (error) {
-      console.error('Reservation API error:', error);
-      const fallbackCode = `PK-${Math.floor(10000 + Math.random() * 90000)}`;
-      const newReservation: Reservation = {
-        id: `res-${Date.now()}`,
-        item: deal,
-        quantity,
-        totalPricePkr,
-        savedPkr: totalSavingsPkr,
-        pickupWindowEnd: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-        status: 'pending',
-        pickupCode: fallbackCode,
-        fulfillmentType,
-        bykeaRiderName: fulfillmentType === 'bykea-delivery' ? 'Tariq Mahmood (Suzuki GD110)' : undefined,
-        bykeaRiderPhone: fulfillmentType === 'bykea-delivery' ? '+92 312 8889900' : undefined,
-        bykeaEtaMinutes: fulfillmentType === 'bykea-delivery' ? 12 : undefined,
-        paymentMethod,
-        paymentStatus: paymentMethod === 'Cash on Pickup' ? 'pending' : 'paid',
-        createdAt: new Date().toISOString(),
-      };
-
-      setConfirmedReservation(newReservation);
-      setIsConfirmed(true);
-      onConfirmReservation(newReservation);
+    } catch (error: any) {
+      setReserveError(error?.message || 'Unable to lock reservation. Please sign in and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -171,37 +144,18 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               </div>
             </div>
 
-            {/* Fulfillment Type Selector */}
-            <div>
-              <label className="block text-xs font-bold text-[#1F2937] dark:text-[#F9F6F0] mb-1.5 flex items-center gap-1">
-                <Bike className="size-3.5 text-[#FF9800]" />
-                Select Fulfillment Mode:
-              </label>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setFulfillmentType('self-pickup')}
-                  className={`p-3 rounded-2xl border text-center font-bold transition-all ${
-                    fulfillmentType === 'self-pickup'
-                      ? 'bg-[#2D6A4F] text-white border-[#2D6A4F] shadow-sm'
-                      : 'bg-[#F9F6F0] dark:bg-[#1F2937] text-slate-700 dark:text-slate-300 border-[#2D6A4F]/15'
-                  }`}
-                >
-                  🚶 Self-Pickup (Free)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFulfillmentType('bykea-delivery')}
-                  className={`p-3 rounded-2xl border text-center font-bold transition-all ${
-                    fulfillmentType === 'bykea-delivery'
-                      ? 'bg-[#FF9800] text-white border-[#FF9800] shadow-sm'
-                      : 'bg-[#F9F6F0] text-slate-700 border-[#2D6A4F]/15'
-                  }`}
-                >
-                  🏍️ Bykea Express (+ ₨ 150)
-                </button>
-              </div>
+            {/* Fulfillment Info */}
+            <div className="p-3 rounded-2xl bg-[#edf7ed] border border-[#c8e6c9] text-xs font-semibold text-[#1b4332] flex items-center justify-between">
+              <span>Counter Self-Pickup ({deal.location.city})</span>
+              <span className="font-bold text-[#2e7d32]">Free</span>
             </div>
+
+            {reserveError && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-start gap-2">
+                <AlertCircle className="size-4 text-red-500 flex-shrink-0 mt-0.5" />
+                <span>{reserveError}</span>
+              </div>
+            )}
 
             {/* Payment Method Selector */}
             <div>
@@ -279,45 +233,11 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             </div>
 
             <div>
-              <h2 className="text-2xl font-black text-[#1F2937] dark:text-[#F9F6F0] mb-1">Surprise Bag Secured!</h2>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                {confirmedReservation?.fulfillmentType === 'bykea-delivery'
-                  ? 'Bykea Express Rider assigned and en route to store!'
-                  : 'Present your pickup code at store counter within 15 minutes.'}
+              <h2 className="text-2xl font-black text-[#1F2937] mb-1">Surplus Bag Reserved!</h2>
+              <p className="text-xs text-slate-600">
+                Present your pickup code at <strong>{deal.storeName}</strong> counter within 15 minutes.
               </p>
             </div>
-
-            {/* Bykea Rider Live Tracking Trigger Box */}
-            {confirmedReservation?.fulfillmentType === 'bykea-delivery' && (
-              <div
-                onClick={() => {
-                  if (confirmedReservation && onOpenBykeaTracker) {
-                    onOpenBykeaTracker(confirmedReservation);
-                  }
-                }}
-                className="w-full p-4 rounded-2xl bg-[#FF9800]/15 hover:bg-[#FF9800]/25 border border-[#FF9800]/40 text-left flex items-center justify-between gap-3 cursor-pointer transition-all shadow-xs"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="size-10 rounded-full bg-[#FF9800] text-white flex items-center justify-center font-bold">
-                    <Bike className="size-5 animate-bounce" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF9800] block">
-                      Bykea Express Rider Assigned
-                    </span>
-                    <p className="text-xs font-bold text-[#1F2937] dark:text-[#F9F6F0]">
-                      {confirmedReservation.bykeaRiderName}
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      ETA: <strong>12 mins</strong> • Click to View Live GPS Route
-                    </p>
-                  </div>
-                </div>
-                <span className="px-3 py-1.5 rounded-full bg-[#FF9800] text-white font-black text-xs shadow-xs">
-                  Track Live 📍
-                </span>
-              </div>
-            )}
 
             {/* Pickup Code Voucher Boarding-Pass Card */}
             <div className="w-full p-5 rounded-3xl bg-[#F9F6F0] dark:bg-[#141c27] text-slate-900 dark:text-slate-100 border-2 border-dashed border-[#2D6A4F]/30 flex flex-col items-center gap-2.5 shadow-sm">

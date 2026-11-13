@@ -81,7 +81,7 @@ export const RatingModal: React.FC<RatingModalProps> = ({
               <textarea
                 rows={3}
                 required
-                placeholder="e.g. Super fresh Chaunsa Mangoes from Al-Fatah! Highly recommended..."
+                placeholder="e.g. Fresh bakery items and quick pickup at the counter..."
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 className="w-full p-3 rounded-xl bg-[#f7f5f0] dark:bg-stone-950 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-white text-xs font-medium focus:outline-none focus:border-[#1b4332]"

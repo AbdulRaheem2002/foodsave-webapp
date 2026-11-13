@@ -21,7 +21,7 @@ export const DealMap: React.FC<DealMapProps> = ({
   const [mapMode, setMapMode] = useState<'radar' | 'pins'>('radar');
   const [selectedRadius, setSelectedRadius] = useState<'5 km' | '10 km'>('5 km');
 
-  const cityLabel = selectedCity === 'All Pakistan' ? 'Islamabad/Lahore' : selectedCity;
+  const cityLabel = selectedCity === 'All Pakistan' ? 'Pakistan' : selectedCity;
 
   return (
     <div className="relative w-full rounded-[1.75rem] overflow-hidden bg-[#071710] border border-[#1b3d2b] shadow-xl p-4 sm:p-6 text-white">
@@ -36,7 +36,9 @@ export const DealMap: React.FC<DealMapProps> = ({
             </h2>
           </div>
           <p className="text-xs text-stone-400 mt-0.5 font-medium">
-            Scanning active stores across Islamabad, Lahore, &amp; Karachi in real-time
+            {deals.length > 0
+              ? `Showing ${deals.length} active surplus listing${deals.length === 1 ? '' : 's'} in ${cityLabel}`
+              : `No active store listings in ${cityLabel} right now`}
           </p>
         </div>
 

@@ -5,9 +5,16 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import { connectDB } from './config/db';
-import { seedDatabase } from './seeds/seed';
 import { memDb } from './store/memDb';
+import { Retailer } from './models/Retailer';
 import { calculateTimeDecay } from './utils/decayCalculator';
+import {
+  validateRegisterPayload,
+  validateLoginPayload,
+  normalizePhone,
+  CITY_COORDINATES,
+  ALLOWED_STORE_CATEGORIES,
+} from './utils/authValidation';
 import { authenticateToken, optionalAuth, requireRetailer, getJwtSecret, type AuthRequest } from './middleware/auth';
 
 // Mongoose MongoDB Controllers
@@ -56,6 +63,21 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
+function formatMemRetailerDto(retailer: any) {
+  if (!retailer) return null;
+  return {
+    id: retailer.id,
+    name: retailer.name,
+    category: retailer.category,
+    address: retailer.location?.address || '',
+    city: retailer.location?.city || 'Lahore',
+    isVerified: Boolean(retailer.isVerified),
+    rating: retailer.rating ?? 5.0,
+    totalRecoveredPkr: retailer.totalRecoveredPkr ?? 0,
+    totalWastedValueAvoidedPkr: retailer.totalWastedValueAvoidedPkr ?? 0,
+  };
+}
+
 // 2. Auth Endpoints (Register & Login for Consumer & Retailer)
 app.post('/api/auth/register', async (req: Request, res: Response) => {
   if (isMongoConnected()) {
@@ -67,16 +89,18 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     }
   }
 
-  const { name, email, password, role, storeName, storeCategory, storeAddress, city } = req.body;
-  const normalizedEmail = String(email || '').trim().toLowerCase();
-
-  if (!normalizedEmail || !password || String(password).length < 6) {
-    res.status(400).json({ error: 'Valid email and password (at least 6 characters) are required.' });
+  const validation = validateRegisterPayload(req.body);
+  if (!validation.valid || !validation.normalizedEmail) {
+    res.status(400).json({ error: validation.error || 'Invalid registration details.' });
     return;
   }
 
+  const { name, password, role, storeName, storeCategory, storeAddress, city, phone } = req.body;
+  const normalizedEmail = validation.normalizedEmail;
+  const normalizedPhone = normalizePhone(phone);
+
   if (memDb.users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
-    res.status(400).json({ error: 'Email already registered. Please sign in instead.' });
+    res.status(409).json({ error: 'An account with this email already exists. Please sign in instead.' });
     return;
   }
 
@@ -84,10 +108,11 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 
   const newUser = {
     id: `usr-${Date.now()}`,
-    name: String(name || '').trim() || 'Foodsave User',
+    name: String(name).trim(),
     email: normalizedEmail,
     passwordHash,
     role: role === 'retailer' ? ('retailer' as const) : ('consumer' as const),
+    contactPhone: normalizedPhone,
     totalSavedPkr: 0,
     itemsRescuedCount: 0,
   };
@@ -95,19 +120,26 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 
   let newRetailer = null;
   if (newUser.role === 'retailer') {
+    const storeCity = String(city).trim();
+    const baseCoords = CITY_COORDINATES[storeCity] || CITY_COORDINATES.Lahore;
+    const safeCategory = ALLOWED_STORE_CATEGORIES.includes(storeCategory)
+      ? (storeCategory as 'grocery' | 'bakery' | 'restaurant')
+      : 'grocery';
+
     newRetailer = {
       id: `ret-${Date.now()}`,
-      name: String(storeName || '').trim() || 'New Pakistan Store',
-      category: (storeCategory as 'grocery' | 'bakery' | 'restaurant') || 'grocery',
+      userId: newUser.id,
+      name: String(storeName).trim(),
+      category: safeCategory,
       location: {
-        lat: 31.5204 + (Math.random() * 0.04 - 0.02),
-        lng: 74.3587 + (Math.random() * 0.04 - 0.02),
-        address: storeAddress || 'Gulberg III Main Blvd',
-        city: city || 'Lahore',
+        lat: baseCoords.lat,
+        lng: baseCoords.lng,
+        address: String(storeAddress).trim(),
+        city: storeCity,
       },
       isVerified: true,
-      rating: 4.8,
-      contactPhone: '+92 300 1234567',
+      rating: 5.0,
+      contactPhone: normalizedPhone,
       totalRecoveredPkr: 0,
       totalWastedValueAvoidedPkr: 0,
     };
@@ -115,6 +147,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
   }
 
   const token = jwt.sign({ id: newUser.id, role: newUser.role }, getJwtSecret(), { expiresIn: '7d' });
+  const retailerDto = formatMemRetailerDto(newRetailer);
 
   res.status(201).json({
     message: 'Registration successful',
@@ -124,10 +157,12 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
       name: newUser.name,
       email: newUser.email,
       role: newUser.role,
+      contactPhone: newUser.contactPhone,
       totalSavedPkr: newUser.totalSavedPkr,
       itemsRescuedCount: newUser.itemsRescuedCount,
+      retailer: retailerDto,
     },
-    retailer: newRetailer,
+    retailer: retailerDto,
   });
 });
 
@@ -141,27 +176,39 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     }
   }
 
-  const { email, password } = req.body;
-  const normalizedEmail = String(email || '').trim().toLowerCase();
-
-  if (!normalizedEmail || !password) {
-    res.status(400).json({ error: 'Email and password are required.' });
+  const validation = validateLoginPayload(req.body);
+  if (!validation.valid || !validation.normalizedEmail) {
+    res.status(400).json({ error: validation.error || 'Email and password are required.' });
     return;
   }
 
+  const { password, expectedRole } = req.body;
+  const normalizedEmail = validation.normalizedEmail;
+
   const user = memDb.users.find((u) => u.email.toLowerCase() === normalizedEmail);
   if (!user || !user.passwordHash) {
-    res.status(401).json({ error: 'Invalid email or password' });
+    res.status(401).json({ error: 'Invalid email or password.' });
     return;
   }
 
   const isMatch = await bcrypt.compare(String(password), user.passwordHash);
   if (!isMatch) {
-    res.status(401).json({ error: 'Invalid email or password' });
+    res.status(401).json({ error: 'Invalid email or password.' });
     return;
   }
 
-  const retailer = user.role === 'retailer' ? memDb.retailers[0] : null;
+  if (expectedRole && expectedRole !== user.role) {
+    res.status(403).json({
+      error:
+        expectedRole === 'retailer'
+          ? 'This email belongs to a Consumer account. Please sign in with a Merchant Partner account or register a new store.'
+          : 'This email belongs to a Merchant Partner account.',
+    });
+    return;
+  }
+
+  const retailer = user.role === 'retailer' ? memDb.getRetailerByUserId(user.id) || null : null;
+  const retailerDto = formatMemRetailerDto(retailer);
   const token = jwt.sign({ id: user.id, role: user.role }, getJwtSecret(), { expiresIn: '7d' });
 
   res.json({
@@ -171,11 +218,28 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      contactPhone: user.contactPhone,
       totalSavedPkr: user.totalSavedPkr,
       itemsRescuedCount: user.itemsRescuedCount,
+      retailer: retailerDto,
     },
-    retailer,
+    retailer: retailerDto,
   });
+});
+
+// 2b. Registered Partner Stores Endpoint
+app.get('/api/stores', async (_req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      const stores = await Retailer.find().sort({ createdAt: -1 });
+      res.json(stores.map(formatMemRetailerDto));
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB getStores fallback to memDb:', mongoErr);
+    }
+  }
+
+  res.json(memDb.retailers.map(formatMemRetailerDto));
 });
 
 // 3. Deals Endpoint (Calculate Rule-Based Time Decay & Filter)
@@ -208,17 +272,22 @@ app.get('/api/retailer/me', authenticateToken, requireRetailer, async (req: Auth
     }
   }
 
-  const retailer = memDb.retailers[0];
-  const activeDealsCount = memDb.deals.filter((d) => d.status === 'active').length;
-  const reservationsCount = memDb.reservations.length;
+  const retailer = memDb.getRetailerByUserId(req.user?.id);
+  if (!retailer) {
+    res.status(404).json({ error: 'Merchant store profile not found for this account.' });
+    return;
+  }
+
+  const activeDealsCount = memDb.deals.filter((d) => d.retailerId === retailer.id && d.status === 'active').length;
+  const reservationsCount = memDb.reservations.filter((r) => r.retailerId === retailer.id).length;
 
   res.json({
-    retailer,
+    retailer: formatMemRetailerDto(retailer),
     stats: {
       activeDealsCount,
       totalReservationsCount: reservationsCount,
-      totalRecoveredPkr: retailer?.totalRecoveredPkr || 0,
-      totalWastedValueAvoidedPkr: retailer?.totalWastedValueAvoidedPkr || 0,
+      totalRecoveredPkr: retailer.totalRecoveredPkr || 0,
+      totalWastedValueAvoidedPkr: retailer.totalWastedValueAvoidedPkr || 0,
     },
   });
 });
@@ -235,23 +304,33 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
 
   const { name, category, originalPricePkr, quantity, expiryHoursLeft, imageUrl } = req.body;
 
-  const retailer = memDb.retailers[0];
+  const retailer = memDb.getRetailerByUserId(req.user?.id);
+  if (!retailer) {
+    res.status(404).json({ error: 'Merchant store profile not found. Please register a merchant account.' });
+    return;
+  }
+
+  if (!String(name || '').trim() || Number(originalPricePkr) <= 0 || Number(quantity) < 1) {
+    res.status(400).json({ error: 'Valid item title, original price (> 0), and quantity (>= 1) are required.' });
+    return;
+  }
+
   const itemId = `itm-${Date.now()}`;
   const dealId = `dl-${Date.now()}`;
-  const price = Number(originalPricePkr || 1000);
-  const hrs = Number(expiryHoursLeft || 2.0);
+  const price = Number(originalPricePkr);
+  const hrs = Math.max(0.5, Number(expiryHoursLeft || 2.0));
   const cat = (category as 'grocery' | 'bakery' | 'restaurant') || 'grocery';
-  const qty = Number(quantity || 1);
+  const qty = Number(quantity);
 
   const newItem = {
     id: itemId,
-    name: name || 'Surplus Food Item',
+    name: String(name).trim(),
     category: cat,
     originalPricePkr: price,
     quantity: qty,
     expiryDeadline: new Date(Date.now() + hrs * 3600 * 1000).toISOString(),
     retailerId: retailer.id,
-    imageUrl: imageUrl || 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=800&q=80',
+    imageUrl: imageUrl || '',
   };
   memDb.items.push(newItem);
 
@@ -288,18 +367,25 @@ app.delete('/api/deals/:id', authenticateToken, requireRetailer, async (req: Aut
     }
   }
 
-  const { id } = req.params;
-  const dealIdx = memDb.deals.findIndex((d) => d.id === id);
-  if (dealIdx !== -1) {
-    const deletedDeal = memDb.deals.splice(dealIdx, 1)[0];
-    const itemIdx = memDb.items.findIndex((i) => i.id === deletedDeal.itemId);
-    if (itemIdx !== -1) {
-      memDb.items.splice(itemIdx, 1);
-    }
-    res.json({ message: 'Surplus deal and item removed successfully', id });
+  const retailer = memDb.getRetailerByUserId(req.user?.id);
+  if (!retailer) {
+    res.status(404).json({ error: 'Merchant store profile not found.' });
     return;
   }
-  res.json({ message: 'Deal removed from memory', id });
+
+  const { id } = req.params;
+  const dealIdx = memDb.deals.findIndex((d) => d.id === id && d.retailerId === retailer.id);
+  if (dealIdx === -1) {
+    res.status(404).json({ error: 'Deal not found for your store.' });
+    return;
+  }
+
+  const deletedDeal = memDb.deals.splice(dealIdx, 1)[0];
+  const itemIdx = memDb.items.findIndex((i) => i.id === deletedDeal.itemId);
+  if (itemIdx !== -1) {
+    memDb.items.splice(itemIdx, 1);
+  }
+  res.json({ message: 'Surplus deal and item removed successfully', id });
 });
 
 app.put('/api/retailer/deals/:id/override', authenticateToken, requireRetailer, async (req: AuthRequest, res: Response) => {
@@ -312,12 +398,18 @@ app.put('/api/retailer/deals/:id/override', authenticateToken, requireRetailer, 
     }
   }
 
+  const retailer = memDb.getRetailerByUserId(req.user?.id);
+  if (!retailer) {
+    res.status(404).json({ error: 'Merchant store profile not found.' });
+    return;
+  }
+
   const { id } = req.params;
   const { manualOverridePricePkr } = req.body;
 
-  const deal = memDb.deals.find((d) => d.id === id);
+  const deal = memDb.deals.find((d) => d.id === id && d.retailerId === retailer.id);
   if (!deal) {
-    res.status(404).json({ error: 'Deal not found' });
+    res.status(404).json({ error: 'Deal not found for your store.' });
     return;
   }
 
@@ -333,8 +425,8 @@ app.put('/api/retailer/deals/:id/override', authenticateToken, requireRetailer, 
   res.json({ message: 'Manual price override applied', deal });
 });
 
-// 5. Reservation Endpoints (JazzCash / EasyPaisa / Cash Pickup & Pickup Code Generation)
-app.post('/api/reservations', async (req: Request, res: Response) => {
+// 5. Reservation Endpoints (Authenticated Consumer / Merchant Reservation & Pickup Code)
+app.post('/api/reservations', authenticateToken, async (req: AuthRequest, res: Response) => {
   if (isMongoConnected()) {
     try {
       await createReservation(req, res);
@@ -353,19 +445,29 @@ app.post('/api/reservations', async (req: Request, res: Response) => {
   }
 
   const qty = Number(quantity || 1);
-  if (deal.stockQuantity < qty) {
+  if (!Number.isInteger(qty) || qty < 1 || deal.stockQuantity < qty) {
     res.status(400).json({ error: 'Insufficient stock remaining' });
     return;
   }
 
-  const user = memDb.users[0];
-  const retailer = memDb.retailers.find((r) => r.id === deal.retailerId) || memDb.retailers[0];
+  const user = memDb.users.find((u) => u.id === req.user?.id);
+  if (!user) {
+    res.status(401).json({ error: 'Please sign in to reserve a surplus deal.' });
+    return;
+  }
+
+  const retailer = memDb.retailers.find((r) => r.id === deal.retailerId);
+  if (!retailer) {
+    res.status(404).json({ error: 'Associated store not found.' });
+    return;
+  }
+
   const item = memDb.items.find((i) => i.id === deal.itemId);
 
   const pickupCode = `PK-${Math.floor(10000 + Math.random() * 90000)}`;
   const totalAmountPkr = deal.currentDiscountedPricePkr * qty;
-  const originalTotalPkr = (item?.originalPricePkr || 1000) * qty;
-  const savedPkr = originalTotalPkr - totalAmountPkr;
+  const originalTotalPkr = (item?.originalPricePkr || totalAmountPkr) * qty;
+  const savedPkr = Math.max(0, originalTotalPkr - totalAmountPkr);
 
   const pickupWindowEnd = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
@@ -379,7 +481,7 @@ app.post('/api/reservations', async (req: Request, res: Response) => {
     pickupWindowEnd,
     quantity: qty,
     totalAmountPkr,
-    paymentMethod: (paymentMethod as any) || 'JazzCash',
+    paymentMethod: (paymentMethod as any) || 'Cash on Pickup',
     paymentStatus: paymentMethod === 'Cash on Pickup' ? ('pending' as const) : ('paid' as const),
     createdAt: new Date().toISOString(),
   };
@@ -406,7 +508,7 @@ app.post('/api/reservations', async (req: Request, res: Response) => {
   });
 });
 
-app.get('/api/reservations/me', async (req: Request, res: Response) => {
+app.get('/api/reservations/me', authenticateToken, async (req: AuthRequest, res: Response) => {
   if (isMongoConnected()) {
     try {
       await getMyReservations(req, res);
@@ -416,7 +518,8 @@ app.get('/api/reservations/me', async (req: Request, res: Response) => {
     }
   }
 
-  const result = memDb.reservations.map((resItem) => {
+  const userReservations = memDb.reservations.filter((r) => r.userId === req.user?.id);
+  const result = userReservations.map((resItem) => {
     const deal = memDb.deals.find((d) => d.id === resItem.dealId);
     const item = memDb.items.find((i) => i.id === deal?.itemId);
     const retailer = memDb.retailers.find((r) => r.id === resItem.retailerId);
@@ -518,14 +621,7 @@ app.put('/api/reservations/:id/status', optionalAuth, async (req: AuthRequest, r
 });
 
 const startServer = async () => {
-  const isConnected = await connectDB();
-  if (isConnected) {
-    try {
-      await seedDatabase();
-    } catch (seedErr) {
-      console.warn('⚠️ Seeding note:', seedErr);
-    }
-  }
+  await connectDB();
 
   app.listen(PORT, () => {
     console.log(`🚀 Foodsave Pakistan MERN Express API running at http://localhost:${PORT}`);
