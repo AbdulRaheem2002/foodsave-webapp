@@ -236,9 +236,9 @@ export const verifyPickupCode = async (req: AuthRequest, res: Response): Promise
   }
 };
 
-export const updateReservationStatus = async (req: Request, res: Response): Promise<void> => {
+export const updateReservationStatus = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id || '');
     const { status } = req.body;
 
     let reservation: any = null;
