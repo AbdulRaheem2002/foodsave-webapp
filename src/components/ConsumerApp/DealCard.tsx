@@ -27,6 +27,17 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect })
 
   const savedAmountPkr = Math.max(0, deal.originalPricePkr - deal.currentPricePkr);
 
+  const flavorLabels: Record<string, string> = {
+    sweet: '🥐 Sweet',
+    savory: '🍗 Savory',
+    drinks: '☕ Drinks',
+    mixed: '🍱 Mixed Box',
+  };
+  const flavorBadge = flavorLabels[deal.flavorProfile || 'mixed'] || '🍱 Mixed';
+  const areaLabel = deal.location.sector
+    ? `${deal.location.sector}, ${deal.location.city}`
+    : deal.location.city || 'Islamabad';
+
   return (
     <div className="bg-white border border-[#e5e0d8] rounded-[1.4rem] p-3.5 shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group">
       
@@ -39,9 +50,14 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect })
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/25" />
 
-        {/* Top-Left: Red Discount Badge */}
-        <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-[#e53935] text-white font-black text-[11px] shadow-sm tracking-wide">
-          {deal.discountPercent}% OFF
+        {/* Top-Left: Red Discount + Flavor Badge */}
+        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+          <span className="px-2.5 py-0.5 rounded-full bg-[#e53935] text-white font-black text-[11px] shadow-sm tracking-wide">
+            {deal.discountPercent}% OFF
+          </span>
+          <span className="px-2 py-0.5 rounded-full bg-white/95 text-stone-800 font-bold text-[10px] shadow-sm">
+            {flavorBadge}
+          </span>
         </div>
 
         {/* Top-Right: Surplus Scarcity Badge */}
@@ -59,14 +75,14 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect })
       {/* Card Content Body */}
       <div className="pt-3 flex-1 flex flex-col justify-between gap-2.5">
         <div>
-          {/* Category & City on Left, Countdown on Right */}
+          {/* Category & Area on Left, Countdown on Right */}
           <div className="flex items-center justify-between text-[11px] mb-1">
-            <span className="text-stone-500 font-medium capitalize">
-              {deal.category} • {deal.location.city || 'Lahore'} ({deal.distanceKm} km)
+            <span className="text-stone-500 font-medium capitalize truncate max-w-[175px]">
+              {deal.category} • {areaLabel}
             </span>
-            <span className="text-[#e53935] font-bold font-mono text-[11px] flex items-center gap-1">
+            <span className="text-[#e53935] font-bold font-mono text-[11px] flex items-center gap-1 shrink-0">
               <Clock className="size-3 text-[#e53935]" />
-              <span>Expires: {formatTimeLeft(secondsRemaining)}</span>
+              <span>{formatTimeLeft(secondsRemaining)} left</span>
             </span>
           </div>
 

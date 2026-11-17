@@ -80,11 +80,14 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
   // Form State
   const [newItemName, setNewItemName] = useState('');
-  const [newItemCategory, setNewItemCategory] = useState<'grocery' | 'bakery' | 'restaurant'>('grocery');
+  const [newItemCategory, setNewItemCategory] = useState<'grocery' | 'bakery' | 'restaurant'>('bakery');
+  const [newItemFlavor, setNewItemFlavor] = useState<'sweet' | 'savory' | 'drinks' | 'mixed'>('mixed');
+  const [newItemPickupSlot, setNewItemPickupSlot] = useState<string>('');
+  const [newItemIsMystery, setNewItemIsMystery] = useState<boolean>(false);
   const [newItemPrice, setNewItemPrice] = useState<number>(1200);
   const [newItemQuantity, setNewItemQuantity] = useState<number>(5);
   const [newItemExpiryHours, setNewItemExpiryHours] = useState<number>(2.0);
-  const [newItemImageUrl, setNewItemImageUrl] = useState<string>(PRESET_IMAGES.grocery);
+  const [newItemImageUrl, setNewItemImageUrl] = useState<string>(PRESET_IMAGES.bakery);
 
   // CSV Report Generator
   const handleExportCsvReport = () => {
@@ -124,6 +127,9 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       const apiRes = await addRetailerItemApi({
         name: newItemName,
         category: newItemCategory,
+        flavorProfile: newItemFlavor,
+        isMysteryBag: newItemIsMystery,
+        pickupWindowText: newItemPickupSlot.trim() || undefined,
         originalPricePkr: newItemPrice,
         quantity: newItemQuantity,
         expiryHoursLeft: newItemExpiryHours,
@@ -136,12 +142,17 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
         id: createdDeal?.id || createdDeal?._id,
         title: newItemName,
         category: newItemCategory,
+        flavorProfile: newItemFlavor,
+        isMysteryBag: newItemIsMystery,
         originalPricePkr: newItemPrice,
         currentPricePkr: createdDeal?.currentDiscountedPricePkr ?? Math.round(newItemPrice * 0.4),
         discountPercent: createdDeal?.discountPercent ?? 60,
         expiryHoursLeft: newItemExpiryHours,
         stockQuantity: newItemQuantity,
-        pickupDeadline: createdDeal?.pickupWindowText || `Pick up within ${newItemExpiryHours} hrs`,
+        pickupDeadline:
+          createdDeal?.pickupWindowText ||
+          newItemPickupSlot.trim() ||
+          `Pick up within ${newItemExpiryHours} hrs`,
         distanceKm: 0.5,
         imageUrl: imgUrl,
         isVerified: true,
@@ -149,7 +160,8 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
           x: 50,
           y: 50,
           address: selectedStore?.address || '',
-          city: selectedStore?.city || 'Lahore',
+          city: selectedStore?.city || 'Islamabad',
+          sector: selectedStore?.sector || '',
         },
         decaySchedule: createdDeal?.decaySchedule || [],
         hoursRemaining: newItemExpiryHours,
@@ -157,6 +169,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
       setIsAddItemOpen(false);
       setNewItemName('');
+      setNewItemPickupSlot('');
     } catch (err: any) {
       setAddItemError(err?.message || 'Could not save listing. Please make sure you are signed in as a Retailer.');
     }
@@ -752,6 +765,42 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                   />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-600 mb-1 font-medium">Flavor Profile:</label>
+                  <select
+                    value={newItemFlavor}
+                    onChange={(e) => setNewItemFlavor(e.target.value as any)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
+                  >
+                    <option value="mixed">🍱 Mixed Box</option>
+                    <option value="sweet">🥐 Sweet / Desserts</option>
+                    <option value="savory">🍗 Savory / Meals</option>
+                    <option value="drinks">☕ Drinks &amp; Café</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-600 mb-1 font-medium">Pickup Time Slot:</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 9:00 PM - 11:00 PM"
+                    value={newItemPickupSlot}
+                    onChange={(e) => setNewItemPickupSlot(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 text-xs text-stone-700 font-semibold cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newItemIsMystery}
+                  onChange={(e) => setNewItemIsMystery(e.target.checked)}
+                  className="rounded border-stone-300 text-[#1b4332]"
+                />
+                <span>List as Surprise Mystery Box (closing assortment)</span>
+              </label>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

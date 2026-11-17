@@ -32,6 +32,7 @@ import {
   overrideDealPrice,
   deleteDeal,
 } from './controllers/retailerController.js';
+import { createPartnerLead, validatePartnerLeadBody } from './controllers/partnerLeadController.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -80,7 +81,8 @@ function formatMemRetailerDto(retailer: any) {
     name: retailer.name,
     category: retailer.category,
     address: retailer.location?.address || '',
-    city: retailer.location?.city || 'Lahore',
+    city: retailer.location?.city || 'Islamabad',
+    sector: retailer.location?.sector || '',
     isVerified: Boolean(retailer.isVerified),
     rating: retailer.rating ?? 5.0,
     totalRecoveredPkr: retailer.totalRecoveredPkr ?? 0,
@@ -105,7 +107,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     return;
   }
 
-  const { name, password, role, storeName, storeCategory, storeAddress, city, phone } = req.body;
+  const { name, password, role, storeName, storeCategory, storeAddress, city, sector, phone } = req.body;
   const normalizedEmail = validation.normalizedEmail;
   const normalizedPhone = normalizePhone(phone);
 
@@ -131,7 +133,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
   let newRetailer = null;
   if (newUser.role === 'retailer') {
     const storeCity = String(city).trim();
-    const baseCoords = CITY_COORDINATES[storeCity] || CITY_COORDINATES.Lahore;
+    const baseCoords = CITY_COORDINATES[storeCity] || CITY_COORDINATES.Islamabad;
     const safeCategory = ALLOWED_STORE_CATEGORIES.includes(storeCategory)
       ? (storeCategory as 'grocery' | 'bakery' | 'restaurant')
       : 'grocery';
@@ -146,6 +148,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
         lng: baseCoords.lng,
         address: String(storeAddress).trim(),
         city: storeCity,
+        sector: String(sector || '').trim(),
       },
       isVerified: true,
       rating: 5.0,
@@ -252,6 +255,36 @@ app.get('/api/stores', async (_req: Request, res: Response) => {
   res.json(memDb.retailers.map(formatMemRetailerDto));
 });
 
+// 2c. Partner Lead Application Endpoint (For Bakeries, Cafes & Restaurants)
+app.post('/api/partner-leads', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await createPartnerLead(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB partnerLead fallback to memDb:', mongoErr);
+    }
+  }
+
+  const check = validatePartnerLeadBody(req.body);
+  if (!check.valid || !check.data) {
+    res.status(400).json({ error: check.error });
+    return;
+  }
+
+  const lead = {
+    id: `lead-${Date.now()}`,
+    ...check.data,
+    status: 'new',
+    createdAt: new Date().toISOString(),
+  };
+  memDb.partnerLeads.unshift(lead);
+  res.status(201).json({
+    message: 'Application received! Our BiteHour team will reach out shortly.',
+    lead: { id: lead.id, businessName: lead.businessName, city: lead.city, sector: lead.sector, status: lead.status },
+  });
+});
+
 // 3. Deals Endpoint (Calculate Rule-Based Time Decay & Filter)
 app.get('/api/deals', async (req: Request, res: Response) => {
   if (isMongoConnected()) {
@@ -312,7 +345,17 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
     }
   }
 
-  const { name, category, originalPricePkr, quantity, expiryHoursLeft, imageUrl } = req.body;
+  const {
+    name,
+    category,
+    flavorProfile,
+    isMysteryBag,
+    pickupWindowText,
+    originalPricePkr,
+    quantity,
+    expiryHoursLeft,
+    imageUrl,
+  } = req.body;
 
   const retailer = memDb.getRetailerByUserId(req.user?.id);
   if (!retailer) {
@@ -331,11 +374,16 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
   const hrs = Math.max(0.5, Number(expiryHoursLeft || 2.0));
   const cat = (category as 'grocery' | 'bakery' | 'restaurant') || 'grocery';
   const qty = Number(quantity);
+  const allowedFlavors = ['savory', 'sweet', 'drinks', 'mixed'];
+  const safeFlavor = allowedFlavors.includes(flavorProfile) ? flavorProfile : 'mixed';
+  const windowLabel = String(pickupWindowText || '').trim() || `Pick up within ${hrs.toFixed(1)} hrs`;
 
   const newItem = {
     id: itemId,
     name: String(name).trim(),
     category: cat,
+    flavorProfile: safeFlavor as 'savory' | 'sweet' | 'drinks' | 'mixed',
+    isMysteryBag: Boolean(isMysteryBag),
     originalPricePkr: price,
     quantity: qty,
     expiryDeadline: new Date(Date.now() + hrs * 3600 * 1000).toISOString(),
@@ -355,7 +403,7 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
     decaySchedule: decay.decaySchedule,
     status: 'active' as const,
     stockQuantity: qty,
-    pickupWindowText: `Pick up within ${hrs.toFixed(1)} hrs`,
+    pickupWindowText: windowLabel,
     hoursRemaining: hrs,
   };
   memDb.deals.unshift(newDeal);

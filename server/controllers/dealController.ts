@@ -34,6 +34,8 @@ export const getDeals = async (req: Request, res: Response): Promise<void> => {
           id: item._id.toString(),
           name: item.name,
           category: item.category,
+          flavorProfile: item.flavorProfile || 'mixed',
+          isMysteryBag: Boolean(item.isMysteryBag),
           originalPricePkr: item.originalPricePkr,
           imageUrl: item.imageUrl,
           expiryDeadline: item.expiryDeadline,

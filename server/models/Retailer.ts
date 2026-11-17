@@ -8,6 +8,7 @@ export interface IRetailer extends Document {
     lng: number;
     address: string;
     city: string;
+    sector?: string;
   };
   isVerified: boolean;
   rating: number;
@@ -25,7 +26,8 @@ const RetailerSchema: Schema = new Schema(
       lat: { type: Number, required: true },
       lng: { type: Number, required: true },
       address: { type: String, required: true },
-      city: { type: String, default: 'Lahore' },
+      city: { type: String, default: 'Islamabad' },
+      sector: { type: String, default: '' },
     },
     isVerified: { type: Boolean, default: true },
     rating: { type: Number, default: 4.8 },

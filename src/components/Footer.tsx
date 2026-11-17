@@ -1,13 +1,19 @@
 import React from 'react';
 import { ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { BiteHourLogo } from './BrandLogo';
+import { InstallPwaBanner } from './InstallPwaBanner';
 
 interface FooterProps {
   totalSavedPkr?: number;
   itemsRescuedCount?: number;
+  onOpenPartnerPage?: () => void;
+  onOpenMerchantPortal?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = () => {
+export const Footer: React.FC<FooterProps> = ({
+  onOpenPartnerPage,
+  onOpenMerchantPortal,
+}) => {
   return (
     <footer className="w-full bg-[#fcfbf9] dark:bg-[#111827] text-stone-700 dark:text-stone-300 pt-12 pb-8 px-4 lg:px-8 border-t border-[#e5e0d8] dark:border-white/10 transition-colors">
       <div className="max-w-7xl mx-auto flex flex-col gap-10">
@@ -42,22 +48,25 @@ export const Footer: React.FC<FooterProps> = () => {
 
         {/* 4-Column Footer Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 items-start">
             <BiteHourLogo compact />
             <p className="text-xs text-stone-500 leading-relaxed font-medium">
               Helping Pakistani bakeries, restaurants, and grocery stores sell daily surplus food at closing-hour discounts.
             </p>
+            <div className="pt-1">
+              <InstallPwaBanner />
+            </div>
           </div>
 
           <div>
             <h4 className="text-xs font-black uppercase tracking-wider text-stone-400 mb-3">
-              Supported Cities
+              Launch Hubs
             </h4>
             <ul className="space-y-1.5 text-xs text-stone-600 font-medium">
+              <li>Islamabad (F-6, F-7, Blue Area, F-10, NUST H-12)</li>
+              <li>Rawalpindi</li>
               <li>Lahore</li>
               <li>Karachi</li>
-              <li>Islamabad</li>
-              <li>Rawalpindi</li>
             </ul>
           </div>
 
@@ -66,10 +75,26 @@ export const Footer: React.FC<FooterProps> = () => {
               For Merchants
             </h4>
             <ul className="space-y-1.5 text-xs text-stone-600 font-medium">
-              <li>Register Bakery or Restaurant</li>
+              <li>
+                <button
+                  type="button"
+                  onClick={onOpenPartnerPage}
+                  className="font-bold text-[#1b4332] hover:text-[#f37021] hover:underline text-left transition-colors"
+                >
+                  For Bakeries &amp; Cafés — Apply Now
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={onOpenMerchantPortal}
+                  className="hover:text-[#1b4332] hover:underline text-left transition-colors"
+                >
+                  Merchant Dashboard Portal
+                </button>
+              </li>
               <li>Time-Decay Surplus Pricing</li>
-              <li>Cashier Pass Verification</li>
-              <li>Merchant Dashboard Portal</li>
+              <li>Cashier Pass Verification (0% Fee)</li>
             </ul>
           </div>
 

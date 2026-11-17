@@ -4,6 +4,10 @@ import { Navbar } from './components/Navbar';
 import { DealMap } from './components/ConsumerApp/DealMap';
 import { DealFeed } from './components/ConsumerApp/DealFeed';
 import { MysteryBagsBanner } from './components/ConsumerApp/MysteryBagsBanner';
+import { HowItWorksSection } from './components/ConsumerApp/HowItWorksSection';
+import { FaqSection } from './components/ConsumerApp/FaqSection';
+import { PartnerPage } from './components/PartnerPage';
+import { InstallPwaBanner } from './components/InstallPwaBanner';
 import { ReservationModal } from './components/ConsumerApp/ReservationModal';
 import { ActivePassesDrawer } from './components/ConsumerApp/ActivePassesDrawer';
 import { WhatsAppModal } from './components/ConsumerApp/WhatsAppModal';
@@ -30,8 +34,23 @@ const STORAGE_KEYS = {
 };
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<AppTab>('consumer');
+  const [activeTab, setActiveTab] = useState<AppTab>(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname === '/partner') return 'partner';
+      if (window.location.pathname === '/merchant') return 'retailer';
+    }
+    return 'consumer';
+  });
   const [selectedCity, setSelectedCity] = useState<PakistanCity>('All Pakistan');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const nextPath =
+      activeTab === 'partner' ? '/partner' : activeTab === 'retailer' ? '/merchant' : '/';
+    if (window.location.pathname !== nextPath) {
+      window.history.replaceState(null, '', nextPath);
+    }
+  }, [activeTab]);
 
   const [deals, setDeals] = useState<DealItem[]>([]);
   const [stores, setStores] = useState<RetailerStore[]>([]);
@@ -129,7 +148,8 @@ export function App() {
         name: `${currentUser?.name || 'Partner'}'s Store`,
         category: partialItem.category || 'grocery',
         address: '',
-        city: selectedCity === 'All Pakistan' ? 'Lahore' : selectedCity,
+        city: selectedCity === 'All Pakistan' ? 'Islamabad' : selectedCity,
+        sector: '',
         rating: 5.0,
       };
 
@@ -141,6 +161,7 @@ export function App() {
       storeRating: merchantStore.rating || 5.0,
       title: partialItem.title || 'Surplus Item',
       category: partialItem.category || merchantStore.category || 'grocery',
+      flavorProfile: partialItem.flavorProfile || 'mixed',
       originalPricePkr: partialItem.originalPricePkr || 0,
       currentPricePkr: partialItem.currentPricePkr || 0,
       discountPercent: partialItem.discountPercent || 0,
@@ -154,10 +175,12 @@ export function App() {
         x: 50,
         y: 50,
         address: merchantStore.address || '',
-        city: merchantStore.city || 'Lahore',
+        city: merchantStore.city || 'Islamabad',
+        sector: merchantStore.sector || '',
       },
       decaySchedule: partialItem.decaySchedule || [],
       hoursRemaining: partialItem.expiryHoursLeft || 2,
+      isMysteryBag: Boolean(partialItem.isMysteryBag),
     };
 
     setDeals((prev) => [newItem, ...prev]);
@@ -332,7 +355,23 @@ export function App() {
 
       {/* Main View Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 pt-5 pb-12">
-        {activeTab === 'retailer' ? (
+        {activeTab === 'partner' ? (
+          <PartnerPage
+            onOpenMerchantRegister={() => {
+              if (currentUser?.role === 'retailer') {
+                setActiveTab('retailer');
+              } else {
+                if (currentUser) handleLogout();
+                setAuthInitialRole('retailer');
+                setIsAuthModalOpen(true);
+              }
+            }}
+            onBackToDeals={() => {
+              setActiveTab('consumer');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        ) : activeTab === 'retailer' ? (
           currentUser?.role === 'retailer' ? (
             <div className="animate-in fade-in duration-300">
               <RetailerDashboard
@@ -396,7 +435,7 @@ export function App() {
                 {/* Top Location & Hold Pill */}
                 <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] inline-flex items-center gap-1.5 self-start mb-3 shadow-2xs">
                   <span className="size-2 rounded-full bg-[#4CAF50] animate-pulse" />
-                  PK Live Surplus Deals &amp; Surprise Bags Across Pakistan | 15-min Guaranteed Hold
+                  Islamabad Launch • Live Surplus Deals &amp; Surprise Bags | 15-min Hold
                 </span>
 
                 {/* Big Editorial Headline */}
@@ -406,11 +445,11 @@ export function App() {
 
                 {/* Subtitle with Pakistani rails */}
                 <p className="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-2xl mb-4 font-medium">
-                  Pakistani bakeries, restaurants, and grocery stores list fresh daily surplus items at steep discounts before closing. Pay easily via <strong>JazzCash, EasyPaisa, or Cash on Pickup</strong> with a 15-minute counter hold.
+                  Local bakeries, cafés, restaurants, and groceries list fresh same-day surplus before closing. Reserve on web in 15 seconds (zero app needed) and pay via <strong>Cash on Pickup, JazzCash, or EasyPaisa</strong>.
                 </p>
 
                 {/* Trust Guarantee Badges */}
-                <div className="flex flex-wrap items-center gap-2.5 text-xs text-stone-600 font-bold">
+                <div className="flex flex-wrap items-center gap-2.5 text-xs text-stone-600 font-bold mb-4">
                   <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs">
                     <CheckCircle2 className="size-3.5 text-[#2e7d32]" />
                     Verified Store Surplus
@@ -421,8 +460,25 @@ export function App() {
                   </span>
                   <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs">
                     <ShieldCheck className="size-3.5 text-[#2e7d32]" />
-                    Direct Counter Pickup
+                    Sweet / Savory &amp; Exact Slots
                   </span>
+                </div>
+
+                {/* PWA Install & Partner B2B Quick Actions */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <InstallPwaBanner />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('partner');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#fff3e0] hover:bg-[#ffe0b2] text-[#b45309] border border-[#f59e0b]/40 text-xs font-black shadow-2xs transition-all"
+                  >
+                    <Store className="size-3.5 text-[#f37021]" />
+                    <span>For Bakeries &amp; Cafés (0% Launch Fee)</span>
+                    <ArrowRight className="size-3.5" />
+                  </button>
                 </div>
               </div>
 
@@ -485,7 +541,12 @@ export function App() {
             {/* Filterable Deal Feed Grid */}
             <DealFeed
               deals={filteredDealsByCity}
+              selectedCity={selectedCity}
               onReserveDeal={handleOpenReserveModal}
+              onOpenPartnerPage={() => {
+                setActiveTab('partner');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
               onSelectDeal={(deal) => {
                 const store =
                   stores.find((s) => s.id === deal.storeId || s.name === deal.storeName) || {
@@ -494,6 +555,7 @@ export function App() {
                     category: deal.storeType,
                     address: deal.location.address,
                     city: deal.location.city,
+                    sector: deal.location.sector,
                     isVerified: deal.isVerified,
                     rating: deal.storeRating,
                     totalRecoveredPkr: 0,
@@ -508,6 +570,17 @@ export function App() {
               mysteryDeal={deals.find((d) => d.isMysteryBag)}
               onClaimMysteryBag={handleOpenReserveModal}
             />
+
+            {/* 4-Step Editorial How BiteHour Works Guide */}
+            <HowItWorksSection
+              onOpenPartnerPage={() => {
+                setActiveTab('partner');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+
+            {/* Transparent Consumer & Merchant FAQ Accordion */}
+            <FaqSection />
 
           </div>
         )}
@@ -569,6 +642,14 @@ export function App() {
       <Footer
         totalSavedPkr={totalSavedPkr}
         itemsRescuedCount={itemsRescuedCount}
+        onOpenPartnerPage={() => {
+          setActiveTab('partner');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenMerchantPortal={() => {
+          setActiveTab('retailer');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
     </div>

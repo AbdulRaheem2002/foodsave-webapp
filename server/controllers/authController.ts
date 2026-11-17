@@ -19,7 +19,8 @@ function formatRetailerDto(retailer: any) {
     name: retailer.name,
     category: retailer.category,
     address: retailer.location?.address || '',
-    city: retailer.location?.city || 'Lahore',
+    city: retailer.location?.city || 'Islamabad',
+    sector: retailer.location?.sector || '',
     isVerified: Boolean(retailer.isVerified),
     rating: retailer.rating ?? 5.0,
     totalRecoveredPkr: retailer.totalRecoveredPkr ?? 0,
@@ -35,7 +36,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const { name, password, role, storeName, storeCategory, storeAddress, city, phone } = req.body;
+    const { name, password, role, storeName, storeCategory, storeAddress, city, sector, phone } = req.body;
     const normalizedEmail = validation.normalizedEmail;
     const normalizedPhone = normalizePhone(phone);
 
@@ -58,7 +59,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     let retailerProfile = null;
     if (user.role === 'retailer') {
       const storeCity = String(city).trim();
-      const baseCoords = CITY_COORDINATES[storeCity] || CITY_COORDINATES.Lahore;
+      const baseCoords = CITY_COORDINATES[storeCity] || CITY_COORDINATES.Islamabad;
       const safeCategory = ALLOWED_STORE_CATEGORIES.includes(storeCategory) ? storeCategory : 'grocery';
 
       retailerProfile = await Retailer.create({
@@ -69,6 +70,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
           lng: baseCoords.lng,
           address: String(storeAddress).trim(),
           city: storeCity,
+          sector: String(sector || '').trim(),
         },
         contactPhone: normalizedPhone,
         rating: 5.0,

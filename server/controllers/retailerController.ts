@@ -39,9 +39,21 @@ export const getRetailerProfile = async (req: AuthRequest, res: Response): Promi
   }
 };
 
+const ALLOWED_FLAVORS = ['savory', 'sweet', 'drinks', 'mixed'] as const;
+
 export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { name, category, originalPricePkr, quantity, expiryHoursLeft, imageUrl } = req.body;
+    const {
+      name,
+      category,
+      flavorProfile,
+      isMysteryBag,
+      pickupWindowText,
+      originalPricePkr,
+      quantity,
+      expiryHoursLeft,
+      imageUrl,
+    } = req.body;
 
     const retailer = await resolveRetailerForUser(req.user?.id);
     if (!retailer) {
@@ -55,15 +67,21 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const expiryDeadline = new Date(Date.now() + (expiryHoursLeft || 2) * 3600 * 1000);
+    const safeFlavor = ALLOWED_FLAVORS.includes(flavorProfile) ? flavorProfile : 'mixed';
+    const windowLabel =
+      String(pickupWindowText || '').trim() ||
+      `Pick up within ${Number(expiryHoursLeft || 2).toFixed(1)} hrs`;
 
     const item = await Item.create({
-      name,
+      name: String(name).trim(),
       category: category || 'grocery',
+      flavorProfile: safeFlavor,
+      isMysteryBag: Boolean(isMysteryBag),
       originalPricePkr: Number(originalPricePkr),
       quantity: Number(quantity || 1),
       expiryDeadline,
       retailerRef: retailer._id,
-      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=800&q=80',
+      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
     });
 
     const decay = calculateTimeDecay(Number(originalPricePkr), Number(expiryHoursLeft || 2), category || 'grocery');
@@ -76,7 +94,7 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
       decaySchedule: decay.decaySchedule,
       status: 'active',
       stockQuantity: Number(quantity || 1),
-      pickupWindowText: `Pick up within ${Number(expiryHoursLeft || 2).toFixed(1)} hrs`,
+      pickupWindowText: windowLabel,
     });
 
     res.status(201).json({
@@ -85,6 +103,8 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
         id: item._id.toString(),
         name: item.name,
         category: item.category,
+        flavorProfile: item.flavorProfile,
+        isMysteryBag: item.isMysteryBag,
         originalPricePkr: item.originalPricePkr,
         quantity: item.quantity,
         imageUrl: item.imageUrl,

@@ -4,9 +4,9 @@ export interface AuthValidationResult {
   normalizedEmail?: string;
 }
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PASSWORD_STRONG_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,72}$/;
-const PK_PHONE_REGEX = /^(\+92|0)(3\d{9}|[2-9]\d{8,10})$/;
+export const PK_PHONE_REGEX = /^(\+92|0)(3\d{9}|[2-9]\d{8,10})$/;
 
 export const ALLOWED_STORE_CATEGORIES = ['grocery', 'bakery', 'restaurant'] as const;
 export const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {

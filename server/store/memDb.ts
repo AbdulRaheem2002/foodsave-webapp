@@ -16,7 +16,7 @@ export interface MemRetailer {
   userId?: string;
   name: string;
   category: 'grocery' | 'bakery' | 'restaurant';
-  location: { lat: number; lng: number; address: string; city: string };
+  location: { lat: number; lng: number; address: string; city: string; sector?: string };
   isVerified: boolean;
   rating: number;
   contactPhone: string;
@@ -28,6 +28,8 @@ export interface MemItem {
   id: string;
   name: string;
   category: 'grocery' | 'bakery' | 'restaurant';
+  flavorProfile?: 'savory' | 'sweet' | 'drinks' | 'mixed';
+  isMysteryBag?: boolean;
   originalPricePkr: number;
   quantity: number;
   expiryDeadline: string;
@@ -70,6 +72,7 @@ class MemoryDatabase {
   items: MemItem[] = [];
   deals: MemDeal[] = [];
   reservations: MemReservation[] = [];
+  partnerLeads: any[] = [];
 
   getRetailerByUserId(userId?: string): MemRetailer | undefined {
     if (!userId) return undefined;

@@ -16,10 +16,10 @@ interface NavbarProps {
 
 const CITIES: { label: string; value: PakistanCity }[] = [
   { label: 'All Cities', value: 'All Pakistan' },
-  { label: 'Karachi', value: 'Karachi' },
-  { label: 'Lahore', value: 'Lahore' },
   { label: 'Islamabad', value: 'Islamabad' },
   { label: 'Rawalpindi', value: 'Rawalpindi' },
+  { label: 'Lahore', value: 'Lahore' },
+  { label: 'Karachi', value: 'Karachi' },
 ];
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -73,7 +73,19 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            
+            {/* For Cafes & Bakeries Landing Tab */}
+            <button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'partner' ? 'consumer' : 'partner')}
+              className={`hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold border transition-all whitespace-nowrap ${
+                activeTab === 'partner'
+                  ? 'bg-[#edf7ed] border-[#1b4332]/40 text-[#1b4332]'
+                  : 'bg-[#fff8f1] border-[#fed7aa] text-[#c2410c] hover:bg-[#ffedd5]'
+              }`}
+            >
+              <span>For Bakeries</span>
+            </button>
+
             {/* Merchant / Consumer Switch */}
             <button
               type="button"

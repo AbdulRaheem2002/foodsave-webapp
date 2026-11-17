@@ -1,11 +1,13 @@
 export type CategoryType = 'All' | 'grocery' | 'bakery' | 'restaurant' | 'mystery-bag';
-export type PakistanCity = 'All Pakistan' | 'Lahore' | 'Karachi' | 'Islamabad' | 'Rawalpindi';
+export type FlavorType = 'All' | 'savory' | 'sweet' | 'drinks' | 'mixed';
+export type PakistanCity = 'All Pakistan' | 'Islamabad' | 'Rawalpindi' | 'Lahore' | 'Karachi';
 
 export interface LocationCoordinates {
   x: number;
   y: number;
   address: string;
   city: string;
+  sector?: string;
 }
 
 export interface DecayPoint {
@@ -31,6 +33,7 @@ export interface DealItem {
   reviewsCount?: number;
   title: string;
   category: 'grocery' | 'bakery' | 'restaurant';
+  flavorProfile?: 'savory' | 'sweet' | 'drinks' | 'mixed';
   originalPricePkr: number;
   currentPricePkr: number;
   discountPercent: number;
@@ -55,13 +58,14 @@ export interface RetailerStore {
   category: 'grocery' | 'bakery' | 'restaurant';
   address: string;
   city: string;
+  sector?: string;
   isVerified: boolean;
   rating: number;
   totalRecoveredPkr: number;
   totalWastedValueAvoidedPkr: number;
 }
 
-export type AppTab = 'consumer' | 'retailer';
+export type AppTab = 'consumer' | 'retailer' | 'partner';
 
 export interface Reservation {
   id: string;

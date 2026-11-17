@@ -87,6 +87,8 @@ export async function fetchDealsApi(category?: string, minDiscount?: number): Pr
         storeRating: d.retailer?.rating ?? 5.0,
         title: d.item?.name || 'Surplus Item',
         category: cat,
+        flavorProfile: d.item?.flavorProfile || 'mixed',
+        isMysteryBag: Boolean(d.item?.isMysteryBag),
         originalPricePkr: d.item?.originalPricePkr || 0,
         currentPricePkr: d.currentDiscountedPricePkr || 0,
         discountPercent: d.discountPercent || 0,
@@ -100,7 +102,8 @@ export async function fetchDealsApi(category?: string, minDiscount?: number): Pr
           x: deterministicCoord(idSeed, 13),
           y: deterministicCoord(idSeed, 37),
           address: d.retailer?.location?.address || '',
-          city: d.retailer?.location?.city || 'Lahore',
+          city: d.retailer?.location?.city || 'Islamabad',
+          sector: d.retailer?.location?.sector || '',
         },
         decaySchedule: d.decaySchedule || [],
         hoursRemaining: d.hoursRemaining || 2.0,
@@ -244,6 +247,7 @@ export async function registerAuthApi(userData: {
   storeCategory?: 'grocery' | 'bakery' | 'restaurant';
   storeAddress?: string;
   city?: string;
+  sector?: string;
 }) {
   const res = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
@@ -253,6 +257,28 @@ export async function registerAuthApi(userData: {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error || 'Registration failed');
+  }
+  return data;
+}
+
+export async function submitPartnerLeadApi(leadData: {
+  ownerName: string;
+  businessName: string;
+  businessType: 'bakery' | 'cafe' | 'restaurant' | 'grocery' | 'dessert';
+  city: string;
+  sector: string;
+  phone: string;
+  email?: string;
+  notes?: string;
+}) {
+  const res = await fetch(`${API_BASE_URL}/partner-leads`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(leadData),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Could not submit partner application.');
   }
   return data;
 }

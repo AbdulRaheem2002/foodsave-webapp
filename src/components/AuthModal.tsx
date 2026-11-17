@@ -51,7 +51,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [storeName, setStoreName] = useState('');
   const [storeCategory, setStoreCategory] = useState<'grocery' | 'bakery' | 'restaurant'>('bakery');
   const [storeAddress, setStoreAddress] = useState('');
-  const [city, setCity] = useState('Lahore');
+  const [city, setCity] = useState('Islamabad');
+  const [sector, setSector] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
@@ -173,6 +174,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           storeCategory: role === 'retailer' ? storeCategory : undefined,
           storeAddress: role === 'retailer' ? storeAddress.trim() : undefined,
           city: role === 'retailer' ? city : undefined,
+          sector: role === 'retailer' ? sector.trim() : undefined,
         });
         if (!res.user || !res.token) {
           throw new Error(res.error || 'Registration failed. Please try again.');
@@ -488,12 +490,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         onChange={(e) => setCity(e.target.value)}
                         className="w-full px-3 py-2 rounded-xl bg-white border border-stone-200 text-stone-900 text-xs font-semibold focus:outline-none focus:border-[#f37021]"
                       >
-                        <option value="Lahore">Lahore</option>
-                        <option value="Karachi">Karachi</option>
                         <option value="Islamabad">Islamabad</option>
                         <option value="Rawalpindi">Rawalpindi</option>
+                        <option value="Lahore">Lahore</option>
+                        <option value="Karachi">Karachi</option>
                       </select>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-stone-700 mb-1 font-semibold">Sector / Neighborhood (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. F-7 Markaz, F-6, Blue Area, H-12 NUST"
+                      value={sector}
+                      onChange={(e) => setSector(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-stone-200 text-stone-900 text-xs font-semibold focus:outline-none focus:border-[#f37021]"
+                    />
                   </div>
 
                   <div>
