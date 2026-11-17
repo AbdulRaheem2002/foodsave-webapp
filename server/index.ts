@@ -4,34 +4,34 @@ import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
-import { connectDB, isMongoConnected } from './config/db';
-import { memDb } from './store/memDb';
-import { Retailer } from './models/Retailer';
-import { calculateTimeDecay } from './utils/decayCalculator';
+import { connectDB, isMongoConnected } from './config/db.js';
+import { memDb } from './store/memDb.js';
+import { Retailer } from './models/Retailer.js';
+import { calculateTimeDecay } from './utils/decayCalculator.js';
 import {
   validateRegisterPayload,
   validateLoginPayload,
   normalizePhone,
   CITY_COORDINATES,
   ALLOWED_STORE_CATEGORIES,
-} from './utils/authValidation';
-import { authenticateToken, optionalAuth, requireRetailer, getJwtSecret, type AuthRequest } from './middleware/auth';
+} from './utils/authValidation.js';
+import { authenticateToken, optionalAuth, requireRetailer, getJwtSecret, type AuthRequest } from './middleware/auth.js';
 
 // Mongoose MongoDB Controllers
-import { register, login } from './controllers/authController';
-import { getDeals } from './controllers/dealController';
+import { register, login } from './controllers/authController.js';
+import { getDeals } from './controllers/dealController.js';
 import {
   createReservation,
   getMyReservations,
   verifyPickupCode,
   updateReservationStatus,
-} from './controllers/reservationController';
+} from './controllers/reservationController.js';
 import {
   getRetailerProfile,
   addItemAndDeal,
   overrideDealPrice,
   deleteDeal,
-} from './controllers/retailerController';
+} from './controllers/retailerController.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;

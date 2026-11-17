@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs';
-import { User } from '../models/User';
-import { Retailer } from '../models/Retailer';
-import { Item } from '../models/Item';
-import { Deal } from '../models/Deal';
-import { calculateTimeDecay } from '../utils/decayCalculator';
+import { User } from '../models/User.js';
+import { Retailer } from '../models/Retailer.js';
+import { Item } from '../models/Item.js';
+import { Deal } from '../models/Deal.js';
+import { calculateTimeDecay } from '../utils/decayCalculator.js';
 
 export async function seedDatabase() {
   console.log('🌱 Checking seed data status...');

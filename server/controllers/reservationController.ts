@@ -1,10 +1,10 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
-import { Reservation } from '../models/Reservation';
-import { Deal } from '../models/Deal';
-import { User } from '../models/User';
-import { Retailer } from '../models/Retailer';
-import type { AuthRequest } from '../middleware/auth';
+import { Reservation } from '../models/Reservation.js';
+import { Deal } from '../models/Deal.js';
+import { User } from '../models/User.js';
+import { Retailer } from '../models/Retailer.js';
+import type { AuthRequest } from '../middleware/auth.js';
 
 export const createReservation = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

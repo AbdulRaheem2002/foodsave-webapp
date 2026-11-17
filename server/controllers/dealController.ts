@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { Deal } from '../models/Deal';
-import { calculateTimeDecay } from '../utils/decayCalculator';
+import { Deal } from '../models/Deal.js';
+import { calculateTimeDecay } from '../utils/decayCalculator.js';
 
 
 export const getDeals = async (req: Request, res: Response): Promise<void> => {

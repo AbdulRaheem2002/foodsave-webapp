@@ -1,16 +1,16 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { User } from '../models/User';
-import { Retailer } from '../models/Retailer';
-import { getJwtSecret } from '../middleware/auth';
+import { User } from '../models/User.js';
+import { Retailer } from '../models/Retailer.js';
+import { getJwtSecret } from '../middleware/auth.js';
 import {
   validateRegisterPayload,
   validateLoginPayload,
   normalizePhone,
   CITY_COORDINATES,
   ALLOWED_STORE_CATEGORIES,
-} from '../utils/authValidation';
+} from '../utils/authValidation.js';
 
 function formatRetailerDto(retailer: any) {
   if (!retailer) return null;

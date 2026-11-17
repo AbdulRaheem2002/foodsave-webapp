@@ -1,11 +1,11 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
-import { Retailer } from '../models/Retailer';
-import { Item } from '../models/Item';
-import { Deal } from '../models/Deal';
-import { Reservation } from '../models/Reservation';
-import { calculateTimeDecay } from '../utils/decayCalculator';
-import type { AuthRequest } from '../middleware/auth';
+import { Retailer } from '../models/Retailer.js';
+import { Item } from '../models/Item.js';
+import { Deal } from '../models/Deal.js';
+import { Reservation } from '../models/Reservation.js';
+import { calculateTimeDecay } from '../utils/decayCalculator.js';
+import type { AuthRequest } from '../middleware/auth.js';
 
 async function resolveRetailerForUser(userId?: string) {
   if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {

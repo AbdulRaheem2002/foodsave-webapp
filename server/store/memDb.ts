@@ -1,4 +1,4 @@
-import { calculateTimeDecay } from '../utils/decayCalculator';
+import { calculateTimeDecay } from '../utils/decayCalculator.js';
 
 export interface MemUser {
   id: string;
