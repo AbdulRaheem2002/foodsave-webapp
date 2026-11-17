@@ -240,7 +240,9 @@ export function App() {
       console.warn('LocalStorage token error:', e);
     }
     refreshMarketplaceData();
-    if (pendingReserveDeal) {
+    if (user.role === 'retailer') {
+      setActiveTab('retailer');
+    } else if (pendingReserveDeal) {
       setReserveModalDeal(pendingReserveDeal);
       setPendingReserveDeal(null);
     }

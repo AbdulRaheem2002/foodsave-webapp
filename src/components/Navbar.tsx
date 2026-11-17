@@ -73,39 +73,47 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Partner Onboarding Page (for new bakeries & cafes) */}
+            {/* Single Smart Business Action: For Bakeries (/partner), Store POS (logged-in retailer), or ← Live Deals */}
             <button
               type="button"
-              onClick={() => setActiveTab(activeTab === 'partner' ? 'consumer' : 'partner')}
-              className={`hidden md:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold border transition-all whitespace-nowrap ${
-                activeTab === 'partner'
-                  ? 'bg-[#f37021] border-[#f37021] text-white shadow-xs'
-                  : 'bg-[#edf7ed]/80 border-[#1b4332]/20 text-[#1b4332] hover:bg-[#dcf2dc]'
-              }`}
-            >
-              <span>{activeTab === 'partner' ? '← Back to Deals' : 'Partner With Us'}</span>
-            </button>
-
-            {/* Existing Store POS Switch */}
-            <button
-              type="button"
-              onClick={() => setActiveTab(activeTab === 'retailer' ? 'consumer' : 'retailer')}
-              title={activeTab === 'retailer' ? 'Back to Consumer Marketplace' : 'Registered Store POS Dashboard'}
+              onClick={() => {
+                if (activeTab !== 'consumer') {
+                  setActiveTab('consumer');
+                } else {
+                  setActiveTab(currentUser?.role === 'retailer' ? 'retailer' : 'partner');
+                }
+              }}
+              title={
+                activeTab !== 'consumer'
+                  ? 'Back to Live Deals'
+                  : currentUser?.role === 'retailer'
+                  ? 'Open Your Store POS Dashboard'
+                  : 'For Bakeries, Cafés & Restaurants'
+              }
               className={`px-3 sm:px-3.5 py-2 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                activeTab === 'retailer'
+                activeTab !== 'consumer'
                   ? 'bg-stone-900 border-stone-900 text-white hover:bg-stone-800 shadow-xs'
-                  : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50 hover:border-stone-300'
+                  : currentUser?.role === 'retailer'
+                  ? 'bg-[#edf7ed] border-[#1b4332]/25 text-[#1b4332] hover:bg-[#dcf2dc]'
+                  : 'bg-[#fff8f1] border-[#fed7aa] text-[#c2410c] hover:bg-[#ffedd5]'
               }`}
             >
-              {activeTab === 'retailer' ? (
+              {activeTab !== 'consumer' ? (
                 <>
                   <ArrowLeft className="size-3.5" />
                   <span className="hidden sm:inline">Live Deals</span>
+                  <span className="sm:hidden">Deals</span>
+                </>
+              ) : currentUser?.role === 'retailer' ? (
+                <>
+                  <Store className="size-3.5 text-[#1b4332]" />
+                  <span>Store POS</span>
                 </>
               ) : (
                 <>
-                  <Store className="size-3.5 text-stone-500" />
-                  <span className="hidden sm:inline">Store POS</span>
+                  <Store className="size-3.5 text-[#f37021]" />
+                  <span className="hidden sm:inline">For Bakeries</span>
+                  <span className="sm:hidden">Bakeries</span>
                 </>
               )}
             </button>
@@ -156,40 +164,26 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Mobile / Tablet City & Quick Partner Row */}
-        <div className="flex lg:hidden items-center justify-between gap-2 pb-2.5 pt-1">
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1">
-            <MapPin className="size-3.5 text-stone-400 shrink-0" />
-            {CITIES.map((c) => {
-              const isActive = selectedCity === c.value;
-              return (
-                <button
-                  key={c.value}
-                  type="button"
-                  onClick={() => setSelectedCity(c.value)}
-                  className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap shrink-0 ${
-                    isActive
-                      ? 'bg-[#1b4332] text-white'
-                      : 'bg-stone-100 text-stone-600 hover:text-stone-900'
-                  }`}
-                >
-                  {c.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab(activeTab === 'partner' ? 'consumer' : 'partner')}
-            className={`md:hidden shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold border whitespace-nowrap ${
-              activeTab === 'partner'
-                ? 'bg-[#f37021] border-[#f37021] text-white'
-                : 'bg-[#edf7ed] border-[#1b4332]/20 text-[#1b4332]'
-            }`}
-          >
-            {activeTab === 'partner' ? '← Deals' : 'Partner'}
-          </button>
+        {/* Mobile / Tablet City Selector Row */}
+        <div className="flex lg:hidden items-center gap-1.5 pb-2.5 pt-1 overflow-x-auto scrollbar-none">
+          <MapPin className="size-3.5 text-stone-400 shrink-0" />
+          {CITIES.map((c) => {
+            const isActive = selectedCity === c.value;
+            return (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setSelectedCity(c.value)}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap shrink-0 ${
+                  isActive
+                    ? 'bg-[#1b4332] text-white'
+                    : 'bg-stone-100 text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                {c.label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </header>

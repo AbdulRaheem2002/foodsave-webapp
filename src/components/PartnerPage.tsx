@@ -89,13 +89,24 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
         {/* Left: B2B Pitch Column */}
         <div className="lg:col-span-6 space-y-6">
           <div className="flex flex-col items-start gap-3">
-            <button
-              type="button"
-              onClick={onBackToDeals}
-              className="text-xs font-bold text-[#1b4332] hover:underline inline-flex items-center gap-1"
-            >
-              ← Back to Live Deals
-            </button>
+            <div className="w-full flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={onBackToDeals}
+                className="text-xs font-bold text-[#1b4332] hover:underline inline-flex items-center gap-1"
+              >
+                ← Back to Live Deals
+              </button>
+              {onOpenStoreLogin && (
+                <button
+                  type="button"
+                  onClick={onOpenStoreLogin}
+                  className="text-xs font-bold text-[#e65100] hover:underline inline-flex items-center gap-1"
+                >
+                  <span>Already a partner? Store POS Login →</span>
+                </button>
+              )}
+            </div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#fff3e0] text-[#e65100] border border-[#ffe0b2] text-xs font-black">
               <Store className="size-3.5" />
               <span>For Bakeries, Cafés &amp; Restaurants</span>
