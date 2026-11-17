@@ -101,7 +101,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       d.currentPricePkr,
       `${d.discountPercent}%`,
       d.stockQuantity,
-      d.location.city || selectedStore?.city || 'Lahore',
+      d.location.city || selectedStore?.city || 'Islamabad',
     ]);
 
     const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -346,9 +346,9 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         
         {/* Metric 1: ₨ Recovered */}
-        <div className="bg-white dark:bg-[#182230] p-5 rounded-2xl border border-[#2D6A4F]/15 dark:border-white/10 flex items-start justify-between shadow-2xs">
+        <div className="bg-white p-5 rounded-2xl border border-[#2D6A4F]/15 flex items-start justify-between shadow-2xs">
           <div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mb-1">Daily Recovery Total</span>
+            <span className="text-xs text-slate-500 font-medium block mb-1">Daily Recovery Total</span>
             <div className="text-2xl font-black text-[#FF9800] tracking-tight mb-1">
               {formatCurrency(selectedStore.totalRecoveredPkr)}
             </div>
@@ -362,25 +362,25 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
         </div>
 
         {/* Metric 2: Wasted Value Avoided */}
-        <div className="bg-white dark:bg-[#182230] p-5 rounded-2xl border border-[#2D6A4F]/15 dark:border-white/10 flex items-start justify-between shadow-2xs">
+        <div className="bg-white p-5 rounded-2xl border border-[#2D6A4F]/15 flex items-start justify-between shadow-2xs">
           <div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mb-1">Wasted Value Diverted</span>
-            <div className="text-2xl font-black text-[#2D6A4F] dark:text-[#4CAF50] tracking-tight mb-1">
+            <span className="text-xs text-slate-500 font-medium block mb-1">Wasted Value Diverted</span>
+            <div className="text-2xl font-black text-[#2D6A4F] tracking-tight mb-1">
               {formatCurrency(selectedStore.totalWastedValueAvoidedPkr)}
             </div>
             <span className="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
               <Leaf className="size-3.5 text-[#4CAF50]" /> Edible Food Rescued
             </span>
           </div>
-          <div className="p-3 rounded-2xl bg-[#2D6A4F]/15 text-[#2D6A4F] dark:text-[#4CAF50]">
+          <div className="p-3 rounded-2xl bg-[#2D6A4F]/15 text-[#2D6A4F]">
             <Leaf className="size-6" />
           </div>
         </div>
 
         {/* Metric 3: NGO Charity Donations */}
-        <div className="bg-white dark:bg-[#182230] p-5 rounded-2xl border border-[#2D6A4F]/15 dark:border-white/10 flex items-start justify-between shadow-2xs">
+        <div className="bg-white p-5 rounded-2xl border border-[#2D6A4F]/15 flex items-start justify-between shadow-2xs">
           <div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mb-1">NGO Rescue Donations</span>
+            <span className="text-xs text-slate-500 font-medium block mb-1">NGO Rescue Donations</span>
             <div className="text-2xl font-black text-rose-500 tracking-tight mb-1">
               {donationsList.length} Dispatched
             </div>
@@ -394,10 +394,10 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
         </div>
 
         {/* Metric 4: Rule Decay Proof */}
-        <div className="bg-white dark:bg-[#182230] p-5 rounded-2xl border border-[#2D6A4F]/15 dark:border-white/10 flex items-start justify-between shadow-2xs">
+        <div className="bg-white p-5 rounded-2xl border border-[#2D6A4F]/15 flex items-start justify-between shadow-2xs">
           <div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium block mb-1">Auto Price Decay</span>
-            <div className="text-xl font-black text-[#1F2937] dark:text-[#F9F6F0] tracking-tight mb-1">
+            <span className="text-xs text-slate-500 font-medium block mb-1">Auto Price Decay</span>
+            <div className="text-xl font-black text-[#1F2937] tracking-tight mb-1">
               Rule Active
             </div>
             <p className="text-[11px] text-slate-500 leading-snug">
@@ -457,8 +457,8 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
       {/* Active Surplus Listings Table */}
       <div className="bg-white p-6 rounded-[2rem] border border-[#2D6A4F]/15 shadow-xs">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-black text-[#1F2937] flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h3 className="text-base font-black text-[#1F2937] flex items-center gap-2 flex-wrap">
             <span>Active Store Surplus Listings ({selectedStore.name.split(' ')[0]})</span>
             <span className="px-3 py-0.5 rounded-full text-xs bg-[#2D6A4F]/15 text-[#2D6A4F] border border-[#2D6A4F]/30 font-bold">
               {storeDeals.length} Active
@@ -513,8 +513,8 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
             </thead>
             <tbody className="divide-y divide-[#2D6A4F]/10">
               {storeDeals.map((deal) => (
-                <tr key={deal.id} className="hover:bg-[#F9F6F0]/60 dark:hover:bg-[#1F2937]/50 transition-colors">
-                  <td className="p-3 font-semibold text-[#1F2937] dark:text-[#F9F6F0] flex items-center gap-3">
+                <tr key={deal.id} className="hover:bg-[#F9F6F0]/60 transition-colors">
+                  <td className="p-3 font-semibold text-[#1F2937] flex items-center gap-3">
                     <img src={deal.imageUrl} alt={deal.title} className="size-10 rounded-xl object-cover border border-[#2D6A4F]/15" />
                     <div>
                       <p className="font-bold text-xs truncate max-w-xs">{deal.title}</p>
@@ -522,7 +522,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                     </div>
                   </td>
                   <td className="p-3">
-                    <span className="px-2.5 py-0.5 rounded-full bg-[#F9F6F0] dark:bg-[#1F2937] border border-[#2D6A4F]/20 text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300">
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#F9F6F0] border border-[#2D6A4F]/20 text-[10px] uppercase font-bold text-slate-600">
                       {deal.category}
                     </span>
                   </td>
@@ -537,7 +537,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                       {deal.discountPercent}% OFF
                     </span>
                   </td>
-                  <td className="p-3 font-bold text-[#1F2937] dark:text-[#F9F6F0]">
+                  <td className="p-3 font-bold text-[#1F2937]">
                     {deal.stockQuantity} pcs
                   </td>
                   <td className="p-3 text-right">

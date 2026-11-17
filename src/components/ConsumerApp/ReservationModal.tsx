@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { DealItem, Reservation } from '../../types';
 import { X, MapPin, QrCode, CheckCircle2, Sparkles, Wallet, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
@@ -25,6 +25,13 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const [reserveError, setReserveError] = useState<string | null>(null);
   const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
   const [confirmedReservation, setConfirmedReservation] = useState<Reservation | null>(null);
+
+  useEffect(() => {
+    setQuantity(1);
+    setReserveError(null);
+    setIsConfirmed(false);
+    setConfirmedReservation(null);
+  }, [deal?.id]);
 
   if (!deal) return null;
 
@@ -75,11 +82,11 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#182230] border border-[#2D6A4F]/20 dark:border-white/10 rounded-[2rem] p-6 sm:p-7 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-white border border-[#2D6A4F]/20 rounded-[2rem] p-6 sm:p-7 shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
         
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-[#F9F6F0] dark:bg-[#1F2937] hover:bg-slate-200 text-slate-700 dark:text-slate-300 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-full bg-[#F9F6F0] hover:bg-slate-200 text-slate-700 transition-colors"
         >
           <X className="size-5" />
         </button>
@@ -94,18 +101,18 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             </div>
 
             {/* Item Summary Card */}
-            <div className="flex gap-4 p-3.5 rounded-2xl bg-[#F9F6F0] dark:bg-[#1F2937] border border-[#2D6A4F]/15 dark:border-white/10 items-center">
+            <div className="flex gap-4 p-3.5 rounded-2xl bg-[#F9F6F0] border border-[#2D6A4F]/15 items-center">
               <img
                 src={deal.imageUrl}
                 alt={deal.title}
                 className="size-20 rounded-2xl object-cover border border-[#2D6A4F]/15 flex-shrink-0 shadow-xs"
               />
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-bold text-[#1F2937] dark:text-[#F9F6F0] truncate mb-1">
+                <h3 className="text-sm font-bold text-[#1F2937] truncate mb-1">
                   {deal.title}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1 font-medium">
-                  <MapPin className="size-3.5 text-[#2D6A4F] dark:text-[#4CAF50]" />
+                <p className="text-xs text-slate-500 mb-1 flex items-center gap-1 font-medium">
+                  <MapPin className="size-3.5 text-[#2D6A4F]" />
                   {deal.storeName} ({deal.distanceKm} km away)
                 </p>
                 <div className="flex items-baseline gap-2">
@@ -123,21 +130,21 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             </div>
 
             {/* Quantity Selector */}
-            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F9F6F0] dark:bg-[#1F2937] border border-[#2D6A4F]/15 dark:border-white/10">
-              <span className="text-xs font-semibold text-[#1F2937] dark:text-[#F9F6F0]">Quantity (Max {deal.stockQuantity}):</span>
+            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F9F6F0] border border-[#2D6A4F]/15">
+              <span className="text-xs font-semibold text-[#1F2937]">Quantity (Max {deal.stockQuantity}):</span>
               <div className="flex items-center gap-3">
                 <button
                   disabled={quantity <= 1}
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="size-8 rounded-full bg-white dark:bg-[#141c27] text-slate-700 dark:text-slate-200 font-bold border border-[#2D6A4F]/20 disabled:opacity-40 hover:bg-slate-100 shadow-2xs"
+                  className="size-8 rounded-full bg-white text-slate-700 font-bold border border-[#2D6A4F]/20 disabled:opacity-40 hover:bg-slate-100 shadow-2xs"
                 >
                   -
                 </button>
-                <span className="font-black text-[#1F2937] dark:text-[#F9F6F0] text-sm w-4 text-center">{quantity}</span>
+                <span className="font-black text-[#1F2937] text-sm w-4 text-center">{quantity}</span>
                 <button
                   disabled={quantity >= deal.stockQuantity}
                   onClick={() => setQuantity((q) => Math.min(deal.stockQuantity, q + 1))}
-                  className="size-8 rounded-full bg-white dark:bg-[#141c27] text-slate-700 dark:text-slate-200 font-bold border border-[#2D6A4F]/20 disabled:opacity-40 hover:bg-slate-100 shadow-2xs"
+                  className="size-8 rounded-full bg-white text-slate-700 font-bold border border-[#2D6A4F]/20 disabled:opacity-40 hover:bg-slate-100 shadow-2xs"
                 >
                   +
                 </button>
@@ -228,7 +235,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
           /* Reserved Confirmation View (Boarding-Pass Ticket) */
           <div className="flex flex-col items-center text-center gap-4 py-2 animate-in zoom-in-95 duration-300">
             
-            <div className="size-16 rounded-full bg-[#4CAF50]/15 text-[#2D6A4F] dark:text-[#4CAF50] flex items-center justify-center border border-[#4CAF50]/30">
+            <div className="size-16 rounded-full bg-[#4CAF50]/15 text-[#2D6A4F] flex items-center justify-center border border-[#4CAF50]/30">
               <CheckCircle2 className="size-10" />
             </div>
 
@@ -240,14 +247,14 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             </div>
 
             {/* Pickup Code Voucher Boarding-Pass Card */}
-            <div className="w-full p-5 rounded-3xl bg-[#F9F6F0] dark:bg-[#141c27] text-slate-900 dark:text-slate-100 border-2 border-dashed border-[#2D6A4F]/30 flex flex-col items-center gap-2.5 shadow-sm">
-              <div className="p-3 bg-white dark:bg-[#1F2937] text-[#2D6A4F] dark:text-[#4CAF50] rounded-2xl shadow-xs border border-[#2D6A4F]/20">
+            <div className="w-full p-5 rounded-3xl bg-[#F9F6F0] text-slate-900 border-2 border-dashed border-[#2D6A4F]/30 flex flex-col items-center gap-2.5 shadow-sm">
+              <div className="p-3 bg-white text-[#2D6A4F] rounded-2xl shadow-xs border border-[#2D6A4F]/20">
                 <QrCode className="size-24" />
               </div>
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 Store Pickup Pass Code
               </span>
-              <span className="font-mono text-3xl font-black tracking-widest text-[#2D6A4F] dark:text-[#4CAF50] bg-white dark:bg-[#1F2937] px-6 py-1.5 rounded-full border border-[#2D6A4F]/30 shadow-xs">
+              <span className="font-mono text-3xl font-black tracking-widest text-[#2D6A4F] bg-white px-6 py-1.5 rounded-full border border-[#2D6A4F]/30 shadow-xs">
                 {confirmedReservation?.pickupCode}
               </span>
               <span className="text-[11px] text-slate-500 font-medium">
@@ -261,7 +268,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   onClose();
                   if (confirmedReservation) onOpenWhatsApp(confirmedReservation);
                 }}
-                className="flex-1 py-3.5 rounded-full bg-[#25D366] hover:bg-[#20bd59] text-white font-bold text-xs transition-all shadow-md flex items-center justify-center gap-1.5"
+                className="flex-1 py-3.5 rounded-full bg-[#25D366] hover:bg-[#20bd59] text-slate-950 font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5"
               >
                 <span>💬 WhatsApp Voucher</span>
               </button>

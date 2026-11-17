@@ -1,7 +1,6 @@
-import React from 'react';
-import { ShieldCheck, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShieldCheck, CheckCircle2, X } from 'lucide-react';
 import { BiteHourLogo } from './BrandLogo';
-import { InstallPwaBanner } from './InstallPwaBanner';
 
 interface FooterProps {
   totalSavedPkr?: number;
@@ -10,12 +9,29 @@ interface FooterProps {
   onOpenMerchantPortal?: () => void;
 }
 
+const POLICY_DETAILS: Record<'halal' | 'terms' | 'privacy', { title: string; body: string }> = {
+  halal: {
+    title: 'Halal & Same-Day Freshness Policy',
+    body: 'All partner bakeries, cafés, restaurants, and groceries on BiteHour Pakistan list 100% Halal-certified same-day food prepared fresh in licensed commercial kitchens and sold before closing.',
+  },
+  terms: {
+    title: 'Terms of Pickup & Reservation Hold',
+    body: 'Reservations lock your bag for a 15-minute counter hold (or within the posted closing pickup window). Please present your PK-XXXXX code at the store counter or cancel ahead in My Bag if plans change.',
+  },
+  privacy: {
+    title: 'Customer & Partner Privacy Policy',
+    body: 'We collect only your name, phone number, and email strictly to issue pickup passes, send order confirmations, and verify store partners. We never sell personal data to third parties.',
+  },
+};
+
 export const Footer: React.FC<FooterProps> = ({
   onOpenPartnerPage,
   onOpenMerchantPortal,
 }) => {
+  const [activePolicy, setActivePolicy] = useState<'halal' | 'terms' | 'privacy' | null>(null);
+
   return (
-    <footer className="w-full bg-[#fcfbf9] dark:bg-[#111827] text-stone-700 dark:text-stone-300 pt-12 pb-8 px-4 lg:px-8 border-t border-[#e5e0d8] dark:border-white/10 transition-colors">
+    <footer className="w-full bg-[#fcfbf9] text-stone-700 pt-12 pb-8 px-4 lg:px-8 border-t border-[#e5e0d8]">
       <div className="max-w-7xl mx-auto flex flex-col gap-10">
         
         {/* Payment Options Banner */}
@@ -51,11 +67,8 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="flex flex-col gap-3 items-start">
             <BiteHourLogo compact />
             <p className="text-xs text-stone-500 leading-relaxed font-medium">
-              Helping Pakistani bakeries, restaurants, and grocery stores sell daily surplus food at closing-hour discounts.
+              Helping Pakistani bakeries, cafés, and restaurants turn evening surplus into affordable deals and new walk-in customers.
             </p>
-            <div className="pt-1">
-              <InstallPwaBanner />
-            </div>
           </div>
 
           <div>
@@ -81,7 +94,7 @@ export const Footer: React.FC<FooterProps> = ({
                   onClick={onOpenPartnerPage}
                   className="font-bold text-[#1b4332] hover:text-[#f37021] hover:underline text-left transition-colors"
                 >
-                  For Bakeries &amp; Cafés — Apply Now
+                  Partner With Us (0% Launch Fee)
                 </button>
               </li>
               <li>
@@ -90,7 +103,7 @@ export const Footer: React.FC<FooterProps> = ({
                   onClick={onOpenMerchantPortal}
                   className="hover:text-[#1b4332] hover:underline text-left transition-colors"
                 >
-                  Merchant Dashboard Portal
+                  Store POS Portal
                 </button>
               </li>
               <li>Time-Decay Surplus Pricing</li>
@@ -119,18 +132,61 @@ export const Footer: React.FC<FooterProps> = ({
         </div>
 
         {/* Bottom Bar: Copyright & Policy Links */}
-        <div className="pt-6 border-t border-[#e5e0d8] dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-400">
+        <div className="pt-6 border-t border-[#e5e0d8] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-400">
           <div>
-            © 2026 BiteHour Pakistan (Pvt.) Ltd. All rights reserved.
+            © 2026 BiteHour Pakistan. All rights reserved.
           </div>
           <div className="flex items-center gap-5 text-[11px]">
-            <span className="hover:text-stone-700 dark:hover:text-white cursor-pointer transition-colors">Halal Verification Policy</span>
-            <span className="hover:text-stone-700 dark:hover:text-white cursor-pointer transition-colors">Terms of Service</span>
-            <span className="hover:text-stone-700 dark:hover:text-white cursor-pointer transition-colors">Privacy Policy</span>
+            <button
+              type="button"
+              onClick={() => setActivePolicy('halal')}
+              className="hover:text-stone-700 cursor-pointer transition-colors"
+            >
+              Halal Verification Policy
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePolicy('terms')}
+              className="hover:text-stone-700 cursor-pointer transition-colors"
+            >
+              Terms of Service
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePolicy('privacy')}
+              className="hover:text-stone-700 cursor-pointer transition-colors"
+            >
+              Privacy Policy
+            </button>
           </div>
         </div>
 
       </div>
+
+      {activePolicy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md bg-white border border-stone-200 rounded-3xl p-6 shadow-2xl space-y-3">
+            <button
+              type="button"
+              onClick={() => setActivePolicy(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600"
+            >
+              <X className="size-4" />
+            </button>
+            <h3 className="text-base font-black text-stone-900 pr-8">{POLICY_DETAILS[activePolicy].title}</h3>
+            <p className="text-xs text-stone-600 leading-relaxed font-medium">
+              {POLICY_DETAILS[activePolicy].body}
+            </p>
+            <button
+              type="button"
+              onClick={() => setActivePolicy(null)}
+              className="w-full py-2.5 rounded-xl bg-[#1b4332] text-white text-xs font-black"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </footer>
   );
 };

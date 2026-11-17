@@ -14,6 +14,7 @@ import { submitPartnerLeadApi } from '../services/api';
 
 interface PartnerPageProps {
   onOpenMerchantRegister: () => void;
+  onOpenStoreLogin?: () => void;
   onBackToDeals: () => void;
 }
 
@@ -42,6 +43,7 @@ const BENEFITS = [
 
 export const PartnerPage: React.FC<PartnerPageProps> = ({
   onOpenMerchantRegister,
+  onOpenStoreLogin,
   onBackToDeals,
 }) => {
   const [ownerName, setOwnerName] = useState('');
@@ -86,15 +88,15 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left: B2B Pitch Column */}
         <div className="lg:col-span-6 space-y-6">
-          <div>
+          <div className="flex flex-col items-start gap-3">
             <button
               type="button"
               onClick={onBackToDeals}
-              className="text-xs font-bold text-[#1b4332] hover:underline mb-3 inline-flex items-center gap-1"
+              className="text-xs font-bold text-[#1b4332] hover:underline inline-flex items-center gap-1"
             >
               ← Back to Live Deals
             </button>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#fff3e0] text-[#e65100] border border-[#ffe0b2] text-xs font-black mb-3 ml-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#fff3e0] text-[#e65100] border border-[#ffe0b2] text-xs font-black">
               <Store className="size-3.5" />
               <span>For Bakeries, Cafés &amp; Restaurants</span>
             </div>
@@ -104,7 +106,7 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
               <span className="text-[#1b4332]">Revenue &amp; New Walk-Ins</span>
             </h1>
 
-            <p className="text-sm text-stone-600 leading-relaxed font-medium mt-3">
+            <p className="text-sm text-stone-600 leading-relaxed font-medium">
               Built for busy spots in <strong>Islamabad (F-6, F-7, Blue Area, H-12), Rawalpindi, Lahore &amp; Karachi</strong>.
               Attract university students &amp; young professionals before closing without discounting full-day menu prices.
             </p>
@@ -116,7 +118,7 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
               return (
                 <div key={b.title} className="bg-white border border-[#e5e0d8] rounded-2xl p-4 space-y-2 shadow-2xs">
                   <div className="size-9 rounded-xl bg-[#edf7ed] text-[#1b4332] flex items-center justify-center">
-                    <Icon className="size-4.5" />
+                    <Icon className="size-4" />
                   </div>
                   <h3 className="text-xs font-black text-stone-900">{b.title}</h3>
                   <p className="text-[11px] text-stone-500 leading-relaxed font-medium">{b.desc}</p>
@@ -125,21 +127,35 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
             })}
           </div>
 
-          <div className="p-5 rounded-3xl bg-[#1b4332] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-sm font-black">Want to go live immediately right now?</h3>
-              <p className="text-xs text-emerald-100/90 mt-0.5">
-                Skip waiting for a call — register your verified Merchant Store portal in 2 minutes.
-              </p>
+          <div className="p-5 rounded-3xl bg-[#1b4332] text-white space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-black">Want to go live immediately right now?</h3>
+                <p className="text-xs text-emerald-100/90 mt-0.5">
+                  Skip waiting for a call — create your Store POS account in 2 minutes.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenMerchantRegister}
+                className="px-4 py-2.5 rounded-xl bg-[#f37021] hover:bg-[#e26115] text-white text-xs font-black shrink-0 inline-flex items-center gap-1.5 shadow-md"
+              >
+                <span>Create Store Now</span>
+                <ArrowRight className="size-3.5" />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={onOpenMerchantRegister}
-              className="px-4 py-2.5 rounded-xl bg-[#f37021] hover:bg-[#e26115] text-white text-xs font-black shrink-0 inline-flex items-center gap-1.5 shadow-md"
-            >
-              <span>Create Store Now</span>
-              <ArrowRight className="size-3.5" />
-            </button>
+            {onOpenStoreLogin && (
+              <div className="pt-2.5 border-t border-white/15 flex items-center justify-between text-[11px] text-emerald-100">
+                <span>Already have a BiteHour store account?</span>
+                <button
+                  type="button"
+                  onClick={onOpenStoreLogin}
+                  className="font-bold text-white hover:underline"
+                >
+                  Sign in to Store POS →
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

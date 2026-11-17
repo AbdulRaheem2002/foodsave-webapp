@@ -86,9 +86,13 @@ export const StoreProfileModal: React.FC<StoreProfileModalProps> = ({
           </div>
 
           <div className="p-3 rounded-2xl bg-[#f7f5f0] border border-[#e8e2d8] text-center">
-            <span className="text-[10px] text-stone-400 font-semibold block uppercase">Revenue Recovered</span>
-            <span className="text-base font-black text-[#f37021]">
-              {formatCurrency(store.totalRecoveredPkr)}
+            <span className="text-[10px] text-stone-400 font-semibold block uppercase">
+              {store.totalRecoveredPkr > 0 ? 'Revenue Recovered' : 'Area Hub'}
+            </span>
+            <span className="text-base font-black text-[#f37021] truncate block">
+              {store.totalRecoveredPkr > 0
+                ? formatCurrency(store.totalRecoveredPkr)
+                : store.sector || store.city}
             </span>
           </div>
         </div>

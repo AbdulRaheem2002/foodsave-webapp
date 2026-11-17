@@ -24,6 +24,7 @@ interface AuthModalProps {
   onClose: () => void;
   currentUser: AuthUser | null;
   initialRole?: 'consumer' | 'retailer';
+  initialMode?: 'login' | 'register';
   onAuthSuccess: (user: AuthUser, token: string) => void;
   onLogout: () => void;
   onSwitchTab?: (tab: 'consumer' | 'retailer') => void;
@@ -37,11 +38,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   currentUser,
   initialRole = 'consumer',
+  initialMode = 'login',
   onAuthSuccess,
   onLogout,
   onSwitchTab,
 }) => {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [role, setRole] = useState<'consumer' | 'retailer'>(initialRole);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,10 +66,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setRole(initialRole);
+      setMode(initialMode);
       setError(null);
       setFieldErrors({});
     }
-  }, [isOpen, initialRole]);
+  }, [isOpen, initialRole, initialMode]);
 
   const passwordChecks = useMemo(
     () => ({
@@ -513,7 +516,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <label className="block text-xs text-stone-700 mb-1 font-semibold">Pickup Street Address *</label>
                     <input
                       type="text"
-                      placeholder="e.g. Block K, Main Market, Gulberg II"
+                      placeholder="e.g. Jinnah Super Market, F-7 Markaz"
                       value={storeAddress}
                       onChange={(e) => {
                         setStoreAddress(e.target.value);

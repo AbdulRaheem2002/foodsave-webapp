@@ -66,6 +66,7 @@ export function App() {
   const [isPassesDrawerOpen, setIsPassesDrawerOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authInitialRole, setAuthInitialRole] = useState<'consumer' | 'retailer'>('consumer');
+  const [authInitialMode, setAuthInitialMode] = useState<'login' | 'register'>('login');
   
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     try {
@@ -190,6 +191,7 @@ export function App() {
     if (!currentUser) {
       setPendingReserveDeal(deal);
       setAuthInitialRole('consumer');
+      setAuthInitialMode('login');
       setIsAuthModalOpen(true);
       return;
     }
@@ -324,7 +326,9 @@ export function App() {
           <div className="flex items-center gap-2 overflow-hidden">
             <span className="size-1.5 rounded-full bg-[#85e3a8] shrink-0" />
             <span className="truncate text-[11px] font-medium text-stone-100">
-              {filteredDealsByCity.length} live surplus {filteredDealsByCity.length === 1 ? 'bag' : 'bags'} available{selectedCity === 'All Pakistan' ? ' across Pakistan' : ` in ${selectedCity}`} • 15-min pickup hold
+              {filteredDealsByCity.length > 0
+                ? `${filteredDealsByCity.length} live surplus ${filteredDealsByCity.length === 1 ? 'bag' : 'bags'} available${selectedCity === 'All Pakistan' ? ' across Pakistan' : ` in ${selectedCity}`} • 15-min hold`
+                : 'Islamabad Launch • Closing-hour bakery & café deals up to 85% OFF • Zero app required'}
             </span>
           </div>
 
@@ -349,6 +353,7 @@ export function App() {
         currentUser={currentUser}
         onOpenAuth={() => {
           setAuthInitialRole('consumer');
+          setAuthInitialMode('login');
           setIsAuthModalOpen(true);
         }}
       />
@@ -363,6 +368,17 @@ export function App() {
               } else {
                 if (currentUser) handleLogout();
                 setAuthInitialRole('retailer');
+                setAuthInitialMode('register');
+                setIsAuthModalOpen(true);
+              }
+            }}
+            onOpenStoreLogin={() => {
+              if (currentUser?.role === 'retailer') {
+                setActiveTab('retailer');
+              } else {
+                if (currentUser) handleLogout();
+                setAuthInitialRole('retailer');
+                setAuthInitialMode('login');
                 setIsAuthModalOpen(true);
               }
             }}
@@ -407,35 +423,48 @@ export function App() {
                     if (currentUser) handleLogout();
                     setActiveTab('retailer');
                     setAuthInitialRole('retailer');
+                    setAuthInitialMode('login');
                     setIsAuthModalOpen(true);
                   }}
-                  className="flex-1 py-3 px-4 rounded-xl bg-[#FF9800] hover:bg-[#e68900] text-white font-black text-xs shadow-md flex items-center justify-center gap-2 transition-all"
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-black text-xs shadow-md flex items-center justify-center gap-2 transition-all"
                 >
                   <Store className="size-4" />
-                  <span>{currentUser ? 'Switch to Merchant Account' : 'Merchant Sign In / Register'}</span>
+                  <span>{currentUser ? 'Switch to Store Account' : 'Sign In to Store POS'}</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('consumer')}
-                  className="py-3 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 font-bold text-xs transition-colors"
+                  onClick={() => {
+                    if (currentUser) handleLogout();
+                    setActiveTab('retailer');
+                    setAuthInitialRole('retailer');
+                    setAuthInitialMode('register');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="py-3 px-4 rounded-xl bg-[#fff3e0] hover:bg-[#ffe0b2] border border-[#ffcc80] text-[#b45309] font-black text-xs transition-colors"
                 >
-                  ← Back to Deals
+                  Register New Store
                 </button>
               </div>
+              <button
+                onClick={() => setActiveTab('consumer')}
+                className="text-xs font-bold text-stone-500 hover:text-stone-800 hover:underline transition-colors"
+              >
+                ← Back to Live Deals
+              </button>
             </div>
           )
         ) : (
           <div className="flex flex-col gap-8 animate-in fade-in duration-300">
             
-            {/* Hero Section matching exact Reference Mockup */}
+            {/* Clean Editorial Hero */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
               
               {/* Left Column: Headline & Value Proposition */}
               <div className="lg:col-span-8 flex flex-col justify-center">
                 
-                {/* Top Location & Hold Pill */}
+                {/* Top Location Pill */}
                 <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] inline-flex items-center gap-1.5 self-start mb-3 shadow-2xs">
                   <span className="size-2 rounded-full bg-[#4CAF50] animate-pulse" />
-                  Islamabad Launch • Live Surplus Deals &amp; Surprise Bags | 15-min Hold
+                  Islamabad Launch • Evening Drops &amp; Surprise Bags | 15-min Hold
                 </span>
 
                 {/* Big Editorial Headline */}
@@ -445,27 +474,35 @@ export function App() {
 
                 {/* Subtitle with Pakistani rails */}
                 <p className="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-2xl mb-4 font-medium">
-                  Local bakeries, cafés, restaurants, and groceries list fresh same-day surplus before closing. Reserve on web in 15 seconds (zero app needed) and pay via <strong>Cash on Pickup, JazzCash, or EasyPaisa</strong>.
+                  Local bakeries, cafés, and restaurants list fresh same-day surplus before closing. Reserve on web in 15 seconds (zero app needed) and pay via <strong>Cash on Pickup, JazzCash, or EasyPaisa</strong>.
                 </p>
 
-                {/* Trust Guarantee Badges */}
-                <div className="flex flex-wrap items-center gap-2.5 text-xs text-stone-600 font-bold mb-4">
-                  <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs">
+                {/* Crisp Inline Guarantees */}
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-stone-600 font-bold mb-5">
+                  <span className="inline-flex items-center gap-1.5">
                     <CheckCircle2 className="size-3.5 text-[#2e7d32]" />
                     Verified Store Surplus
                   </span>
-                  <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs">
+                  <span className="inline-flex items-center gap-1.5">
                     <Clock className="size-3.5 text-[#f37021]" />
                     15-Min Guaranteed Hold
                   </span>
-                  <span className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-stone-200 shadow-2xs">
+                  <span className="inline-flex items-center gap-1.5">
                     <ShieldCheck className="size-3.5 text-[#2e7d32]" />
                     Sweet / Savory &amp; Exact Slots
                   </span>
                 </div>
 
-                {/* PWA Install & Partner B2B Quick Actions */}
+                {/* Focused Action Buttons */}
                 <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={scrollToDeals}
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white text-xs font-black shadow-md transition-all"
+                  >
+                    <span>Explore Closing Deals</span>
+                    <ArrowRight className="size-3.5" />
+                  </button>
                   <InstallPwaBanner />
                   <button
                     type="button"
@@ -476,69 +513,108 @@ export function App() {
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#fff3e0] hover:bg-[#ffe0b2] text-[#b45309] border border-[#f59e0b]/40 text-xs font-black shadow-2xs transition-all"
                   >
                     <Store className="size-3.5 text-[#f37021]" />
-                    <span>For Bakeries &amp; Cafés (0% Launch Fee)</span>
-                    <ArrowRight className="size-3.5" />
+                    <span>Partner With Us (0% Fee)</span>
                   </button>
                 </div>
               </div>
 
-              {/* Right Column: Live Marketplace Status Card */}
-              <div className="lg:col-span-4 p-5 sm:p-6 rounded-[1.75rem] bg-[#f7f5f0] border border-[#e8e2d8] shadow-2xs flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
-                      LIVE MARKETPLACE
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] text-[10px] font-bold">
-                      {deals.length > 0 ? 'Live' : 'Ready'}
-                    </span>
-                  </div>
+              {/* Right Column: Live Marketplace Status OR Launch Highlights */}
+              <div className="lg:col-span-4 p-5 sm:p-6 rounded-[1.75rem] bg-[#f7f5f0] border border-[#e8e2d8] shadow-2xs flex flex-col justify-between gap-4">
+                {deals.length > 0 ? (
+                  <>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
+                          LIVE MARKETPLACE
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] text-[10px] font-bold">
+                          Live Now
+                        </span>
+                      </div>
 
-                  <h3 className="text-xl sm:text-2xl font-black text-stone-900 mb-1.5">
-                    {deals.length > 0
-                      ? `${deals.length} Active Surplus Deal${deals.length === 1 ? '' : 's'}`
-                      : 'Fresh Surplus Listed Daily'}
-                  </h3>
+                      <h3 className="text-xl sm:text-2xl font-black text-stone-900 mb-1.5">
+                        {deals.length} Active Surplus Deal{deals.length === 1 ? '' : 's'}
+                      </h3>
 
-                  <p className="text-xs text-stone-500 leading-relaxed font-medium mb-4">
-                    {stores.length > 0
-                      ? `Connecting ${stores.length} registered partner store${stores.length === 1 ? '' : 's'} with local customers before closing.`
-                      : 'Sign in as a customer to claim deals or register your bakery, restaurant, or grocery store to start listing.'}
-                  </p>
-                </div>
+                      <p className="text-xs text-stone-500 leading-relaxed font-medium">
+                        Connecting {stores.length || 1} verified partner store{stores.length === 1 ? '' : 's'} with local customers before closing.
+                      </p>
+                    </div>
 
-                <div className="pt-3 border-t border-stone-200 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-stone-400 block">
-                      Registered Stores
-                    </span>
-                    <span className="text-xs font-black text-stone-800 font-mono">
-                      {stores.length} Verified Partner{stores.length === 1 ? '' : 's'}
-                    </span>
-                  </div>
+                    <div className="pt-3 border-t border-stone-200 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-stone-400 block">
+                          Verified Stores
+                        </span>
+                        <span className="text-xs font-black text-stone-800 font-mono">
+                          {stores.length || 1} Partner{stores.length === 1 ? '' : 's'}
+                        </span>
+                      </div>
 
-                  <button
-                    onClick={scrollToDeals}
-                    className="px-4 py-2 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all transform active:scale-95"
-                  >
-                    <span>Explore Deals</span>
-                    <ArrowRight className="size-3.5" />
-                  </button>
-                </div>
+                      <button
+                        onClick={scrollToDeals}
+                        className="px-4 py-2 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all"
+                      >
+                        <span>View Feed</span>
+                        <ArrowRight className="size-3.5" />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
+                          ISLAMABAD FIRST WAVE
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#fff3e0] text-[#b45309] border border-[#f59e0b]/40 text-[10px] font-bold">
+                          0% Partner Fee
+                        </span>
+                      </div>
+
+                      <h3 className="text-xl font-black text-stone-900 mb-2">
+                        Fresh Closing Drops Tonight
+                      </h3>
+
+                      <ul className="space-y-1.5 text-xs text-stone-600 font-medium">
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="size-3.5 text-[#2e7d32] shrink-0" />
+                          <span>F-6, F-7, Blue Area, F-10 &amp; NUST H-12</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="size-3.5 text-[#2e7d32] shrink-0" />
+                          <span>Save 30%–85% on same-day pastries &amp; meals</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CheckCircle2 className="size-3.5 text-[#2e7d32] shrink-0" />
+                          <span>Pay Cash on Pickup directly at store counter</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="pt-3 border-t border-stone-200 flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-bold text-stone-600">
+                        Run a bakery or café?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab('partner');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-[#f37021] hover:bg-[#e26115] text-white font-bold text-xs shadow-xs flex items-center gap-1 transition-all shrink-0"
+                      >
+                        <span>List Store Free</span>
+                        <ArrowRight className="size-3.5" />
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
             </div>
 
-            {/* Geolocation Radar Map View */}
-            <DealMap
-              deals={filteredDealsByCity}
-              selectedCity={selectedCity}
-              selectedDeal={selectedDeal}
-              onSelectDeal={(deal) => setSelectedDeal(deal)}
-              onReserveDeal={handleOpenReserveModal}
-            />
-
-            {/* Filterable Deal Feed Grid */}
+            {/* Filterable Deal Feed Grid FIRST (customers see deals/filters immediately) */}
             <DealFeed
               deals={filteredDealsByCity}
               selectedCity={selectedCity}
@@ -563,6 +639,15 @@ export function App() {
                   };
                 setSelectedStoreProfile(store);
               }}
+            />
+
+            {/* Warm Light Map View (auto-hides when 0 deals match) */}
+            <DealMap
+              deals={filteredDealsByCity}
+              selectedCity={selectedCity}
+              selectedDeal={selectedDeal}
+              onSelectDeal={(deal) => setSelectedDeal(deal)}
+              onReserveDeal={handleOpenReserveModal}
             />
 
             {/* Surprise Mystery Bags: What's Inside? Feature Banner */}
@@ -633,6 +718,7 @@ export function App() {
         onClose={() => setIsAuthModalOpen(false)}
         currentUser={currentUser}
         initialRole={authInitialRole}
+        initialMode={authInitialMode}
         onAuthSuccess={handleAuthSuccess}
         onLogout={handleLogout}
         onSwitchTab={(tab) => setActiveTab(tab)}
