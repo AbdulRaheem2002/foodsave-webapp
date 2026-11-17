@@ -1,6 +1,7 @@
 import React from 'react';
-import { ShoppingBag, Store, Leaf, LogIn, MapPin, ArrowLeft } from 'lucide-react';
+import { ShoppingBag, Store, LogIn, MapPin, ArrowLeft } from 'lucide-react';
 import type { AuthUser, PakistanCity, AppTab } from '../types';
+import { BiteHourLogo } from './BrandLogo';
 
 interface NavbarProps {
   activeTab: AppTab;
@@ -36,28 +37,13 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-16 flex items-center justify-between gap-4">
           
-          {/* Brand Logo */}
+          {/* Brand Logo (Option B: Bitten-Clock Badge + Bold BiteHour) */}
           <button
             type="button"
             onClick={() => setActiveTab('consumer')}
-            className="flex items-center gap-2.5 text-left group shrink-0"
+            className="flex items-center text-left group shrink-0"
           >
-            <div className="size-9 rounded-xl bg-[#1b4332] text-white flex items-center justify-center shadow-sm group-hover:bg-[#143527] transition-colors">
-              <Leaf className="size-4 text-[#85e3a8]" />
-            </div>
-            <div className="leading-tight">
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-black tracking-tight text-stone-900">
-                  Foodsave
-                </span>
-                <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-[#edf7ed] text-[#1b4332] border border-[#c8e6c9] rounded">
-                  PK
-                </span>
-              </div>
-              <p className="text-[11px] text-stone-500 font-medium hidden sm:block whitespace-nowrap">
-                Surplus Food Marketplace
-              </p>
-            </div>
+            <BiteHourLogo showTagline />
           </button>
 
           {/* Center City Selector (Desktop) */}

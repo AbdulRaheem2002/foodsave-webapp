@@ -308,7 +308,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-stone-900 tracking-tight">
-                    {mode === 'login' ? 'Sign In to Foodsave' : 'Create Verified Account'}
+                    {mode === 'login' ? 'Sign In to BiteHour' : 'Create Verified Account'}
                   </h3>
                   <p className="text-xs text-stone-500 font-medium">
                     {mode === 'login'

@@ -55,7 +55,7 @@ const isMongoConnected = (): boolean => mongoose.connection.readyState === 1;
 app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
-    app: 'Foodsave Pakistan MERN Stack API',
+    app: 'BiteHour Pakistan MERN Stack API',
     locale: 'PKR (₨)',
     databaseEngine: isMongoConnected() ? 'MongoDB Atlas (Connected)' : 'In-Memory MERN Database (Development Fallback)',
     mongoReadyState: mongoose.connection.readyState,
@@ -624,7 +624,7 @@ const startServer = async () => {
   await connectDB();
 
   app.listen(PORT, () => {
-    console.log(`🚀 Foodsave Pakistan MERN Express API running at http://localhost:${PORT}`);
+    console.log(`🚀 BiteHour Pakistan MERN Express API running at http://localhost:${PORT}`);
     console.log(`📡 Database mode: ${isMongoConnected() ? 'MongoDB Atlas' : 'In-Memory DB'}`);
   });
 };

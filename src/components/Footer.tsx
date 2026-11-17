@@ -1,5 +1,6 @@
 import React from 'react';
-import { Leaf, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { BiteHourLogo } from './BrandLogo';
 
 interface FooterProps {
   totalSavedPkr?: number;
@@ -42,16 +43,9 @@ export const Footer: React.FC<FooterProps> = () => {
         {/* 4-Column Footer Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="size-8 rounded-full bg-[#1b4332] text-white flex items-center justify-center shadow-xs">
-                <Leaf className="size-4 text-[#85e3a8]" />
-              </div>
-              <h3 className="text-base font-black text-stone-900">
-                Foodsave Pakistan
-              </h3>
-            </div>
+            <BiteHourLogo compact />
             <p className="text-xs text-stone-500 leading-relaxed font-medium">
-              Helping Pakistani bakeries, restaurants, and grocery stores sell daily surplus food at steep closing discounts.
+              Helping Pakistani bakeries, restaurants, and grocery stores sell daily surplus food at closing-hour discounts.
             </p>
           </div>
 
@@ -102,7 +96,7 @@ export const Footer: React.FC<FooterProps> = () => {
         {/* Bottom Bar: Copyright & Policy Links */}
         <div className="pt-6 border-t border-[#e5e0d8] dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-400">
           <div>
-            © 2026 Foodsave Pakistan (Pvt.) Ltd. All rights reserved.
+            © 2026 BiteHour Pakistan (Pvt.) Ltd. All rights reserved.
           </div>
           <div className="flex items-center gap-5 text-[11px]">
             <span className="hover:text-stone-700 dark:hover:text-white cursor-pointer transition-colors">Halal Verification Policy</span>

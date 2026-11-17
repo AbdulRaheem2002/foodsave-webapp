@@ -35,7 +35,7 @@ export const CsrCertificateModal: React.FC<CsrCertificateModalProps> = ({
         <div className="p-6 sm:p-8 rounded-2xl bg-white text-stone-900 border-4 border-[#1b4332]/20 shadow-md relative flex flex-col items-center text-center">
           
           <div className="absolute top-4 left-4 flex items-center gap-1.5 text-[10px] font-bold text-[#1b4332] uppercase tracking-widest">
-            <span>🇵🇰</span> Foodsave Zero-Waste Alliance
+            <span>🇵🇰</span> BiteHour Zero-Waste Network
           </div>
 
           <div className="absolute top-4 right-4 text-[10px] font-mono font-bold text-stone-400">

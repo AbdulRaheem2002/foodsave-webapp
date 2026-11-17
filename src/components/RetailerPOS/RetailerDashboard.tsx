@@ -88,7 +88,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
   // CSV Report Generator
   const handleExportCsvReport = () => {
-    const storeLabel = (selectedStore?.name || 'Foodsave_Store').replace(/\s+/g, '_');
+    const storeLabel = (selectedStore?.name || 'BiteHour_Store').replace(/\s+/g, '_');
     const headers = ['Listing ID', 'Item Name', 'Category', 'Original Price (PKR)', 'Discount Price (PKR)', 'Discount %', 'Quantity', 'Store City'];
     const rows = storeDeals.map((d) => [
       d.id,
@@ -106,7 +106,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `Foodsave_Daily_Recovery_Report_${storeLabel}.csv`);
+    link.setAttribute('download', `BiteHour_Daily_Recovery_Report_${storeLabel}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
