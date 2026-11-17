@@ -29,9 +29,9 @@ export const getDeals = async (req: Request, res: Response): Promise<void> => {
       const effectiveDiscount = Math.round(((item.originalPricePkr - effectivePrice) / item.originalPricePkr) * 100);
 
       return {
-        id: deal._id,
+        id: deal._id.toString(),
         item: {
-          id: item._id,
+          id: item._id.toString(),
           name: item.name,
           category: item.category,
           originalPricePkr: item.originalPricePkr,

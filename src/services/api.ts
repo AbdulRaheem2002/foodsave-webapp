@@ -2,7 +2,10 @@ import type { DealItem, Reservation, RetailerStore } from '../types';
 
 export const TOKEN_STORAGE_KEY = 'foodsave_token_v2';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api')
+).replace(/\/$/, '');
 
 const CATEGORY_FALLBACK_IMAGES: Record<'grocery' | 'bakery' | 'restaurant', string> = {
   grocery: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',

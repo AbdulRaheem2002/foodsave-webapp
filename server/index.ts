@@ -4,7 +4,7 @@ import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
-import { connectDB } from './config/db';
+import { connectDB, isMongoConnected } from './config/db';
 import { memDb } from './store/memDb';
 import { Retailer } from './models/Retailer';
 import { calculateTimeDecay } from './utils/decayCalculator';
@@ -48,8 +48,18 @@ app.use(
 );
 app.use(express.json());
 
-// Helper to determine if MongoDB Atlas is live
-const isMongoConnected = (): boolean => mongoose.connection.readyState === 1;
+// Ensure MongoDB Atlas connection on API requests (supports serverless cold starts)
+app.use('/api', async (req: Request, res: Response, next) => {
+  if (!isMongoConnected() && process.env.MONGODB_URI) {
+    await connectDB();
+  }
+  const isProd = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+  if (isProd && req.path !== '/health' && !isMongoConnected()) {
+    res.status(503).json({ error: 'Database unavailable. Verify MONGODB_URI and Atlas network access.' });
+    return;
+  }
+  next();
+});
 
 // 1. Health Check Endpoint
 app.get('/api/health', (_req: Request, res: Response) => {
@@ -564,14 +574,26 @@ app.post('/api/reservations/verify', authenticateToken, requireRetailer, async (
     return;
   }
 
+  const storeRetailer = memDb.getRetailerByUserId(req.user?.id);
+  if (storeRetailer && reservation.retailerId !== storeRetailer.id) {
+    res.status(403).json({ valid: false, error: 'This pickup code belongs to a different store.' });
+    return;
+  }
+
   const deal = memDb.deals.find((d) => d.id === reservation.dealId);
   const item = memDb.items.find((i) => i.id === deal?.itemId);
   const retailer = memDb.retailers.find((r) => r.id === reservation.retailerId);
+  const customer = memDb.users.find((u) => u.id === reservation.userId);
 
   res.json({
+    valid: true,
     message: 'Pass verified successfully',
     reservation: {
       ...reservation,
+      customerName: customer?.name || 'Customer',
+      dealTitle: item?.name || 'Surplus Bag',
+      totalPricePkr: reservation.totalAmountPkr,
+      pickupDeadline: reservation.pickupWindowEnd,
       deal: { ...deal, item },
       retailer,
     },
@@ -629,4 +651,9 @@ const startServer = async () => {
   });
 };
 
-startServer();
+if (process.env.VERCEL !== '1') {
+  startServer();
+}
+
+export { app };
+export default app;

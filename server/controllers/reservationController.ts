@@ -120,49 +120,110 @@ export const getMyReservations = async (req: AuthRequest, res: Response): Promis
       }
     }
 
-    res.json(reservations);
+    const formatted = reservations.map((resItem: any) => {
+      const deal = resItem.dealRef;
+      const item = deal?.itemRef;
+      const retailer = resItem.retailerRef;
+      return {
+        id: resItem._id.toString(),
+        userId: resItem.userRef?.toString(),
+        dealId: deal?._id?.toString(),
+        retailerId: retailer?._id?.toString(),
+        pickupCode: resItem.pickupCode,
+        status: resItem.status,
+        pickupWindowEnd: resItem.pickupWindowEnd,
+        quantity: resItem.quantity,
+        totalAmountPkr: resItem.totalAmountPkr,
+        paymentMethod: resItem.paymentMethod,
+        paymentStatus: resItem.paymentStatus,
+        createdAt: resItem.createdAt,
+        deal: deal
+          ? {
+              id: deal._id.toString(),
+              currentDiscountedPricePkr: deal.currentDiscountedPricePkr,
+              discountPercent: deal.discountPercent,
+              pickupWindowText: deal.pickupWindowText,
+              item: item
+                ? {
+                    id: item._id.toString(),
+                    name: item.name,
+                    category: item.category,
+                    originalPricePkr: item.originalPricePkr,
+                    imageUrl: item.imageUrl,
+                  }
+                : null,
+            }
+          : null,
+        retailer: retailer
+          ? {
+              id: retailer._id.toString(),
+              name: retailer.name,
+              category: retailer.category,
+              rating: retailer.rating,
+              location: retailer.location,
+            }
+          : null,
+      };
+    });
+
+    res.json(formatted);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 };
 
-export const verifyPickupCode = async (req: Request, res: Response): Promise<void> => {
+export const verifyPickupCode = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { pickupCode } = req.body;
     if (!pickupCode) {
-      res.status(400).json({ error: 'Pickup code is required' });
+      res.status(400).json({ valid: false, error: 'Pickup code is required' });
       return;
     }
 
+    const retailer = req.user?.id ? await Retailer.findOne({ userRef: req.user.id }) : null;
     const cleanCode = String(pickupCode).trim().toUpperCase();
     let reservation: any = await Reservation.findOne({ pickupCode: cleanCode })
       .populate({ path: 'dealRef', populate: { path: 'itemRef' } })
-      .populate('retailerRef');
+      .populate('retailerRef')
+      .populate('userRef', 'name contactPhone');
 
-    if (!reservation && mongoose.Types.ObjectId.isValid(pickupCode)) {
+    if (!reservation && mongoose.Types.ObjectId.isValid(String(pickupCode))) {
       reservation = await Reservation.findById(pickupCode)
         .populate({ path: 'dealRef', populate: { path: 'itemRef' } })
-        .populate('retailerRef');
+        .populate('retailerRef')
+        .populate('userRef', 'name contactPhone');
     }
 
     if (!reservation) {
-      res.status(404).json({ error: `No active reservation found with code: ${cleanCode}` });
+      res.status(404).json({ valid: false, error: `No active reservation found with code: ${cleanCode}` });
       return;
     }
 
+    if (retailer && reservation.retailerRef?._id && reservation.retailerRef._id.toString() !== retailer._id.toString()) {
+      res.status(403).json({ valid: false, error: 'This pickup code belongs to a different store.' });
+      return;
+    }
+
+    const dealTitle = reservation.dealRef?.itemRef?.name || 'Surplus Bag';
+
     res.json({
+      valid: true,
       message: 'Pass verified successfully',
       reservation: {
-        id: reservation._id,
+        id: reservation._id.toString(),
         pickupCode: reservation.pickupCode,
+        customerName: reservation.userRef?.name || 'Customer',
+        dealTitle,
         status: reservation.status,
         quantity: reservation.quantity,
+        totalPricePkr: reservation.totalAmountPkr,
         totalAmountPkr: reservation.totalAmountPkr,
         paymentMethod: reservation.paymentMethod,
         paymentStatus: reservation.paymentStatus,
         pickupWindowEnd: reservation.pickupWindowEnd,
+        pickupDeadline: reservation.pickupWindowEnd,
         deal: {
-          id: reservation.dealRef?._id,
+          id: reservation.dealRef?._id?.toString(),
           currentDiscountedPricePkr: reservation.dealRef?.currentDiscountedPricePkr,
           discountPercent: reservation.dealRef?.discountPercent,
           item: reservation.dealRef?.itemRef,
