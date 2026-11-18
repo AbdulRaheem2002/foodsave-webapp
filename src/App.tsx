@@ -240,7 +240,7 @@ export function App() {
       console.warn('LocalStorage token error:', e);
     }
     refreshMarketplaceData();
-    if (user.role === 'retailer') {
+    if (user.role === 'retailer' && user.retailer?.isVerified) {
       setActiveTab('retailer');
     } else if (pendingReserveDeal) {
       setReserveModalDeal(pendingReserveDeal);
@@ -392,7 +392,7 @@ export function App() {
             }}
           />
         ) : activeTab === 'retailer' ? (
-          currentUser?.role === 'retailer' ? (
+          currentUser?.role === 'retailer' && currentUser.retailer?.isVerified ? (
             <div className="animate-in fade-in duration-300">
               <RetailerDashboard
                 stores={stores}
@@ -404,6 +404,34 @@ export function App() {
                 onUpdateDealPrice={handleUpdateDealPrice}
                 onCollectReservation={handleCollectReservation}
               />
+            </div>
+          ) : currentUser?.role === 'retailer' ? (
+            <div className="max-w-lg mx-auto my-12 p-8 rounded-3xl bg-white border border-[#f37021]/30 shadow-lg text-center flex flex-col items-center gap-4 animate-in fade-in duration-300">
+              <div className="size-16 rounded-2xl bg-[#fff3e0] text-[#e65100] border border-[#ffe0b2] flex items-center justify-center shadow-xs">
+                <Clock className="size-8" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-stone-900 tracking-tight">
+                  Store Approval Pending
+                </h2>
+                <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
+                  <strong>{currentUser.retailer?.name || currentUser.name}</strong> is currently awaiting BiteHour verification. Once approved, you will receive an <strong>email or WhatsApp confirmation</strong> unlocking Store POS access.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2.5 w-full mt-2">
+                <button
+                  onClick={() => setActiveTab('consumer')}
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-black text-xs shadow-md cursor-pointer"
+                >
+                  ← Back to Live Deals
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="py-3 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 font-bold text-xs cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
           ) : (
             <div className="max-w-lg mx-auto my-12 p-8 rounded-3xl bg-white border border-[#2D6A4F]/20 shadow-lg text-center flex flex-col items-center gap-4 animate-in fade-in duration-300">

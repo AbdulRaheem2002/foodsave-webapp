@@ -29,7 +29,7 @@ const RetailerSchema: Schema = new Schema(
       city: { type: String, default: 'Islamabad' },
       sector: { type: String, default: '' },
     },
-    isVerified: { type: Boolean, default: true },
+    isVerified: { type: Boolean, default: false },
     rating: { type: Number, default: 4.8 },
     contactPhone: { type: String, default: '+92 300 1234567' },
     userRef: { type: Schema.Types.ObjectId, ref: 'User' },

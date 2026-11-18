@@ -24,7 +24,7 @@ const FAQS = [
   },
   {
     q: 'I run a bakery, café, or restaurant — how fast can I start?',
-    a: 'Partner registration takes under 2 minutes with zero commission during our launch phase. Your staff can publish closing items and verify customer PK-XXXXX codes right from any phone browser.',
+    a: 'Apply in 30 seconds on our For Bakeries page. Once our team approves your store via email or WhatsApp (with zero launch commission), you receive Store POS access to list closing boxes and verify PK-XXXXX codes from any phone.',
   },
 ];
 

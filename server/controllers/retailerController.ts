@@ -61,6 +61,13 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
+    if (!retailer.isVerified) {
+      res.status(403).json({
+        error: 'Your store is awaiting BiteHour approval before you can publish surplus deals.',
+      });
+      return;
+    }
+
     if (!String(name || '').trim() || Number(originalPricePkr) <= 0 || Number(quantity) < 1) {
       res.status(400).json({ error: 'Valid item title, original price (> 0), and quantity (>= 1) are required.' });
       return;

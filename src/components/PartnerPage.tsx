@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Store,
-  CheckCircle2,
   Zap,
   Banknote,
   QrCode,
@@ -26,8 +25,8 @@ const BENEFITS = [
   },
   {
     icon: Zap,
-    title: 'Go Live in 2 Minutes',
-    desc: 'No 10-step forms or 48-hour waiting periods. Create your verified store account and list closing surplus in under 2 minutes.',
+    title: 'Fast Approval & Setup',
+    desc: 'Apply in 30 seconds — once approved via WhatsApp or email, start listing closing boxes in under 2 minutes.',
   },
   {
     icon: QrCode,
@@ -143,32 +142,24 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
           <div className="p-5 rounded-3xl bg-[#1b4332] text-white space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-sm font-black">Want to go live immediately right now?</h3>
+                <h3 className="text-sm font-black">Already approved by our team?</h3>
                 <p className="text-xs text-emerald-100/90 mt-0.5">
-                  Skip waiting for a call — create your Store POS account in 2 minutes.
+                  Received your approval email or WhatsApp confirmation? Sign in to open your Store POS counter.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={onOpenMerchantRegister}
-                className="px-4 py-2.5 rounded-xl bg-[#f37021] hover:bg-[#e26115] text-white text-xs font-black shrink-0 inline-flex items-center gap-1.5 shadow-md"
+                onClick={onOpenStoreLogin || onOpenMerchantRegister}
+                className="px-4 py-2.5 rounded-xl bg-[#f37021] hover:bg-[#e26115] text-white text-xs font-black shrink-0 inline-flex items-center gap-1.5 shadow-md cursor-pointer"
               >
-                <span>Create Store Now</span>
+                <span>Store POS Login</span>
                 <ArrowRight className="size-3.5" />
               </button>
             </div>
-            {onOpenStoreLogin && (
-              <div className="pt-2.5 border-t border-white/15 flex items-center justify-between text-[11px] text-emerald-100">
-                <span>Already have a BiteHour store account?</span>
-                <button
-                  type="button"
-                  onClick={onOpenStoreLogin}
-                  className="font-bold text-white hover:underline"
-                >
-                  Sign in to Store POS →
-                </button>
-              </div>
-            )}
+            <div className="pt-2.5 border-t border-white/15 flex items-center justify-between text-[11px] text-emerald-100">
+              <span>New bakery or café? Apply on the right →</span>
+              <span className="font-bold text-[#a7f3d0]">0% Launch Commission</span>
+            </div>
           </div>
         </div>
 
@@ -176,21 +167,27 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
         <div className="lg:col-span-6 bg-white border border-[#e5e0d8] rounded-3xl p-6 sm:p-8 shadow-sm">
           {submittedLead ? (
             <div className="text-center py-8 space-y-4">
-              <div className="size-16 rounded-full bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] flex items-center justify-center mx-auto">
-                <CheckCircle2 className="size-9" />
+              <div className="size-16 rounded-full bg-[#fff8e1] text-[#e65100] border border-[#ffe0b2] flex items-center justify-center mx-auto">
+                <Clock className="size-8" />
               </div>
-              <h2 className="text-2xl font-black text-stone-900">Application Received!</h2>
-              <p className="text-xs sm:text-sm text-stone-600 max-w-md mx-auto">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#fff3e0] text-[#c2410c] border border-[#fed7aa] text-[11px] font-black uppercase tracking-wider">
+                Pending Verification
+              </span>
+              <h2 className="text-2xl font-black text-stone-900">Application Under Review!</h2>
+              <p className="text-xs sm:text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
                 Thanks for applying for <strong>{submittedLead.businessName}</strong> ({submittedLead.sector},{' '}
-                {submittedLead.city}). Our onboarding team will contact you shortly, or you can activate your Merchant POS portal immediately below.
+                {submittedLead.city}). Please wait while our BiteHour team verifies your bakery details.
               </p>
+              <div className="p-4 rounded-2xl bg-[#f7f5f0] border border-[#e8e2d8] text-xs text-stone-700 font-medium max-w-md mx-auto">
+                Once approved, you will receive an <strong>email or WhatsApp confirmation</strong> unlocking access to your Store POS portal.
+              </div>
               <div className="flex flex-col sm:flex-row gap-2.5 pt-2 justify-center">
                 <button
                   type="button"
-                  onClick={onOpenMerchantRegister}
-                  className="px-5 py-3 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white text-xs font-black"
+                  onClick={onBackToDeals}
+                  className="px-5 py-3 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white text-xs font-black cursor-pointer"
                 >
-                  Open Self-Serve Store Signup →
+                  ← Back to Live Deals
                 </button>
                 <button
                   type="button"
@@ -201,7 +198,7 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
                     setPhone('');
                     setNotes('');
                   }}
-                  className="px-5 py-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold"
+                  className="px-5 py-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold cursor-pointer"
                 >
                   Submit Another Branch
                 </button>

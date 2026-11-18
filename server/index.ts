@@ -150,7 +150,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
         city: storeCity,
         sector: String(sector || '').trim(),
       },
-      isVerified: true,
+      isVerified: false,
       rating: 5.0,
       contactPhone: normalizedPhone,
       totalRecoveredPkr: 0,
@@ -159,8 +159,29 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     memDb.retailers.push(newRetailer);
   }
 
-  const token = jwt.sign({ id: newUser.id, role: newUser.role }, getJwtSecret(), { expiresIn: '7d' });
   const retailerDto = formatMemRetailerDto(newRetailer);
+
+  if (newUser.role === 'retailer') {
+    res.status(201).json({
+      pendingApproval: true,
+      message:
+        'Application received! Your bakery registration is pending verification. Once approved, you will receive an email or WhatsApp message unlocking Store POS access.',
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        contactPhone: newUser.contactPhone,
+        totalSavedPkr: newUser.totalSavedPkr,
+        itemsRescuedCount: newUser.itemsRescuedCount,
+        retailer: retailerDto,
+      },
+      retailer: retailerDto,
+    });
+    return;
+  }
+
+  const token = jwt.sign({ id: newUser.id, role: newUser.role }, getJwtSecret(), { expiresIn: '7d' });
 
   res.status(201).json({
     message: 'Registration successful',
@@ -173,9 +194,9 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
       contactPhone: newUser.contactPhone,
       totalSavedPkr: newUser.totalSavedPkr,
       itemsRescuedCount: newUser.itemsRescuedCount,
-      retailer: retailerDto,
+      retailer: null,
     },
-    retailer: retailerDto,
+    retailer: null,
   });
 });
 
@@ -221,6 +242,14 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   }
 
   const retailer = user.role === 'retailer' ? memDb.getRetailerByUserId(user.id) || null : null;
+  if (user.role === 'retailer' && (!retailer || !retailer.isVerified)) {
+    res.status(403).json({
+      pendingApproval: true,
+      error:
+        'Your bakery is still under review. Please wait — you will receive an email or WhatsApp confirmation once your store is approved for Store POS access.',
+    });
+    return;
+  }
   const retailerDto = formatMemRetailerDto(retailer);
   const token = jwt.sign({ id: user.id, role: user.role }, getJwtSecret(), { expiresIn: '7d' });
 
@@ -244,7 +273,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 app.get('/api/stores', async (_req: Request, res: Response) => {
   if (isMongoConnected()) {
     try {
-      const stores = await Retailer.find().sort({ createdAt: -1 });
+      const stores = await Retailer.find({ isVerified: true }).sort({ createdAt: -1 });
       res.json(stores.map(formatMemRetailerDto));
       return;
     } catch (mongoErr) {
@@ -252,7 +281,7 @@ app.get('/api/stores', async (_req: Request, res: Response) => {
     }
   }
 
-  res.json(memDb.retailers.map(formatMemRetailerDto));
+  res.json(memDb.retailers.filter((r) => r.isVerified).map(formatMemRetailerDto));
 });
 
 // 2c. Partner Lead Application Endpoint (For Bakeries, Cafes & Restaurants)
@@ -360,6 +389,13 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
   const retailer = memDb.getRetailerByUserId(req.user?.id);
   if (!retailer) {
     res.status(404).json({ error: 'Merchant store profile not found. Please register a merchant account.' });
+    return;
+  }
+
+  if (!retailer.isVerified) {
+    res.status(403).json({
+      error: 'Your store is awaiting BiteHour approval before you can publish surplus deals.',
+    });
     return;
   }
 

@@ -74,9 +74,29 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         },
         contactPhone: normalizedPhone,
         rating: 5.0,
-        isVerified: true,
+        isVerified: false,
         userRef: user._id,
       });
+    }
+
+    if (user.role === 'retailer') {
+      res.status(201).json({
+        pendingApproval: true,
+        message:
+          'Application received! Your bakery registration is pending verification. Once approved, you will receive an email or WhatsApp message unlocking Store POS access.',
+        user: {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          contactPhone: user.contactPhone,
+          totalSavedPkr: user.totalSavedPkr,
+          itemsRescuedCount: user.itemsRescuedCount,
+          retailer: formatRetailerDto(retailerProfile),
+        },
+        retailer: formatRetailerDto(retailerProfile),
+      });
+      return;
     }
 
     const token = jwt.sign({ id: user._id.toString(), role: user.role }, getJwtSecret(), { expiresIn: '7d' });
@@ -92,9 +112,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         contactPhone: user.contactPhone,
         totalSavedPkr: user.totalSavedPkr,
         itemsRescuedCount: user.itemsRescuedCount,
-        retailer: formatRetailerDto(retailerProfile),
+        retailer: null,
       },
-      retailer: formatRetailerDto(retailerProfile),
+      retailer: null,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Registration failed' });
@@ -137,6 +157,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     let retailerProfile = null;
     if (user.role === 'retailer') {
       retailerProfile = await Retailer.findOne({ userRef: user._id });
+      if (!retailerProfile || !retailerProfile.isVerified) {
+        res.status(403).json({
+          pendingApproval: true,
+          error:
+            'Your bakery is still under review. Please wait — you will receive an email or WhatsApp confirmation once your store is approved for Store POS access.',
+        });
+        return;
+      }
     }
 
     const token = jwt.sign({ id: user._id.toString(), role: user.role }, getJwtSecret(), { expiresIn: '7d' });

@@ -14,6 +14,7 @@ import {
   Phone,
   Lock,
   Mail,
+  Clock,
 } from 'lucide-react';
 import { loginAuthApi, registerAuthApi } from '../services/api';
 import type { AuthUser } from '../types';
@@ -62,6 +63,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingApprovalInfo, setPendingApprovalInfo] = useState<{ storeName: string; message: string } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -69,6 +71,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setMode(initialMode);
       setError(null);
       setFieldErrors({});
+      setPendingApprovalInfo(null);
     }
   }, [isOpen, initialRole, initialMode]);
 
@@ -179,6 +182,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           city: role === 'retailer' ? city : undefined,
           sector: role === 'retailer' ? sector.trim() : undefined,
         });
+        if (res.pendingApproval || (role === 'retailer' && !res.token)) {
+          const submittedName = res.retailer?.name || storeName.trim() || 'your bakery';
+          resetSensitiveInputs();
+          setPendingApprovalInfo({
+            storeName: submittedName,
+            message:
+              res.message ||
+              'Application received! Please wait while we verify your bakery — you will get an email or WhatsApp message once approved.',
+          });
+          return;
+        }
         if (!res.user || !res.token) {
           throw new Error(res.error || 'Registration failed. Please try again.');
         }
@@ -219,7 +233,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <X className="size-5" />
         </button>
 
-        {currentUser ? (
+        {pendingApprovalInfo ? (
+          <div className="flex flex-col items-center text-center gap-4 py-4">
+            <div className="size-16 rounded-full bg-[#fff8e1] text-[#e65100] border border-[#ffe0b2] flex items-center justify-center shadow-xs">
+              <Clock className="size-8" />
+            </div>
+            <span className="px-3 py-1 rounded-full bg-[#fff3e0] text-[#c2410c] border border-[#fed7aa] text-[11px] font-black uppercase tracking-wider">
+              Store Approval Pending
+            </span>
+            <div>
+              <h3 className="text-xl font-black text-stone-900 tracking-tight">
+                {pendingApprovalInfo.storeName} is Under Review
+              </h3>
+              <p className="text-xs text-stone-600 leading-relaxed mt-2">
+                {pendingApprovalInfo.message}
+              </p>
+            </div>
+            <div className="w-full p-3.5 rounded-2xl bg-[#f7f5f0] border border-[#e8e2d8] text-xs text-stone-700 font-medium">
+              Once verified, you will get an <strong>Email or WhatsApp confirmation</strong> and can sign in to open your Store POS portal.
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingApprovalInfo(null);
+                onClose();
+              }}
+              className="w-full py-3 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-black text-xs shadow-md transition-all cursor-pointer"
+            >
+              Got It, Back to Marketplace
+            </button>
+          </div>
+        ) : currentUser ? (
           <div className="flex flex-col items-center text-center gap-4 py-2">
             <div className="size-16 rounded-full bg-[#1b4332] text-white flex items-center justify-center text-2xl font-black shadow-md">
               {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
@@ -451,6 +495,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <span className="text-[11px] font-black uppercase tracking-wider text-[#e65100]">
                     Store Verification Details
                   </span>
+                  <p className="text-[11px] text-stone-600 font-medium leading-snug">
+                    New stores require quick approval before POS access unlocks — you will be notified via Email or WhatsApp.
+                  </p>
 
                   <div>
                     <label className="block text-xs text-stone-700 mb-1 font-semibold">Store / Bakery Name *</label>
