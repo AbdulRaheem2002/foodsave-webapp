@@ -12,13 +12,20 @@ import {
   validateRegisterPayload,
   validateLoginPayload,
   normalizePhone,
+  isConfiguredAdminEmail,
   CITY_COORDINATES,
   ALLOWED_STORE_CATEGORIES,
 } from './utils/authValidation.js';
-import { authenticateToken, optionalAuth, requireRetailer, getJwtSecret, type AuthRequest } from './middleware/auth.js';
+import { authenticateToken, optionalAuth, requireRetailer, requireAdmin, getJwtSecret, type AuthRequest } from './middleware/auth.js';
 
 // Mongoose MongoDB Controllers
 import { register, login } from './controllers/authController.js';
+import {
+  getAdminOverview,
+  updateRetailerApproval,
+  deleteAdminRetailer,
+  updatePartnerLeadStatus,
+} from './controllers/adminController.js';
 import { getDeals } from './controllers/dealController.js';
 import {
   createReservation,
@@ -118,12 +125,18 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 
   const passwordHash = await bcrypt.hash(String(password), 10);
 
+  const assignedRole = isConfiguredAdminEmail(normalizedEmail)
+    ? ('admin' as const)
+    : role === 'retailer'
+    ? ('retailer' as const)
+    : ('consumer' as const);
+
   const newUser = {
     id: `usr-${Date.now()}`,
     name: String(name).trim(),
     email: normalizedEmail,
     passwordHash,
-    role: role === 'retailer' ? ('retailer' as const) : ('consumer' as const),
+    role: assignedRole,
     contactPhone: normalizedPhone,
     totalSavedPkr: 0,
     itemsRescuedCount: 0,
@@ -231,12 +244,18 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     return;
   }
 
+  if (isConfiguredAdminEmail(normalizedEmail) && user.role !== 'admin') {
+    user.role = 'admin';
+  }
+
   if (expectedRole && expectedRole !== user.role) {
     res.status(403).json({
       error:
-        expectedRole === 'retailer'
-          ? 'This email belongs to a Consumer account. Please sign in with a Merchant Partner account or register a new store.'
-          : 'This email belongs to a Merchant Partner account.',
+        expectedRole === 'admin'
+          ? 'Founder Admin privileges are required to access this portal.'
+          : expectedRole === 'retailer'
+          ? 'This email belongs to a non-store account. Please sign in with a Merchant Partner account.'
+          : 'This email belongs to a different account type.',
     });
     return;
   }
@@ -530,7 +549,7 @@ app.post('/api/reservations', authenticateToken, async (req: AuthRequest, res: R
     }
   }
 
-  const { dealId, quantity, paymentMethod } = req.body;
+  const { dealId, quantity, paymentMethod, paymentReference } = req.body;
 
   const deal = memDb.deals.find((d) => d.id === dealId);
   if (!deal || deal.status !== 'active') {
@@ -576,7 +595,8 @@ app.post('/api/reservations', authenticateToken, async (req: AuthRequest, res: R
     quantity: qty,
     totalAmountPkr,
     paymentMethod: (paymentMethod as any) || 'Cash on Pickup',
-    paymentStatus: paymentMethod === 'Cash on Pickup' ? ('pending' as const) : ('paid' as const),
+    paymentStatus: 'pending' as const,
+    paymentReference: String(paymentReference || '').trim().slice(0, 64),
     createdAt: new Date().toISOString(),
   };
   memDb.reservations.unshift(newReservation);
@@ -724,6 +744,107 @@ app.put('/api/reservations/:id/status', optionalAuth, async (req: AuthRequest, r
     message: `Reservation updated to ${status}`,
     reservation,
   });
+});
+
+// 7. Founder Admin Endpoints (Protected by JWT + Admin Role from ADMIN_EMAIL)
+app.get('/api/admin/overview', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await getAdminOverview(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB getAdminOverview fallback to memDb:', mongoErr);
+    }
+  }
+
+  const mappedRetailers = memDb.retailers.map((r) => {
+    const owner = memDb.users.find((u) => u.id === r.userId);
+    return {
+      ...formatMemRetailerDto(r),
+      contactPhone: r.contactPhone || owner?.contactPhone || '',
+      ownerName: owner?.name || '',
+      ownerEmail: owner?.email || '',
+      createdAt: new Date().toISOString(),
+    };
+  });
+
+  const pendingRetailers = mappedRetailers.filter((r) => !r.isVerified);
+  const approvedRetailers = mappedRetailers.filter((r) => r.isVerified);
+
+  res.json({
+    stats: {
+      pendingRetailersCount: pendingRetailers.length,
+      approvedRetailersCount: approvedRetailers.length,
+      partnerLeadsCount: memDb.partnerLeads.length,
+      activeDealsCount: memDb.deals.filter((d) => d.status === 'active').length,
+    },
+    pendingRetailers,
+    approvedRetailers,
+    partnerLeads: memDb.partnerLeads,
+  });
+});
+
+app.put('/api/admin/retailers/:id/status', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await updateRetailerApproval(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB updateRetailerApproval fallback to memDb:', mongoErr);
+    }
+  }
+
+  const retailer = memDb.retailers.find((r) => r.id === req.params.id);
+  if (!retailer) {
+    res.status(404).json({ error: 'Store not found.' });
+    return;
+  }
+
+  retailer.isVerified = Boolean(req.body?.isVerified);
+  res.json({
+    message: retailer.isVerified ? 'Store approved!' : 'Store moved back to pending review.',
+    retailer: formatMemRetailerDto(retailer),
+  });
+});
+
+app.delete('/api/admin/retailers/:id', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await deleteAdminRetailer(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB deleteAdminRetailer fallback to memDb:', mongoErr);
+    }
+  }
+
+  const idx = memDb.retailers.findIndex((r) => r.id === req.params.id);
+  if (idx === -1) {
+    res.status(404).json({ error: 'Store not found.' });
+    return;
+  }
+  const [removed] = memDb.retailers.splice(idx, 1);
+  memDb.deals = memDb.deals.filter((d) => d.retailerId !== removed.id);
+  memDb.items = memDb.items.filter((i) => i.retailerId !== removed.id);
+  res.json({ message: 'Store removed.' });
+});
+
+app.put('/api/admin/leads/:id/status', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await updatePartnerLeadStatus(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB updatePartnerLeadStatus fallback to memDb:', mongoErr);
+    }
+  }
+
+  const lead = memDb.partnerLeads.find((l) => l.id === req.params.id);
+  if (!lead) {
+    res.status(404).json({ error: 'Partner lead not found.' });
+    return;
+  }
+  lead.status = String(req.body?.status || 'new');
+  res.json({ message: `Lead marked as ${lead.status}`, lead });
 });
 
 const startServer = async () => {

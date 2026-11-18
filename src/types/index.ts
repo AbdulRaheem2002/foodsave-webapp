@@ -65,7 +65,7 @@ export interface RetailerStore {
   totalWastedValueAvoidedPkr: number;
 }
 
-export type AppTab = 'consumer' | 'retailer' | 'partner';
+export type AppTab = 'consumer' | 'retailer' | 'partner' | 'admin';
 
 export interface Reservation {
   id: string;
@@ -82,6 +82,7 @@ export interface Reservation {
   bykeaEtaMinutes?: number;
   paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Cash on Pickup';
   paymentStatus: 'paid' | 'pending';
+  paymentReference?: string;
   createdAt: string;
 }
 
@@ -89,12 +90,45 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: 'consumer' | 'retailer';
+  role: 'consumer' | 'retailer' | 'admin';
   contactPhone?: string;
   totalSavedPkr: number;
   itemsRescuedCount: number;
   rescueWalletBalancePkr?: number;
   retailer?: RetailerStore | null;
+}
+
+export interface AdminRetailerRecord extends RetailerStore {
+  contactPhone: string;
+  ownerName: string;
+  ownerEmail: string;
+  createdAt: string;
+}
+
+export interface AdminPartnerLead {
+  id: string;
+  ownerName: string;
+  businessName: string;
+  businessType: string;
+  city: string;
+  sector: string;
+  phone: string;
+  email?: string;
+  notes?: string;
+  status: 'new' | 'contacted' | 'approved' | 'rejected';
+  createdAt: string;
+}
+
+export interface AdminOverview {
+  stats: {
+    pendingRetailersCount: number;
+    approvedRetailersCount: number;
+    partnerLeadsCount: number;
+    activeDealsCount: number;
+  };
+  pendingRetailers: AdminRetailerRecord[];
+  approvedRetailers: AdminRetailerRecord[];
+  partnerLeads: AdminPartnerLead[];
 }
 
 export interface DonationRecord {

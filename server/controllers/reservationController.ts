@@ -13,7 +13,7 @@ export const createReservation = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    const { dealId, quantity, paymentMethod } = req.body;
+    const { dealId, quantity, paymentMethod, paymentReference } = req.body;
 
     if (!dealId || !mongoose.Types.ObjectId.isValid(String(dealId))) {
       res.status(400).json({ error: 'Valid dealId is required.' });
@@ -47,6 +47,7 @@ export const createReservation = async (req: AuthRequest, res: Response): Promis
     // 15-minute pickup window
     const pickupWindowEnd = new Date(Date.now() + 15 * 60 * 1000);
 
+    // Payment is always verified at the bakery counter (receipt/TID or cash) before handover
     const reservation = await Reservation.create({
       userRef: user._id,
       dealRef: deal._id,
@@ -56,8 +57,9 @@ export const createReservation = async (req: AuthRequest, res: Response): Promis
       pickupWindowEnd,
       quantity: qty,
       totalAmountPkr,
-      paymentMethod: paymentMethod || 'JazzCash',
-      paymentStatus: paymentMethod === 'Cash on Pickup' ? 'pending' : 'paid',
+      paymentMethod: paymentMethod || 'Cash on Pickup',
+      paymentStatus: 'pending',
+      paymentReference: String(paymentReference || '').trim().slice(0, 64),
     });
 
     // Deduct deal stock
@@ -136,6 +138,7 @@ export const getMyReservations = async (req: AuthRequest, res: Response): Promis
         totalAmountPkr: resItem.totalAmountPkr,
         paymentMethod: resItem.paymentMethod,
         paymentStatus: resItem.paymentStatus,
+        paymentReference: resItem.paymentReference || '',
         createdAt: resItem.createdAt,
         deal: deal
           ? {
@@ -220,6 +223,7 @@ export const verifyPickupCode = async (req: AuthRequest, res: Response): Promise
         totalAmountPkr: reservation.totalAmountPkr,
         paymentMethod: reservation.paymentMethod,
         paymentStatus: reservation.paymentStatus,
+        paymentReference: reservation.paymentReference || '',
         pickupWindowEnd: reservation.pickupWindowEnd,
         pickupDeadline: reservation.pickupWindowEnd,
         deal: {

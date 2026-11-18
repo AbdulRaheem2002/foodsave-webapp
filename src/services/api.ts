@@ -1,4 +1,4 @@
-import type { DealItem, Reservation, RetailerStore } from '../types';
+import type { AdminOverview, DealItem, Reservation, RetailerStore } from '../types';
 
 export const TOKEN_STORAGE_KEY = 'foodsave_token_v2';
 
@@ -166,6 +166,7 @@ export async function fetchMyReservationsApi(): Promise<Reservation[]> {
         fulfillmentType: 'self-pickup',
         paymentMethod: r.paymentMethod,
         paymentStatus: r.paymentStatus,
+        paymentReference: r.paymentReference || '',
         createdAt: r.createdAt,
       };
     });
@@ -175,11 +176,16 @@ export async function fetchMyReservationsApi(): Promise<Reservation[]> {
   }
 }
 
-export async function createReservationApi(dealId: string, quantity: number, paymentMethod: string) {
+export async function createReservationApi(
+  dealId: string,
+  quantity: number,
+  paymentMethod: string,
+  paymentReference?: string
+) {
   const res = await fetch(`${API_BASE_URL}/reservations`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ dealId, quantity, paymentMethod }),
+    body: JSON.stringify({ dealId, quantity, paymentMethod, paymentReference }),
   });
   if (!res.ok) throw new Error(await parseErrorMessage(res, 'Failed to create reservation'));
   return res.json();
@@ -286,7 +292,7 @@ export async function submitPartnerLeadApi(leadData: {
 export async function loginAuthApi(
   email: string,
   password: string,
-  expectedRole?: 'consumer' | 'retailer'
+  expectedRole?: 'consumer' | 'retailer' | 'admin'
 ) {
   const res = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
@@ -296,6 +302,58 @@ export async function loginAuthApi(
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error || 'Invalid email or password');
+  }
+  return data;
+}
+
+export async function fetchAdminOverviewApi(): Promise<AdminOverview> {
+  const res = await fetch(`${API_BASE_URL}/admin/overview`, {
+    headers: getAuthHeaders(false),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to load Founder Admin portal.');
+  }
+  return data;
+}
+
+export async function updateAdminRetailerStatusApi(retailerId: string, isVerified: boolean) {
+  const res = await fetch(`${API_BASE_URL}/admin/retailers/${retailerId}/status`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ isVerified }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to update store approval.');
+  }
+  return data;
+}
+
+export async function deleteAdminRetailerApi(retailerId: string) {
+  const res = await fetch(`${API_BASE_URL}/admin/retailers/${retailerId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(false),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to remove store application.');
+  }
+  return data;
+}
+
+export async function updateAdminLeadStatusApi(
+  leadId: string,
+  status: 'new' | 'contacted' | 'approved' | 'rejected'
+) {
+  const res = await fetch(`${API_BASE_URL}/admin/leads/${leadId}/status`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ status }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to update lead status.');
   }
   return data;
 }

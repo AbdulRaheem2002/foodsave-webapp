@@ -15,6 +15,7 @@ import {
   Lock,
   Mail,
   Clock,
+  ShieldCheck,
 } from 'lucide-react';
 import { loginAuthApi, registerAuthApi } from '../services/api';
 import type { AuthUser } from '../types';
@@ -24,11 +25,11 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: AuthUser | null;
-  initialRole?: 'consumer' | 'retailer';
+  initialRole?: 'consumer' | 'retailer' | 'admin';
   initialMode?: 'login' | 'register';
   onAuthSuccess: (user: AuthUser, token: string) => void;
   onLogout: () => void;
-  onSwitchTab?: (tab: 'consumer' | 'retailer') => void;
+  onSwitchTab?: (tab: 'consumer' | 'retailer' | 'partner' | 'admin') => void;
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -45,7 +46,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onSwitchTab,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
-  const [role, setRole] = useState<'consumer' | 'retailer'>(initialRole);
+  const [role, setRole] = useState<'consumer' | 'retailer'>(initialRole === 'retailer' ? 'retailer' : 'consumer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -67,7 +68,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setRole(initialRole);
+      setRole(initialRole === 'retailer' ? 'retailer' : 'consumer');
       setMode(initialMode);
       setError(null);
       setFieldErrors({});
@@ -201,7 +202,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const res = await loginAuthApi(
           email.trim().toLowerCase(),
           password,
-          initialRole === 'retailer' ? 'retailer' : undefined
+          initialRole === 'retailer' ? 'retailer' : initialRole === 'admin' ? 'admin' : undefined
         );
         if (!res.user || !res.token) {
           throw new Error(res.error || 'Invalid email or password.');
@@ -280,7 +281,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               )}
 
               <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold">
-                {currentUser.role === 'retailer' ? (
+                {currentUser.role === 'admin' ? (
+                  <span className="px-3 py-1 rounded-full bg-[#171916] text-white font-black flex items-center gap-1.5">
+                    <ShieldCheck className="size-3.5 text-[#f37021]" />
+                    Founder Admin Account
+                  </span>
+                ) : currentUser.role === 'retailer' ? (
                   <span className="px-3 py-1 rounded-full bg-[#fff3e0] text-[#e65100] border border-[#ffe0b2] font-black flex items-center gap-1">
                     <Store className="size-3.5" />
                     {currentUser.retailer?.name || 'Verified Merchant Partner'}
@@ -310,7 +316,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
 
-            {currentUser.role === 'retailer' ? (
+            {currentUser.role === 'admin' ? (
+              <button
+                onClick={() => {
+                  if (onSwitchTab) onSwitchTab('admin');
+                  onClose();
+                }}
+                className="w-full py-3 rounded-xl bg-[#171916] hover:bg-stone-800 text-white font-black text-xs shadow-md flex items-center justify-center gap-2 transition-all mt-1 cursor-pointer"
+              >
+                <ShieldCheck className="size-4 text-[#f37021]" />
+                <span>Open Founder Admin Panel</span>
+                <ArrowRight className="size-4" />
+              </button>
+            ) : currentUser.role === 'retailer' ? (
               <button
                 onClick={() => {
                   if (onSwitchTab) onSwitchTab('retailer');
@@ -361,7 +379,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </h3>
                   <p className="text-xs text-stone-500 font-medium">
                     {mode === 'login'
-                      ? initialRole === 'retailer'
+                      ? initialRole === 'admin'
+                        ? 'Founder Admin authentication required'
+                        : initialRole === 'retailer'
                         ? 'Merchant Partner authentication required'
                         : 'Access reservations & account tools'
                       : 'Strict verification keeps pickups reliable'}

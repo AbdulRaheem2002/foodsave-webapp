@@ -143,9 +143,18 @@ export const ActivePassesDrawer: React.FC<ActivePassesDrawerProps> = ({
                         <MapPin className="size-3 text-[#1b4332]" />
                         {res.item.storeName}
                       </p>
-                      <p className="text-xs font-black text-[#f37021] mt-0.5">
-                        {formatCurrency(res.totalPricePkr)} ({res.quantity}x)
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                        <p className="text-xs font-black text-[#f37021]">
+                          {formatCurrency(res.totalPricePkr)} ({res.quantity}x)
+                        </p>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                          {res.paymentStatus === 'paid'
+                            ? `${res.paymentMethod} Paid`
+                            : res.paymentMethod === 'Cash on Pickup'
+                            ? 'Pay Cash at Counter'
+                            : `Show ${res.paymentMethod} Receipt`}
+                        </span>
+                      </div>
                     </div>
                   </div>
 

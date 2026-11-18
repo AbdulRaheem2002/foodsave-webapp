@@ -8,6 +8,7 @@ import {
   validateRegisterPayload,
   validateLoginPayload,
   normalizePhone,
+  isConfiguredAdminEmail,
   CITY_COORDINATES,
   ALLOWED_STORE_CATEGORIES,
 } from '../utils/authValidation.js';
@@ -47,12 +48,17 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
 
     const passwordHash = await bcrypt.hash(String(password), 10);
+    const assignedRole = isConfiguredAdminEmail(normalizedEmail)
+      ? 'admin'
+      : role === 'retailer'
+      ? 'retailer'
+      : 'consumer';
 
     const user = await User.create({
       name: String(name).trim(),
       email: normalizedEmail,
       passwordHash,
-      role: role === 'retailer' ? 'retailer' : 'consumer',
+      role: assignedRole,
       contactPhone: normalizedPhone,
     });
 
@@ -144,12 +150,19 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (isConfiguredAdminEmail(normalizedEmail) && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
+    }
+
     if (expectedRole && expectedRole !== user.role) {
       res.status(403).json({
         error:
-          expectedRole === 'retailer'
-            ? 'This email belongs to a Consumer account. Please sign in with a Merchant Partner account or register a new store.'
-            : 'This email belongs to a Merchant Partner account.',
+          expectedRole === 'admin'
+            ? 'Founder Admin privileges are required to access this portal.'
+            : expectedRole === 'retailer'
+            ? 'This email belongs to a non-store account. Please sign in with a Merchant Partner account.'
+            : 'This email belongs to a different account type.',
       });
       return;
     }

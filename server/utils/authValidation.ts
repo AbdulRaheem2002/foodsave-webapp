@@ -20,6 +20,17 @@ export function normalizePhone(rawPhone?: string): string {
   return String(rawPhone || '').replace(/[\s()-]/g, '').trim();
 }
 
+export function isConfiguredAdminEmail(email?: string): boolean {
+  const clean = String(email || '').trim().toLowerCase();
+  if (!clean) return false;
+  const raw = process.env.ADMIN_EMAIL || process.env.ADMIN_EMAILS || '';
+  return raw
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(clean);
+}
+
 export function validateRegisterPayload(body: any): AuthValidationResult {
   const name = String(body?.name || '').trim();
   const normalizedEmail = String(body?.email || '').trim().toLowerCase();

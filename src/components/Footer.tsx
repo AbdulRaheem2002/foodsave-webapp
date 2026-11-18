@@ -73,13 +73,13 @@ export const Footer: React.FC<FooterProps> = ({
 
           <div>
             <h4 className="text-xs font-black uppercase tracking-wider text-stone-400 mb-3">
-              Launch Hubs
+              Islamabad Live Zones
             </h4>
             <ul className="space-y-1.5 text-xs text-stone-600 font-medium">
-              <li>Islamabad (F-6, F-7, Blue Area, F-10, NUST H-12)</li>
-              <li>Rawalpindi</li>
-              <li>Lahore</li>
-              <li>Karachi</li>
+              <li>F-6 &amp; F-7 Markaz</li>
+              <li>E-11 &amp; F-10 Sectors</li>
+              <li>Blue Area &amp; I-8</li>
+              <li>NUST H-12 (More cities coming soon)</li>
             </ul>
           </div>
 

@@ -11,6 +11,7 @@ export interface IReservation extends Document {
   totalAmountPkr: number;
   paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Cash on Pickup';
   paymentStatus: 'paid' | 'pending';
+  paymentReference?: string;
 }
 
 const ReservationSchema: Schema = new Schema(
@@ -23,8 +24,9 @@ const ReservationSchema: Schema = new Schema(
     pickupWindowEnd: { type: Date, required: true },
     quantity: { type: Number, default: 1 },
     totalAmountPkr: { type: Number, required: true },
-    paymentMethod: { type: String, enum: ['JazzCash', 'EasyPaisa', 'Cash on Pickup'], default: 'JazzCash' },
-    paymentStatus: { type: String, enum: ['paid', 'pending'], default: 'paid' },
+    paymentMethod: { type: String, enum: ['JazzCash', 'EasyPaisa', 'Cash on Pickup'], default: 'Cash on Pickup' },
+    paymentStatus: { type: String, enum: ['paid', 'pending'], default: 'pending' },
+    paymentReference: { type: String, default: '' },
   },
   { timestamps: true }
 );

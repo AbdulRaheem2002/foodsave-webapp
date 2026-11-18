@@ -5,7 +5,7 @@ export interface MemUser {
   name: string;
   email: string;
   passwordHash: string;
-  role: 'consumer' | 'retailer';
+  role: 'consumer' | 'retailer' | 'admin';
   contactPhone?: string;
   totalSavedPkr: number;
   itemsRescuedCount: number;
@@ -63,6 +63,7 @@ export interface MemReservation {
   totalAmountPkr: number;
   paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Cash on Pickup';
   paymentStatus: 'paid' | 'pending';
+  paymentReference?: string;
   createdAt: string;
 }
 

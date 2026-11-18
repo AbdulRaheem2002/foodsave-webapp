@@ -215,6 +215,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
           totalPricePkr: localMatch.totalPricePkr,
           paymentMethod: localMatch.paymentMethod,
           paymentStatus: localMatch.paymentStatus,
+          paymentReference: localMatch.paymentReference || '',
           status: localMatch.status,
           pickupDeadline: localMatch.pickupWindowEnd,
         });
@@ -326,15 +327,15 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
           <button
             onClick={() => setIsVerifyPassOpen(true)}
-            className="btn-claim px-4 py-2.5 text-xs font-black shadow-xs"
+            className="btn-claim px-4 py-2.5 text-xs font-black shadow-xs flex-1 sm:flex-none justify-center"
           >
             <QrCode className="size-4" />
-            <span>Verify Customer Pass</span>
+            <span>Verify Pass</span>
           </button>
 
           <button
             onClick={() => setIsAddItemOpen(true)}
-            className="px-4 py-2.5 rounded-full bg-[#FF9800] hover:bg-[#f57c00] text-white font-black text-xs shadow-md shadow-[#FF9800]/25 flex items-center gap-1.5 transition-all transform active:scale-95"
+            className="px-4 py-2.5 rounded-full bg-[#FF9800] hover:bg-[#f57c00] text-white font-black text-xs shadow-md shadow-[#FF9800]/25 flex items-center justify-center gap-1.5 transition-all transform active:scale-95 flex-1 sm:flex-none"
           >
             <Plus className="size-4" />
             <span>List Surplus Item</span>
@@ -343,7 +344,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       </div>
 
       {/* Daily Recovery Total Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         
         {/* Metric 1: ₨ Recovered */}
         <div className="bg-white p-5 rounded-2xl border border-[#2D6A4F]/15 flex items-start justify-between shadow-2xs">
@@ -680,24 +681,42 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                   </span>
                 </div>
 
-                <div className="text-xs space-y-1">
+                <div className="text-xs space-y-1.5">
                   <p className="text-stone-900 font-bold">{verifiedPass.dealTitle}</p>
                   <p className="text-stone-600">Quantity: <strong>{verifiedPass.quantity} pcs</strong></p>
-                  <p className="text-stone-600">Amount: <strong className="text-[#f37021]">{formatCurrency(verifiedPass.totalPricePkr)}</strong></p>
-                  <p className="text-stone-600">Payment: <strong>{verifiedPass.paymentMethod}</strong> ({verifiedPass.paymentStatus})</p>
+                  <p className="text-stone-600">Amount Due: <strong className="text-[#f37021]">{formatCurrency(verifiedPass.totalPricePkr)}</strong></p>
+                  <div
+                    className={`mt-1.5 p-2.5 rounded-xl border text-[11px] font-bold ${
+                      verifiedPass.paymentStatus === 'paid'
+                        ? 'bg-[#edf7ed] border-[#c8e6c9] text-[#2e7d32]'
+                        : 'bg-amber-50 border-amber-300 text-amber-900'
+                    }`}
+                  >
+                    {verifiedPass.paymentStatus === 'paid' ? (
+                      <span>✓ Payment Already Confirmed ({verifiedPass.paymentMethod})</span>
+                    ) : verifiedPass.paymentMethod === 'Cash on Pickup' ? (
+                      <span>💵 COLLECT {formatCurrency(verifiedPass.totalPricePkr)} CASH AT COUNTER</span>
+                    ) : (
+                      <span>
+                        📱 CHECK {verifiedPass.paymentMethod.toUpperCase()} RECEIPT FOR{' '}
+                        {formatCurrency(verifiedPass.totalPricePkr)}
+                        {verifiedPass.paymentReference ? ` (Ref: ${verifiedPass.paymentReference})` : ''}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {isSuccessCollected ? (
                   <div className="p-3 rounded-xl bg-[#edf7ed] border border-[#c8e6c9] text-[#2e7d32] text-xs font-bold flex items-center justify-center gap-1.5 animate-bounce">
                     <CheckCircle2 className="size-4" />
-                    <span>Item Handover Confirmed!</span>
+                    <span>Payment Verified &amp; Item Handed Over!</span>
                   </div>
                 ) : (
                   <button
                     onClick={handleConfirmCollection}
                     className="w-full py-2.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-black text-xs shadow-md transition-all"
                   >
-                    Confirm Customer Handover (Collect)
+                    Confirm Payment &amp; Handover
                   </button>
                 )}
               </div>

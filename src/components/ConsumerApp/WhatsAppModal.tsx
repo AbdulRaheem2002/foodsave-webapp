@@ -18,7 +18,16 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
 
   if (!isOpen || !reservation) return null;
 
-  const messageText = `⚡ *BITEHOUR PAKISTAN PICKUP PASS* ⚡\n\n📌 *Pickup Code:* ${reservation.pickupCode}\n🛍️ *Item:* ${reservation.item.title} (Qty: ${reservation.quantity})\n🏪 *Store:* ${reservation.item.storeName}\n📍 *Address:* ${reservation.item.location.address}, ${reservation.item.location.city}\n💰 *Total Paid:* ${formatCurrency(reservation.totalPricePkr)} via ${reservation.paymentMethod}\n⏱️ *Pickup Deadline:* ${reservation.item.pickupDeadline}\n\n*Show this pass at checkout counter!*`;
+  const paymentLabel =
+    reservation.paymentStatus === 'paid'
+      ? `Paid (${reservation.paymentMethod})`
+      : reservation.paymentMethod === 'Cash on Pickup'
+      ? 'Pay Cash at Counter'
+      : `Verify ${reservation.paymentMethod} Receipt at Counter${
+          reservation.paymentReference ? ` (Ref: ${reservation.paymentReference})` : ''
+        }`;
+
+  const messageText = `⚡ *BITEHOUR PAKISTAN PICKUP PASS* ⚡\n\n📌 *Pickup Code:* ${reservation.pickupCode}\n🛍️ *Item:* ${reservation.item.title} (Qty: ${reservation.quantity})\n🏪 *Store:* ${reservation.item.storeName}\n📍 *Address:* ${reservation.item.location.address}, ${reservation.item.location.city}\n💰 *Total:* ${formatCurrency(reservation.totalPricePkr)} — ${paymentLabel}\n⏱️ *Pickup Deadline:* ${reservation.item.pickupDeadline}\n\n*Show this pass at checkout counter!*`;
 
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(messageText)}`;
 

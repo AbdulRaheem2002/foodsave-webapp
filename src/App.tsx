@@ -7,6 +7,7 @@ import { MysteryBagsBanner } from './components/ConsumerApp/MysteryBagsBanner';
 import { HowItWorksSection } from './components/ConsumerApp/HowItWorksSection';
 import { FaqSection } from './components/ConsumerApp/FaqSection';
 import { PartnerPage } from './components/PartnerPage';
+import { AdminDashboard } from './components/AdminDashboard';
 import { InstallPwaBanner } from './components/InstallPwaBanner';
 import { ReservationModal } from './components/ConsumerApp/ReservationModal';
 import { ActivePassesDrawer } from './components/ConsumerApp/ActivePassesDrawer';
@@ -38,15 +39,23 @@ export function App() {
     if (typeof window !== 'undefined') {
       if (window.location.pathname === '/partner') return 'partner';
       if (window.location.pathname === '/merchant') return 'retailer';
+      if (window.location.pathname === '/admin') return 'admin';
     }
     return 'consumer';
   });
-  const [selectedCity, setSelectedCity] = useState<PakistanCity>('All Pakistan');
+  const [selectedCity] = useState<PakistanCity>('All Pakistan');
+  const [selectedSector, setSelectedSector] = useState<string>('All Areas');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const nextPath =
-      activeTab === 'partner' ? '/partner' : activeTab === 'retailer' ? '/merchant' : '/';
+      activeTab === 'partner'
+        ? '/partner'
+        : activeTab === 'retailer'
+        ? '/merchant'
+        : activeTab === 'admin'
+        ? '/admin'
+        : '/';
     if (window.location.pathname !== nextPath) {
       window.history.replaceState(null, '', nextPath);
     }
@@ -65,7 +74,7 @@ export function App() {
 
   const [isPassesDrawerOpen, setIsPassesDrawerOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [authInitialRole, setAuthInitialRole] = useState<'consumer' | 'retailer'>('consumer');
+  const [authInitialRole, setAuthInitialRole] = useState<'consumer' | 'retailer' | 'admin'>('consumer');
   const [authInitialMode, setAuthInitialMode] = useState<'login' | 'register'>('login');
   
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
@@ -240,7 +249,9 @@ export function App() {
       console.warn('LocalStorage token error:', e);
     }
     refreshMarketplaceData();
-    if (user.role === 'retailer' && user.retailer?.isVerified) {
+    if (user.role === 'admin') {
+      setActiveTab('admin');
+    } else if (user.role === 'retailer' && user.retailer?.isVerified) {
       setActiveTab('retailer');
     } else if (pendingReserveDeal) {
       setReserveModalDeal(pendingReserveDeal);
@@ -252,7 +263,7 @@ export function App() {
     setCurrentUser(null);
     setReservations([]);
     setPendingReserveDeal(null);
-    if (activeTab === 'retailer') {
+    if (activeTab === 'retailer' || activeTab === 'admin') {
       setActiveTab('consumer');
     }
     try {
@@ -331,7 +342,7 @@ export function App() {
             <span className="size-1.5 rounded-full bg-[#85e3a8] shrink-0" />
             <span className="truncate text-[11px] font-medium text-stone-100">
               {filteredDealsByCity.length > 0
-                ? `${filteredDealsByCity.length} live surplus ${filteredDealsByCity.length === 1 ? 'bag' : 'bags'} available${selectedCity === 'All Pakistan' ? ' across Pakistan' : ` in ${selectedCity}`} • 15-min hold`
+                ? `${filteredDealsByCity.length} live surplus ${filteredDealsByCity.length === 1 ? 'bag' : 'bags'} available in Islamabad • 15-min hold`
                 : 'Islamabad Launch • Closing-hour bakery & café deals up to 85% OFF • Zero app required'}
             </span>
           </div>
@@ -350,8 +361,8 @@ export function App() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        selectedCity={selectedCity}
-        setSelectedCity={setSelectedCity}
+        selectedSector={selectedSector}
+        setSelectedSector={setSelectedSector}
         reservationCount={reservations.length}
         onOpenReservations={() => setIsPassesDrawerOpen(true)}
         currentUser={currentUser}
@@ -363,8 +374,45 @@ export function App() {
       />
 
       {/* Main View Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 pt-5 pb-12">
-        {activeTab === 'partner' ? (
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-12">
+        {activeTab === 'admin' ? (
+          currentUser?.role === 'admin' ? (
+            <AdminDashboard />
+          ) : (
+            <div className="max-w-lg mx-auto my-12 p-8 rounded-3xl bg-white border border-[#E7E2D8] shadow-lg text-center flex flex-col items-center gap-4 animate-in fade-in duration-300">
+              <div className="size-16 rounded-2xl bg-[#171916] text-white flex items-center justify-center shadow-xs">
+                <Lock className="size-8 text-[#f37021]" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-stone-900 tracking-tight">
+                  Founder Admin Access Required
+                </h2>
+                <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
+                  Sign in with your configured BiteHour Founder Admin email to approve pending bakeries and manage /partner leads.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2.5 w-full mt-2">
+                <button
+                  onClick={() => {
+                    if (currentUser) handleLogout();
+                    setAuthInitialRole('admin');
+                    setAuthInitialMode('login');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#1B4332] hover:bg-[#133326] text-white font-black text-xs shadow-md cursor-pointer"
+                >
+                  Sign In as Founder Admin
+                </button>
+                <button
+                  onClick={() => setActiveTab('consumer')}
+                  className="py-3 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 font-bold text-xs cursor-pointer"
+                >
+                  ← Back to Deals
+                </button>
+              </div>
+            </div>
+          )
+        ) : activeTab === 'partner' ? (
           <PartnerPage
             onOpenMerchantRegister={() => {
               if (currentUser?.role === 'retailer') {
@@ -485,22 +533,22 @@ export function App() {
             </div>
           )
         ) : (
-          <div className="flex flex-col gap-12 sm:gap-16 animate-in fade-in duration-300">
+          <div className="flex flex-col gap-10 sm:gap-16 animate-in fade-in duration-300">
             
             {/* Editorial Split Hero with Appetite Photography */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center pt-1 lg:pt-4">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-center pt-1 lg:pt-4">
               
               {/* Left Column: High-Impact Typography & Clear CTAs */}
               <div className="lg:col-span-6 flex flex-col justify-center">
                 
                 {/* Top Location Pill */}
-                <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9] inline-flex items-center gap-2 self-start mb-5 shadow-2xs">
+                <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9] inline-flex items-center gap-2 self-start mb-4 sm:mb-5 shadow-2xs">
                   <span className="size-2 rounded-full bg-[#2e7d32] animate-pulse" />
                   Islamabad Closing Drops • Up to 85% OFF
                 </span>
 
                 {/* Big Display Headline with Editorial Italic Serif Accent */}
-                <h1 className="text-4xl sm:text-5xl lg:text-[3.65rem] font-extrabold text-[#171916] tracking-[-0.03em] leading-[1.03] mb-5">
+                <h1 className="text-[2.1rem] sm:text-5xl lg:text-[3.65rem] font-extrabold text-[#171916] tracking-[-0.03em] leading-[1.06] sm:leading-[1.03] mb-4 sm:mb-5">
                   Rescue Fresh{' '}
                   <span className="font-serif-display italic font-semibold text-[#1B4332]">
                     Evening Pastries
@@ -509,17 +557,17 @@ export function App() {
                 </h1>
 
                 {/* Generous Lead Subtitle */}
-                <p className="text-base sm:text-lg text-stone-600 leading-relaxed max-w-xl mb-6 font-medium">
+                <p className="text-[15px] sm:text-lg text-stone-600 leading-relaxed max-w-xl mb-5 sm:mb-6 font-medium">
                   Islamabad bakeries, cafés, and kitchens drop fresh same-day surplus before lockup. Reserve on web in 15 seconds — pay via{' '}
                   <strong className="text-[#171916] font-bold">Cash on Pickup, JazzCash, or EasyPaisa</strong>.
                 </p>
 
                 {/* Primary CTA Pair + App Install */}
-                <div className="flex flex-wrap items-center gap-3 mb-6">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 mb-5 sm:mb-6">
                   <button
                     type="button"
                     onClick={scrollToDeals}
-                    className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[#1B4332] hover:bg-[#133326] text-white text-sm font-bold shadow-lg shadow-[#1B4332]/20 transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-[#1B4332] hover:bg-[#133326] text-white text-sm font-bold shadow-lg shadow-[#1B4332]/20 transition-all cursor-pointer w-full sm:w-auto"
                   >
                     <span>{deals.length > 0 ? 'Explore Live Drops' : 'See Sample Boxes'}</span>
                     <ArrowRight className="size-4" />
@@ -531,20 +579,22 @@ export function App() {
                       setActiveTab('partner');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-[#fff8f1] text-[#171916] border border-[#D8D1C5] hover:border-[#f37021] text-sm font-bold shadow-2xs transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-[#fff8f1] text-[#171916] border border-[#D8D1C5] hover:border-[#f37021] text-sm font-bold shadow-2xs transition-all cursor-pointer w-full sm:w-auto"
                   >
                     <Store className="size-4 text-[#f37021]" />
                     <span>Partner Your Bakery (0% Fee)</span>
                   </button>
 
-                  <InstallPwaBanner />
+                  <div className="flex justify-center sm:justify-start">
+                    <InstallPwaBanner />
+                  </div>
                 </div>
 
                 {/* Crisp Inline Guarantees */}
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-stone-600 font-semibold pt-2 border-t border-[#E7E2D8]">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs sm:text-[13px] text-stone-600 font-semibold pt-3 border-t border-[#E7E2D8]">
                   <span className="inline-flex items-center gap-1.5">
                     <CheckCircle2 className="size-4 text-[#2e7d32]" />
-                    F-6 • F-7 • Blue Area • H-12
+                    F-6 • F-7 • E-11 • Blue Area • H-12
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <Clock className="size-4 text-[#f37021]" />
@@ -559,7 +609,7 @@ export function App() {
 
               {/* Right Column: Rich Sunlit Artisan Food Photography + Floating Bag Preview */}
               <div className="lg:col-span-6">
-                <div className="relative rounded-[2rem] overflow-hidden shadow-[0_24px_60px_-20px_rgba(23,25,22,0.22)] border border-[#E7E2D8] bg-stone-100 aspect-[4/3]">
+                <div className="relative rounded-3xl sm:rounded-[2rem] overflow-hidden shadow-[0_24px_60px_-20px_rgba(23,25,22,0.22)] border border-[#E7E2D8] bg-stone-100 aspect-[4/3]">
                   <img
                     src={featuredDeal?.imageUrl || '/images/hero-pastries.jpg'}
                     alt={featuredDeal ? featuredDeal.title : 'Fresh golden croissants and evening bakery assortment'}
@@ -568,14 +618,14 @@ export function App() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
 
                   {/* Single Floating Editorial Drop Pill */}
-                  <div className="absolute bottom-4 left-4 right-4 sm:left-5 sm:right-5 rounded-2xl bg-white/95 backdrop-blur-md p-4 shadow-xl border border-white/60 flex items-center justify-between gap-4">
+                  <div className="absolute bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 rounded-2xl bg-white/95 backdrop-blur-md p-3 sm:p-4 shadow-xl border border-white/60 flex items-center justify-between gap-3 sm:gap-4">
                     <div className="min-w-0">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#f37021] block">
+                      <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#f37021] block truncate">
                         {featuredDeal
                           ? `Live Drop • ${featuredDeal.storeName}`
-                          : 'Sample Evening Drop • Islamabad Bakery Format'}
+                          : 'Sample Evening Drop • Islamabad Bakery'}
                       </span>
-                      <p className="text-sm sm:text-base font-extrabold text-[#171916] truncate">
+                      <p className="text-xs sm:text-base font-extrabold text-[#171916] truncate">
                         {featuredDeal
                           ? featuredDeal.title
                           : 'Artisan Croissant & Pastry Box (9:30 PM)'}
@@ -583,10 +633,10 @@ export function App() {
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="text-xs text-stone-400 line-through font-medium block leading-none mb-0.5">
+                      <span className="text-[11px] sm:text-xs text-stone-400 line-through font-medium block leading-none mb-0.5">
                         {featuredDeal ? `₨ ${featuredDeal.originalPricePkr}` : '₨ 1,650'}
                       </span>
-                      <span className="text-lg sm:text-xl font-extrabold text-[#1B4332] leading-none">
+                      <span className="text-base sm:text-xl font-extrabold text-[#1B4332] leading-none">
                         {featuredDeal ? `₨ ${featuredDeal.currentPricePkr}` : '₨ 550'}
                       </span>
                     </div>
@@ -599,7 +649,9 @@ export function App() {
             {/* Filterable Deal Feed Grid FIRST (customers see deals/filters immediately) */}
             <DealFeed
               deals={filteredDealsByCity}
-              selectedCity={selectedCity}
+              selectedCity="Islamabad"
+              selectedSector={selectedSector}
+              onSelectSector={setSelectedSector}
               onReserveDeal={handleOpenReserveModal}
               onOpenPartnerPage={() => {
                 setActiveTab('partner');
@@ -626,7 +678,7 @@ export function App() {
             {/* Warm Light Map View (auto-hides when 0 deals match) */}
             <DealMap
               deals={filteredDealsByCity}
-              selectedCity={selectedCity}
+              selectedCity="Islamabad"
               selectedDeal={selectedDeal}
               onSelectDeal={(deal) => setSelectedDeal(deal)}
               onReserveDeal={handleOpenReserveModal}

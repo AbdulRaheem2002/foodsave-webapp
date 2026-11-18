@@ -21,6 +21,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 }) => {
   const [quantity, setQuantity] = useState<number>(1);
   const [paymentMethod, setPaymentMethod] = useState<'JazzCash' | 'EasyPaisa' | 'Cash on Pickup'>('Cash on Pickup');
+  const [paymentReference, setPaymentReference] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [reserveError, setReserveError] = useState<string | null>(null);
   const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
@@ -28,6 +29,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
   useEffect(() => {
     setQuantity(1);
+    setPaymentReference('');
     setReserveError(null);
     setIsConfirmed(false);
     setConfirmedReservation(null);
@@ -46,7 +48,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     sounds.playCashChime();
 
     try {
-      const apiRes = await createReservationApi(deal.id, quantity, paymentMethod);
+      const cleanRef = paymentMethod === 'Cash on Pickup' ? '' : paymentReference.trim();
+      const apiRes = await createReservationApi(deal.id, quantity, paymentMethod, cleanRef || undefined);
 
       const newReservation: Reservation = {
         id: apiRes.reservation?.id || apiRes.reservation?._id || `res-${Date.now()}`,
@@ -59,7 +62,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         pickupCode: apiRes.pickupCode,
         fulfillmentType: 'self-pickup',
         paymentMethod,
-        paymentStatus: paymentMethod === 'Cash on Pickup' ? 'pending' : 'paid',
+        paymentStatus: 'pending',
+        paymentReference: cleanRef,
         createdAt: new Date().toISOString(),
       };
 
@@ -168,13 +172,13 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             <div>
               <label className="block text-xs font-bold text-[#1F2937] mb-1.5 flex items-center gap-1">
                 <Wallet className="size-3.5 text-[#2D6A4F]" />
-                Select Payment Method:
+                Select Counter Payment Method:
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('JazzCash')}
-                  className={`p-2.5 rounded-xl border text-center transition-all text-xs font-bold ${
+                  className={`py-2.5 px-1.5 rounded-xl border text-center transition-all text-[11px] sm:text-xs font-bold ${
                     paymentMethod === 'JazzCash'
                       ? 'bg-[#d32f2f] text-white border-[#d32f2f] shadow-sm'
                       : 'bg-[#F9F6F0] text-slate-700 border-[#2D6A4F]/15'
@@ -185,7 +189,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('EasyPaisa')}
-                  className={`p-2.5 rounded-xl border text-center transition-all text-xs font-bold ${
+                  className={`py-2.5 px-1.5 rounded-xl border text-center transition-all text-[11px] sm:text-xs font-bold ${
                     paymentMethod === 'EasyPaisa'
                       ? 'bg-[#2e7d32] text-white border-[#2e7d32] shadow-sm'
                       : 'bg-[#F9F6F0] text-slate-700 border-[#2D6A4F]/15'
@@ -196,7 +200,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setPaymentMethod('Cash on Pickup')}
-                  className={`p-2.5 rounded-xl border text-center transition-all text-xs font-bold ${
+                  className={`py-2.5 px-1.5 rounded-xl border text-center transition-all text-[11px] sm:text-xs font-bold ${
                     paymentMethod === 'Cash on Pickup'
                       ? 'bg-[#FF9800] text-white border-[#FF9800] shadow-sm'
                       : 'bg-[#F9F6F0] text-slate-700 border-[#2D6A4F]/15'
@@ -205,6 +209,21 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   💵 Cash
                 </button>
               </div>
+
+              {paymentMethod !== 'Cash on Pickup' && (
+                <div className="mt-2.5 p-3 rounded-xl bg-[#fff8e1] border border-[#ffecb3] space-y-2 text-[11px] text-amber-900">
+                  <p className="font-semibold leading-snug">
+                    <strong>Verify at Counter:</strong> Send {formatCurrency(totalPricePkr)} to the store's {paymentMethod} at pickup and <strong>show the transaction receipt SMS/screen</strong> to the cashier.
+                  </p>
+                  <input
+                    type="text"
+                    value={paymentReference}
+                    onChange={(e) => setPaymentReference(e.target.value)}
+                    placeholder="Optional: Paste TID / Reference after paying"
+                    className="w-full px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-stone-900 text-[11px] font-mono placeholder-stone-400 focus:outline-none focus:border-[#1b4332]"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Order Summary Breakdown */}
@@ -257,9 +276,16 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               <span className="font-mono text-3xl font-black tracking-widest text-[#2D6A4F] bg-white px-6 py-1.5 rounded-full border border-[#2D6A4F]/30 shadow-xs">
                 {confirmedReservation?.pickupCode}
               </span>
-              <span className="text-[11px] text-slate-500 font-medium">
-                Payment: {confirmedReservation?.paymentMethod} ({confirmedReservation?.paymentStatus})
+              <span className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full font-bold">
+                {confirmedReservation?.paymentMethod === 'Cash on Pickup'
+                  ? `Pay ${formatCurrency(totalPricePkr)} Cash at Counter`
+                  : `Show ${confirmedReservation?.paymentMethod} Receipt for ${formatCurrency(totalPricePkr)} at Counter`}
               </span>
+              {confirmedReservation?.paymentReference && (
+                <span className="text-[11px] font-mono text-stone-600">
+                  Ref: {confirmedReservation.paymentReference}
+                </span>
+              )}
             </div>
 
             <div className="flex gap-2.5 w-full pt-2">

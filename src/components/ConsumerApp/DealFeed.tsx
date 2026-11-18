@@ -7,6 +7,8 @@ import { Search } from 'lucide-react';
 interface DealFeedProps {
   deals: DealItem[];
   selectedCity?: PakistanCity;
+  selectedSector?: string;
+  onSelectSector?: (sector: string) => void;
   onReserveDeal: (deal: DealItem) => void;
   onSelectDeal: (deal: DealItem) => void;
   onOpenPartnerPage?: () => void;
@@ -28,11 +30,13 @@ const FLAVORS: { key: FlavorType; label: string }[] = [
   { key: 'mixed', label: '🍱 Mixed' },
 ];
 
-const ISLAMABAD_SECTORS = ['All Areas', 'F-6', 'F-7', 'F-10', 'Blue Area', 'NUST / H-12', 'I-8 / DHA'];
+const ISLAMABAD_SECTORS = ['All Areas', 'F-6', 'F-7', 'E-11', 'F-10', 'Blue Area', 'NUST / H-12', 'I-8 / DHA'];
 
 export const DealFeed: React.FC<DealFeedProps> = ({
   deals,
   selectedCity = 'All Pakistan',
+  selectedSector: controlledSector,
+  onSelectSector,
   onReserveDeal,
   onSelectDeal,
   onOpenPartnerPage,
@@ -40,8 +44,14 @@ export const DealFeed: React.FC<DealFeedProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('All');
   const [selectedFlavor, setSelectedFlavor] = useState<FlavorType>('All');
-  const [selectedSector, setSelectedSector] = useState<string>('All Areas');
+  const [internalSector, setInternalSector] = useState<string>('All Areas');
   const [minDiscount, setMinDiscount] = useState<number>(30);
+
+  const selectedSector = controlledSector ?? internalSector;
+  const setSelectedSector = (sector: string) => {
+    if (onSelectSector) onSelectSector(sector);
+    setInternalSector(sector);
+  };
 
   const filteredDeals = useMemo(() => {
     return deals.filter((deal) => {
@@ -104,7 +114,7 @@ export const DealFeed: React.FC<DealFeedProps> = ({
                 step="5"
                 value={minDiscount}
                 onChange={(e) => setMinDiscount(Number(e.target.value))}
-                className="w-20 accent-[#1b4332] cursor-pointer"
+                className="flex-1 sm:flex-none sm:w-20 accent-[#1b4332] cursor-pointer"
               />
               <span className="font-extrabold text-[#1b4332] font-mono text-[11px] w-9">{minDiscount}%+</span>
             </div>

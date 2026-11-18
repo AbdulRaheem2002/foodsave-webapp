@@ -32,15 +32,27 @@ export const BiteHourLogo: React.FC<BiteHourLogoProps> = ({
   showTagline = false,
   compact = false,
 }) => (
-  <div className="flex items-center gap-2.5 text-left">
-    <BiteHourBadgeIcon className={compact ? 'size-8 shrink-0' : 'size-9 shrink-0 shadow-xs rounded-xl'} />
+  <div className="flex items-center gap-2 sm:gap-2.5 text-left">
+    <BiteHourBadgeIcon
+      className={
+        compact
+          ? 'size-8 shrink-0'
+          : 'size-8 sm:size-9 shrink-0 shadow-xs rounded-xl'
+      }
+    />
     <div className="leading-tight">
       <div className="flex items-center gap-1.5">
-        <span className={compact ? 'text-base font-black tracking-tight text-stone-900' : 'text-lg font-black tracking-tight text-[#1B4332]'}>
+        <span
+          className={
+            compact
+              ? 'text-base font-black tracking-tight text-stone-900'
+              : 'text-base sm:text-lg font-black tracking-tight text-[#1B4332]'
+          }
+        >
           BiteHour
         </span>
         {!compact && (
-          <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-[#edf7ed] text-[#1b4332] border border-[#c8e6c9] rounded">
+          <span className="hidden xs:inline-block sm:inline-block px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-[#edf7ed] text-[#1b4332] border border-[#c8e6c9] rounded">
             PK
           </span>
         )}

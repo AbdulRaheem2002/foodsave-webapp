@@ -7,7 +7,7 @@ export function getJwtSecret(): string {
 
 export interface AuthPayload {
   id: string;
-  role: 'consumer' | 'retailer';
+  role: 'consumer' | 'retailer' | 'admin';
 }
 
 export interface AuthRequest extends Request {
@@ -49,6 +49,14 @@ export function optionalAuth(req: AuthRequest, _res: Response, next: NextFunctio
 export function requireRetailer(req: AuthRequest, res: Response, next: NextFunction): void {
   if (!req.user || req.user.role !== 'retailer') {
     res.status(403).json({ error: 'Merchant Partner account required for this action.' });
+    return;
+  }
+  next();
+}
+
+export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction): void {
+  if (!req.user || req.user.role !== 'admin') {
+    res.status(403).json({ error: 'Founder Admin access required.' });
     return;
   }
   next();
