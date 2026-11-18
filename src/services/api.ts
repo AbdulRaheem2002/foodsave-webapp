@@ -306,6 +306,22 @@ export async function loginAuthApi(
   return data;
 }
 
+export async function googleLoginApi(
+  idToken: string,
+  expectedRole?: 'consumer' | 'retailer' | 'admin'
+) {
+  const res = await fetch(`${API_BASE_URL}/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken, expectedRole }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Google Sign-In failed. Please try again.');
+  }
+  return data;
+}
+
 export async function fetchAdminOverviewApi(): Promise<AdminOverview> {
   const res = await fetch(`${API_BASE_URL}/admin/overview`, {
     headers: getAuthHeaders(false),

@@ -15,7 +15,6 @@
     "lint": "oxlint",
     "preview": "vite preview"
   },
-
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",
@@ -24,6 +23,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "google-auth-library": "^11.3.4",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.28.0",
     "mongoose": "^9.9.1",

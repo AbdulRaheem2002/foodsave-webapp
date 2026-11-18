@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X,
   User,
@@ -17,9 +17,36 @@ import {
   Clock,
   ShieldCheck,
 } from 'lucide-react';
-import { loginAuthApi, registerAuthApi } from '../services/api';
+import { loginAuthApi, registerAuthApi, googleLoginApi } from '../services/api';
 import type { AuthUser } from '../types';
 import { formatCurrency } from '../lib/utils';
+
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        id?: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential?: string }) => void;
+          }) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: {
+              theme?: 'outline' | 'filled_blue' | 'filled_black';
+              size?: 'large' | 'medium' | 'small';
+              shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+              width?: number;
+              text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
+            }
+          ) => void;
+        };
+      };
+    };
+  }
+}
+
+const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim();
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -65,6 +92,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingApprovalInfo, setPendingApprovalInfo] = useState<{ storeName: string; message: string } | null>(null);
+  const googleBtnRef = useRef<HTMLDivElement | null>(null);
+  const onAuthSuccessRef = useRef(onAuthSuccess);
+  const onCloseRef = useRef(onClose);
+  onAuthSuccessRef.current = onAuthSuccess;
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (isOpen) {
@@ -75,6 +107,75 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPendingApprovalInfo(null);
     }
   }, [isOpen, initialRole, initialMode]);
+
+  const showGoogleAuth =
+    Boolean(GOOGLE_CLIENT_ID) &&
+    isOpen &&
+    !currentUser &&
+    !pendingApprovalInfo &&
+    !(mode === 'register' && role === 'retailer');
+
+  useEffect(() => {
+    if (!showGoogleAuth || !GOOGLE_CLIENT_ID) return;
+
+    let cancelled = false;
+    let pollTimer: number | undefined;
+
+    const handleCredential = async (credential?: string) => {
+      if (!credential || cancelled) return;
+      setError(null);
+      setIsSubmitting(true);
+      try {
+        const res = await googleLoginApi(
+          credential,
+          initialRole === 'admin' ? 'admin' : initialRole === 'retailer' ? 'retailer' : undefined
+        );
+        if (!res.user || !res.token) {
+          throw new Error(res.error || 'Google Sign-In failed.');
+        }
+        onAuthSuccessRef.current({ ...res.user, retailer: res.retailer || res.user.retailer }, res.token);
+        onCloseRef.current();
+      } catch (err: any) {
+        setError(err?.message || 'Unable to sign in with Google.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    const renderGoogleButton = () => {
+      const gsi = window.google?.accounts?.id;
+      const container = googleBtnRef.current;
+      if (!gsi || !container) return false;
+
+      container.innerHTML = '';
+      const parentWidth = container.parentElement?.clientWidth || 320;
+      gsi.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (response) => handleCredential(response.credential),
+      });
+      gsi.renderButton(container, {
+        theme: 'outline',
+        size: 'large',
+        shape: 'pill',
+        text: 'continue_with',
+        width: Math.max(240, Math.min(340, parentWidth)),
+      });
+      return true;
+    };
+
+    if (!renderGoogleButton()) {
+      pollTimer = window.setInterval(() => {
+        if (renderGoogleButton() && pollTimer) {
+          window.clearInterval(pollTimer);
+        }
+      }, 250);
+    }
+
+    return () => {
+      cancelled = true;
+      if (pollTimer) window.clearInterval(pollTimer);
+    };
+  }, [showGoogleAuth, initialRole]);
 
   const passwordChecks = useMemo(
     () => ({
@@ -454,6 +555,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <Store className="size-3.5" />
                   <span>Merchant Store</span>
                 </button>
+              </div>
+            )}
+
+            {showGoogleAuth && (
+              <div className="mb-4 space-y-3">
+                <div className="flex justify-center">
+                  <div ref={googleBtnRef} className="min-h-[42px] flex items-center justify-center" />
+                </div>
+                <div className="relative flex items-center justify-center">
+                  <div className="border-t border-stone-200 w-full" />
+                  <span className="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-stone-400 whitespace-nowrap">
+                    or continue with email
+                  </span>
+                  <div className="border-t border-stone-200 w-full" />
+                </div>
               </div>
             )}
 

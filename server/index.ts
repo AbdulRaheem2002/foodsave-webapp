@@ -19,7 +19,7 @@ import {
 import { authenticateToken, optionalAuth, requireRetailer, requireAdmin, getJwtSecret, type AuthRequest } from './middleware/auth.js';
 
 // Mongoose MongoDB Controllers
-import { register, login } from './controllers/authController.js';
+import { register, login, googleLogin, verifyGoogleToken } from './controllers/authController.js';
 import {
   getAdminOverview,
   updateRetailerApproval,
@@ -233,8 +233,13 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   const normalizedEmail = validation.normalizedEmail;
 
   const user = memDb.users.find((u) => u.email.toLowerCase() === normalizedEmail);
-  if (!user || !user.passwordHash) {
+  if (!user) {
     res.status(401).json({ error: 'Invalid email or password.' });
+    return;
+  }
+
+  if (!user.passwordHash) {
+    res.status(400).json({ error: 'This account uses Google Sign-In. Please click Continue with Google.' });
     return;
   }
 
@@ -269,6 +274,91 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     });
     return;
   }
+  const retailerDto = formatMemRetailerDto(retailer);
+  const token = jwt.sign({ id: user.id, role: user.role }, getJwtSecret(), { expiresIn: '7d' });
+
+  res.json({
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      contactPhone: user.contactPhone,
+      totalSavedPkr: user.totalSavedPkr,
+      itemsRescuedCount: user.itemsRescuedCount,
+      retailer: retailerDto,
+    },
+    retailer: retailerDto,
+  });
+});
+
+app.post('/api/auth/google', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await googleLogin(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB googleLogin fallback to memDb:', mongoErr);
+    }
+  }
+
+  const idToken = String(req.body?.idToken || '').trim();
+  const expectedRole = req.body?.expectedRole as 'consumer' | 'retailer' | 'admin' | undefined;
+
+  if (!idToken) {
+    res.status(400).json({ error: 'Google ID token is required.' });
+    return;
+  }
+
+  let profile;
+  try {
+    profile = await verifyGoogleToken(idToken);
+  } catch (verifyErr: any) {
+    res.status(verifyErr?.statusCode || 401).json({
+      error: verifyErr?.message || 'Invalid or expired Google Sign-In session.',
+    });
+    return;
+  }
+
+  const isAdmin = isConfiguredAdminEmail(profile.email);
+  let user = memDb.users.find((u) => u.email.toLowerCase() === profile.email);
+  if (!user) {
+    user = {
+      id: `usr-${Date.now()}`,
+      name: profile.name,
+      email: profile.email,
+      authProvider: 'google',
+      googleId: profile.googleId,
+      role: isAdmin ? 'admin' : 'consumer',
+      totalSavedPkr: 0,
+      itemsRescuedCount: 0,
+    };
+    memDb.users.push(user);
+  } else if (isAdmin && user.role !== 'admin') {
+    user.role = 'admin';
+  }
+
+  if (expectedRole && expectedRole !== user.role) {
+    res.status(403).json({
+      error:
+        expectedRole === 'admin'
+          ? 'Founder Admin privileges are required to access this portal.'
+          : 'This Google account is not linked to a verified Merchant Store yet.',
+    });
+    return;
+  }
+
+  const retailer = user.role === 'retailer' ? memDb.getRetailerByUserId(user.id) || null : null;
+  if (user.role === 'retailer' && (!retailer || !retailer.isVerified)) {
+    res.status(403).json({
+      pendingApproval: true,
+      error:
+        'Your bakery is still under review. Please wait — you will receive an email or WhatsApp confirmation once your store is approved for Store POS access.',
+    });
+    return;
+  }
+
   const retailerDto = formatMemRetailerDto(retailer);
   const token = jwt.sign({ id: user.id, role: user.role }, getJwtSecret(), { expiresIn: '7d' });
 

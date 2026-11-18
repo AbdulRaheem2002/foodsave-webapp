@@ -4,7 +4,9 @@ export interface MemUser {
   id: string;
   name: string;
   email: string;
-  passwordHash: string;
+  passwordHash?: string;
+  authProvider?: 'local' | 'google';
+  googleId?: string;
   role: 'consumer' | 'retailer' | 'admin';
   contactPhone?: string;
   totalSavedPkr: number;

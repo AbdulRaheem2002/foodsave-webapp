@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
 import { User } from '../models/User.js';
 import { Retailer } from '../models/Retailer.js';
 import { getJwtSecret } from '../middleware/auth.js';
@@ -144,6 +145,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (!user.passwordHash) {
+      res.status(400).json({ error: 'This account uses Google Sign-In. Please click Continue with Google.' });
+      return;
+    }
+
     const isMatch = await bcrypt.compare(String(password), user.passwordHash);
     if (!isMatch) {
       res.status(401).json({ error: 'Invalid email or password.' });
@@ -198,5 +204,128 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Login failed' });
+  }
+};
+
+export interface GoogleProfileResult {
+  email: string;
+  name: string;
+  googleId: string;
+}
+
+export async function verifyGoogleToken(idToken: string): Promise<GoogleProfileResult> {
+  const audience = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+  if (!audience) {
+    const err: any = new Error('Google Sign-In is not configured on the server (missing GOOGLE_CLIENT_ID).');
+    err.statusCode = 503;
+    throw err;
+  }
+
+  const client = new OAuth2Client(audience);
+  const ticket = await client.verifyIdToken({ idToken, audience });
+  const payload = ticket.getPayload();
+
+  if (!payload?.email || !payload.email_verified) {
+    const err: any = new Error('Verified Google email is required to sign in.');
+    err.statusCode = 401;
+    throw err;
+  }
+
+  return {
+    email: payload.email.trim().toLowerCase(),
+    name: (payload.name || payload.email.split('@')[0] || 'BiteHour User').trim(),
+    googleId: payload.sub,
+  };
+}
+
+export const googleLogin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const idToken = String(req.body?.idToken || '').trim();
+    const expectedRole = req.body?.expectedRole as 'consumer' | 'retailer' | 'admin' | undefined;
+
+    if (!idToken) {
+      res.status(400).json({ error: 'Google ID token is required.' });
+      return;
+    }
+
+    let profile: GoogleProfileResult;
+    try {
+      profile = await verifyGoogleToken(idToken);
+    } catch (verifyErr: any) {
+      res.status(verifyErr?.statusCode || 401).json({
+        error: verifyErr?.message || 'Invalid or expired Google Sign-In session. Please try again.',
+      });
+      return;
+    }
+
+    const isAdminEmail = isConfiguredAdminEmail(profile.email);
+    let user = await User.findOne({ email: profile.email });
+
+    if (!user) {
+      user = await User.create({
+        name: profile.name,
+        email: profile.email,
+        authProvider: 'google',
+        googleId: profile.googleId,
+        role: isAdminEmail ? 'admin' : 'consumer',
+      });
+    } else {
+      let changed = false;
+      if (isAdminEmail && user.role !== 'admin') {
+        user.role = 'admin';
+        changed = true;
+      }
+      if (!user.googleId) {
+        user.googleId = profile.googleId;
+        changed = true;
+      }
+      if (changed) {
+        await user.save();
+      }
+    }
+
+    if (expectedRole && expectedRole !== user.role) {
+      res.status(403).json({
+        error:
+          expectedRole === 'admin'
+            ? 'Founder Admin privileges are required to access this portal.'
+            : expectedRole === 'retailer'
+            ? 'This Google account is not linked to a verified Merchant Store yet.'
+            : 'This email belongs to a different account type.',
+      });
+      return;
+    }
+
+    let retailerProfile = null;
+    if (user.role === 'retailer') {
+      retailerProfile = await Retailer.findOne({ userRef: user._id });
+      if (!retailerProfile || !retailerProfile.isVerified) {
+        res.status(403).json({
+          pendingApproval: true,
+          error:
+            'Your bakery is still under review. Please wait — you will receive an email or WhatsApp confirmation once your store is approved for Store POS access.',
+        });
+        return;
+      }
+    }
+
+    const token = jwt.sign({ id: user._id.toString(), role: user.role }, getJwtSecret(), { expiresIn: '7d' });
+
+    res.json({
+      token,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        contactPhone: user.contactPhone,
+        totalSavedPkr: user.totalSavedPkr,
+        itemsRescuedCount: user.itemsRescuedCount,
+        retailer: formatRetailerDto(retailerProfile),
+      },
+      retailer: formatRetailerDto(retailerProfile),
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Google Sign-In failed' });
   }
 };
