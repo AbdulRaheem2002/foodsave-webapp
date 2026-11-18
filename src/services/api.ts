@@ -1,4 +1,11 @@
-import type { AdminOverview, DealItem, Reservation, RetailerStore } from '../types';
+import type {
+  AdminDropSubscriber,
+  AdminOverview,
+  DealItem,
+  DropAlertPreference,
+  Reservation,
+  RetailerStore,
+} from '../types';
 
 export const TOKEN_STORAGE_KEY = 'foodsave_token_v2';
 
@@ -370,6 +377,38 @@ export async function updateAdminLeadStatusApi(
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error || 'Unable to update lead status.');
+  }
+  return data;
+}
+
+export async function subscribeDropAlertApi(payload: {
+  name?: string;
+  phone: string;
+  email?: string;
+  city?: string;
+  sector: string;
+  preference: DropAlertPreference;
+}): Promise<{ message: string; subscriber: AdminDropSubscriber }> {
+  const res = await fetch(`${API_BASE_URL}/drop-alerts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to subscribe to evening drop alerts.');
+  }
+  return data;
+}
+
+export async function deleteAdminDropSubscriberApi(subscriberId: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE_URL}/admin/drop-alerts/${subscriberId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(false),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to remove drop subscriber.');
   }
   return data;
 }

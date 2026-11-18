@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { Reservation } from '../../types';
 import { X, Copy, Check, Send } from 'lucide-react';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, getGoogleMapsDirectionsUrl } from '../../lib/utils';
 
 interface WhatsAppModalProps {
   isOpen: boolean;
@@ -27,7 +27,14 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
           reservation.paymentReference ? ` (Ref: ${reservation.paymentReference})` : ''
         }`;
 
-  const messageText = `⚡ *BITEHOUR PAKISTAN PICKUP PASS* ⚡\n\n📌 *Pickup Code:* ${reservation.pickupCode}\n🛍️ *Item:* ${reservation.item.title} (Qty: ${reservation.quantity})\n🏪 *Store:* ${reservation.item.storeName}\n📍 *Address:* ${reservation.item.location.address}, ${reservation.item.location.city}\n💰 *Total:* ${formatCurrency(reservation.totalPricePkr)} — ${paymentLabel}\n⏱️ *Pickup Deadline:* ${reservation.item.pickupDeadline}\n\n*Show this pass at checkout counter!*`;
+  const directionsUrl = getGoogleMapsDirectionsUrl(
+    reservation.item.storeName,
+    reservation.item.location.address,
+    reservation.item.location.sector,
+    reservation.item.location.city
+  );
+
+  const messageText = `⚡ *BITEHOUR PAKISTAN PICKUP PASS* ⚡\n\n📌 *Pickup Code:* ${reservation.pickupCode}\n🛍️ *Item:* ${reservation.item.title} (Qty: ${reservation.quantity})\n🏪 *Store:* ${reservation.item.storeName}\n📍 *Address:* ${reservation.item.location.address}, ${reservation.item.location.city}\n🗺️ *Google Maps:* ${directionsUrl}\n💰 *Total:* ${formatCurrency(reservation.totalPricePkr)} — ${paymentLabel}\n⏱️ *Pickup Deadline:* ${reservation.item.pickupDeadline}\n\n*Show this pass at checkout counter!*`;
 
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(messageText)}`;
 

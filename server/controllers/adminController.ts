@@ -2,6 +2,7 @@ import { Response } from 'express';
 import mongoose from 'mongoose';
 import { Retailer } from '../models/Retailer.js';
 import { PartnerLead } from '../models/PartnerLead.js';
+import { DropAlertSubscriber } from '../models/DropAlertSubscriber.js';
 import { Item } from '../models/Item.js';
 import { Deal } from '../models/Deal.js';
 import type { AuthRequest } from '../middleware/auth.js';
@@ -30,9 +31,10 @@ export function formatAdminRetailerDto(retailer: any) {
 
 export const getAdminOverview = async (_req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const [retailers, partnerLeads, activeDealsCount] = await Promise.all([
+    const [retailers, partnerLeads, dropSubscribers, activeDealsCount] = await Promise.all([
       Retailer.find().populate('userRef', 'name email contactPhone').sort({ createdAt: -1 }),
       PartnerLead.find().sort({ createdAt: -1 }),
+      DropAlertSubscriber.find().sort({ createdAt: -1 }),
       Deal.countDocuments({ status: 'active' }),
     ]);
 
@@ -54,16 +56,29 @@ export const getAdminOverview = async (_req: AuthRequest, res: Response): Promis
       createdAt: lead.createdAt,
     }));
 
+    const mappedSubscribers = dropSubscribers.map((sub: any) => ({
+      id: sub._id.toString(),
+      name: sub.name || '',
+      phone: sub.phone,
+      email: sub.email || '',
+      city: sub.city || 'Islamabad',
+      sector: sub.sector || 'All Islamabad',
+      preference: sub.preference || 'all',
+      createdAt: sub.createdAt,
+    }));
+
     res.json({
       stats: {
         pendingRetailersCount: pendingRetailers.length,
         approvedRetailersCount: approvedRetailers.length,
         partnerLeadsCount: mappedLeads.length,
+        dropSubscribersCount: mappedSubscribers.length,
         activeDealsCount,
       },
       pendingRetailers,
       approvedRetailers,
       partnerLeads: mappedLeads,
+      dropSubscribers: mappedSubscribers,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Could not load admin dashboard.' });
@@ -160,5 +175,25 @@ export const updatePartnerLeadStatus = async (req: AuthRequest, res: Response): 
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Could not update lead status.' });
+  }
+};
+
+export const deleteDropSubscriber = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = String(req.params.id || '');
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ error: 'Invalid subscriber ID.' });
+      return;
+    }
+
+    const removed = await DropAlertSubscriber.findByIdAndDelete(id);
+    if (!removed) {
+      res.status(404).json({ error: 'Subscriber not found.' });
+      return;
+    }
+
+    res.json({ message: 'Drop alert subscriber removed.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Could not remove subscriber.' });
   }
 };

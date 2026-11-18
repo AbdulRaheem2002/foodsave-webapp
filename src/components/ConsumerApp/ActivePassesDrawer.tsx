@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { PickupDirectionsLink } from './PickupDirectionsLink';
 import type { Reservation, DealItem } from '../../types';
 import { X, Clock, MapPin, ShoppingBag, AlertTriangle, CheckCircle2, Bike, Star, Trash2 } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
@@ -139,10 +140,21 @@ export const ActivePassesDrawer: React.FC<ActivePassesDrawerProps> = ({
                       <h4 className="text-xs font-bold text-stone-900 truncate">
                         {res.item.title}
                       </h4>
-                      <p className="text-[11px] text-stone-500 truncate flex items-center gap-1">
-                        <MapPin className="size-3 text-[#1b4332]" />
-                        {res.item.storeName}
-                      </p>
+                      <div className="flex items-center justify-between gap-2 mt-0.5">
+                        <p className="text-[11px] text-stone-500 truncate flex items-center gap-1">
+                          <MapPin className="size-3 text-[#1b4332] shrink-0" />
+                          <span className="truncate">{res.item.storeName}</span>
+                        </p>
+                        <PickupDirectionsLink
+                          storeName={res.item.storeName}
+                          address={res.item.location.address}
+                          sector={res.item.location.sector}
+                          city={res.item.location.city}
+                          label="Directions"
+                          variant="compact"
+                          className="shrink-0"
+                        />
+                      </div>
                       <div className="flex flex-wrap items-center gap-2 mt-0.5">
                         <p className="text-xs font-black text-[#f37021]">
                           {formatCurrency(res.totalPricePkr)} ({res.quantity}x)

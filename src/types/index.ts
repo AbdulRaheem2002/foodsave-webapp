@@ -119,16 +119,31 @@ export interface AdminPartnerLead {
   createdAt: string;
 }
 
+export type DropAlertPreference = 'all' | 'sweet' | 'savory' | 'drinks';
+
+export interface AdminDropSubscriber {
+  id: string;
+  name?: string;
+  phone: string;
+  email?: string;
+  city: string;
+  sector: string;
+  preference: DropAlertPreference;
+  createdAt: string;
+}
+
 export interface AdminOverview {
   stats: {
     pendingRetailersCount: number;
     approvedRetailersCount: number;
     partnerLeadsCount: number;
+    dropSubscribersCount: number;
     activeDealsCount: number;
   };
   pendingRetailers: AdminRetailerRecord[];
   approvedRetailers: AdminRetailerRecord[];
   partnerLeads: AdminPartnerLead[];
+  dropSubscribers: AdminDropSubscriber[];
 }
 
 export interface DonationRecord {

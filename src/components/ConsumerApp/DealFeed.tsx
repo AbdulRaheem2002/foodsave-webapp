@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { DealItem, CategoryType, FlavorType, PakistanCity } from '../../types';
+import { DropAlertSignupCard } from './DropAlertSignupCard';
 import { DealCard } from './DealCard';
 import { SampleBoxesSection } from './SampleBoxesSection';
 import { Search } from 'lucide-react';
@@ -257,6 +258,9 @@ export const DealFeed: React.FC<DealFeedProps> = ({
           ))}
         </div>
       )}
+
+      {/* Evening Drop Alert Waitlist Signup */}
+      <DropAlertSignupCard defaultSector={selectedSector} />
     </div>
   );
 };

@@ -1,0 +1,66 @@
+import { Request, Response } from 'express';
+import { DropAlertSubscriber } from '../models/DropAlertSubscriber.js';
+import { normalizePhone, PK_PHONE_REGEX, EMAIL_REGEX } from '../utils/authValidation.js';
+
+const ALLOWED_PREFERENCES = ['all', 'sweet', 'savory', 'drinks'] as const;
+
+export function validateDropAlertBody(body: any) {
+  const name = String(body?.name || '').trim().slice(0, 80);
+  const phone = normalizePhone(body?.phone);
+  const email = String(body?.email || '').trim().toLowerCase();
+  const city = String(body?.city || 'Islamabad').trim() || 'Islamabad';
+  const sector = String(body?.sector || 'All Islamabad').trim().slice(0, 60) || 'All Islamabad';
+  const preference = ALLOWED_PREFERENCES.includes(body?.preference) ? body.preference : 'all';
+
+  if (!PK_PHONE_REGEX.test(phone)) {
+    return {
+      valid: false,
+      error: 'Enter a valid Pakistani WhatsApp number (e.g. 03001234567).',
+    };
+  }
+
+  if (email && !EMAIL_REGEX.test(email)) {
+    return { valid: false, error: 'Please enter a valid email address or leave email blank.' };
+  }
+
+  return {
+    valid: true,
+    data: {
+      name,
+      phone,
+      email: email || undefined,
+      city,
+      sector,
+      preference,
+      isActive: true,
+    },
+  };
+}
+
+export const subscribeDropAlert = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const check = validateDropAlertBody(req.body);
+    if (!check.valid || !check.data) {
+      res.status(400).json({ error: check.error });
+      return;
+    }
+
+    const subscriber = await DropAlertSubscriber.findOneAndUpdate(
+      { phone: check.data.phone },
+      { $set: check.data },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    res.status(201).json({
+      message: `You're on tonight's Islamabad drop list (${subscriber.sector})!`,
+      subscriber: {
+        id: subscriber._id.toString(),
+        phone: subscriber.phone,
+        sector: subscriber.sector,
+        preference: subscriber.preference,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Could not save drop alert subscription.' });
+  }
+};

@@ -15,13 +15,20 @@ import {
   AlertTriangle,
   X,
   Trash2,
+  BellRing,
 } from 'lucide-react';
-import type { AdminOverview, AdminPartnerLead, AdminRetailerRecord } from '../types';
+import type {
+  AdminDropSubscriber,
+  AdminOverview,
+  AdminPartnerLead,
+  AdminRetailerRecord,
+} from '../types';
 import {
   fetchAdminOverviewApi,
   updateAdminRetailerStatusApi,
   deleteAdminRetailerApi,
   updateAdminLeadStatusApi,
+  deleteAdminDropSubscriberApi,
 } from '../services/api';
 
 function toWhatsAppHref(rawPhone: string, message: string): string {
@@ -34,7 +41,8 @@ type ConfirmAction =
   | { kind: 'approve-store'; store: AdminRetailerRecord }
   | { kind: 'revoke-store'; store: AdminRetailerRecord }
   | { kind: 'delete-store'; store: AdminRetailerRecord }
-  | { kind: 'lead-status'; lead: AdminPartnerLead; nextStatus: AdminPartnerLead['status'] };
+  | { kind: 'lead-status'; lead: AdminPartnerLead; nextStatus: AdminPartnerLead['status'] }
+  | { kind: 'delete-subscriber'; subscriber: AdminDropSubscriber };
 
 interface AlertNotice {
   type: 'success' | 'warning';
@@ -45,7 +53,7 @@ interface AlertNotice {
 
 export const AdminDashboard: React.FC = () => {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
-  const [activeSection, setActiveSection] = useState<'pending' | 'leads' | 'approved'>('pending');
+  const [activeSection, setActiveSection] = useState<'pending' | 'leads' | 'subscribers' | 'approved'>('pending');
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +148,26 @@ export const AdminDashboard: React.FC = () => {
         setBusyId(null);
         setConfirmAction(null);
       }
+      return;
+    }
+
+    if (action.kind === 'delete-subscriber') {
+      setBusyId(action.subscriber.id);
+      setError(null);
+      try {
+        await deleteAdminDropSubscriberApi(action.subscriber.id);
+        await loadOverview();
+        setAlertNotice({
+          type: 'warning',
+          title: 'Drop Subscriber Removed',
+          message: `${action.subscriber.phone} (${action.subscriber.sector}) removed from evening drop alerts.`,
+        });
+      } catch (err: any) {
+        setError(err?.message || 'Failed to remove subscriber.');
+      } finally {
+        setBusyId(null);
+        setConfirmAction(null);
+      }
     }
   };
 
@@ -170,6 +198,7 @@ export const AdminDashboard: React.FC = () => {
     pendingRetailersCount: 0,
     approvedRetailersCount: 0,
     partnerLeadsCount: 0,
+    dropSubscribersCount: 0,
     activeDealsCount: 0,
   };
 
@@ -199,6 +228,14 @@ export const AdminDashboard: React.FC = () => {
         confirmLabel: 'Yes, Delete Permanently',
       };
     }
+    if (confirmAction.kind === 'delete-subscriber') {
+      return {
+        tone: 'red' as const,
+        title: `Remove ${confirmAction.subscriber.phone}?`,
+        body: 'Remove this phone number from Islamabad evening drop alerts.',
+        confirmLabel: 'Yes, Remove Subscriber',
+      };
+    }
     return {
       tone: confirmAction.nextStatus === 'rejected' ? ('red' as const) : ('emerald' as const),
       title: `Mark ${confirmAction.lead.businessName} as ${confirmAction.nextStatus}?`,
@@ -210,7 +247,11 @@ export const AdminDashboard: React.FC = () => {
   const isConfirmBusy = Boolean(
     confirmAction &&
       busyId ===
-        (confirmAction.kind === 'lead-status' ? confirmAction.lead.id : confirmAction.store.id)
+        (confirmAction.kind === 'lead-status'
+          ? confirmAction.lead.id
+          : confirmAction.kind === 'delete-subscriber'
+          ? confirmAction.subscriber.id
+          : confirmAction.store.id)
   );
 
   return (
@@ -298,7 +339,7 @@ export const AdminDashboard: React.FC = () => {
       )}
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4">
           <span className="text-[11px] font-bold text-stone-500 block">Pending Stores</span>
           <span className="text-2xl font-extrabold text-[#f37021]">{stats.pendingRetailersCount}</span>
@@ -310,6 +351,10 @@ export const AdminDashboard: React.FC = () => {
         <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4">
           <span className="text-[11px] font-bold text-stone-500 block">/partner Inquiries</span>
           <span className="text-2xl font-extrabold text-[#171916]">{stats.partnerLeadsCount}</span>
+        </div>
+        <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4">
+          <span className="text-[11px] font-bold text-stone-500 block">Drop Subscribers</span>
+          <span className="text-2xl font-extrabold text-[#C85610]">{stats.dropSubscribersCount}</span>
         </div>
         <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4">
           <span className="text-[11px] font-bold text-stone-500 block">Active Live Deals</span>
@@ -343,6 +388,19 @@ export const AdminDashboard: React.FC = () => {
         >
           <Users className="size-3.5" />
           <span>/partner Leads ({overview?.partnerLeads.length ?? 0})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSection('subscribers')}
+          className={`px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+            activeSection === 'subscribers'
+              ? 'bg-[#1B4332] text-white border-[#1B4332]'
+              : 'bg-white text-stone-700 border-[#E5DFD3] hover:bg-stone-50'
+          }`}
+        >
+          <BellRing className="size-3.5" />
+          <span>Drop Alerts ({overview?.dropSubscribers?.length ?? 0})</span>
         </button>
 
         <button
@@ -531,6 +589,69 @@ export const AdminDashboard: React.FC = () => {
                       <option value="approved">Approved</option>
                       <option value="rejected">Rejected</option>
                     </select>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      ) : activeSection === 'subscribers' ? (
+        <div className="space-y-3">
+          {!overview?.dropSubscribers?.length ? (
+            <div className="bg-white border border-[#E7E2D8] rounded-3xl p-10 text-center space-y-2">
+              <BellRing className="size-8 text-stone-400 mx-auto" />
+              <p className="text-sm font-bold text-stone-900">No Evening Drop Subscribers Yet</p>
+              <p className="text-xs text-stone-500">
+                Customers who request WhatsApp drop alerts for their Islamabad sector appear here.
+              </p>
+            </div>
+          ) : (
+            overview.dropSubscribers.map((subscriber) => {
+              const dropPingMsg = `Assalam-o-Alaikum${subscriber.name ? ` ${subscriber.name}` : ''}! Tonight's BiteHour surplus bakery boxes just dropped in ${subscriber.sector}. Reserve your closing-hour bag now before it sells out: https://foodsave-webapp.vercel.app`;
+              return (
+                <div
+                  key={subscriber.id}
+                  className="bg-white border border-[#E7E2D8] rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs"
+                >
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#FFF3E6] text-[#C85610] border border-[#f37021]/25 text-[10px] font-black uppercase">
+                        {subscriber.sector}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 text-[10px] font-bold uppercase">
+                        {subscriber.preference}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-extrabold text-stone-900">
+                      {subscriber.name || 'Islamabad Customer'}{' '}
+                      <span className="text-xs font-semibold text-stone-500">({subscriber.phone})</span>
+                    </h3>
+                    <p className="text-xs text-stone-500">
+                      {subscriber.city} • Joined{' '}
+                      {subscriber.createdAt ? new Date(subscriber.createdAt).toLocaleDateString() : 'Recently'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                    <a
+                      href={toWhatsAppHref(subscriber.phone, dropPingMsg)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-2 rounded-full bg-[#25D366]/15 hover:bg-[#25D366]/25 text-[#15803d] border border-[#25D366]/40 text-xs font-bold flex items-center gap-1.5"
+                    >
+                      <MessageCircle className="size-3.5" />
+                      <span>Send Drop Alert</span>
+                    </a>
+
+                    <button
+                      type="button"
+                      disabled={busyId === subscriber.id}
+                      onClick={() => setConfirmAction({ kind: 'delete-subscriber', subscriber })}
+                      className="px-3.5 py-2 rounded-full bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 className="size-3.5" />
+                      <span>Remove</span>
+                    </button>
                   </div>
                 </div>
               );

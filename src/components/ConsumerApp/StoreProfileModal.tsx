@@ -1,4 +1,5 @@
 import React from 'react';
+import { PickupDirectionsLink } from './PickupDirectionsLink';
 import { X, MapPin, Star, ShieldCheck, ArrowLeft } from 'lucide-react';
 import type { DealItem, RetailerStore } from '../../types';
 import { formatCurrency } from '../../lib/utils';
@@ -61,10 +62,20 @@ export const StoreProfileModal: React.FC<StoreProfileModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-white/80 flex items-center gap-1.5 mt-0.5 font-medium">
-                <MapPin className="size-3.5 text-[#85e3a8]" />
-                {store.address}, {store.city}
-              </p>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <p className="text-xs text-white/80 flex items-center gap-1.5 font-medium">
+                  <MapPin className="size-3.5 text-[#85e3a8]" />
+                  {store.address}, {store.city}
+                </p>
+                <PickupDirectionsLink
+                  storeName={store.name}
+                  address={store.address}
+                  sector={store.sector}
+                  city={store.city}
+                  label="Google Maps Directions"
+                  variant="overlay"
+                />
+              </div>
             </div>
           </div>
         </div>

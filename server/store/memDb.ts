@@ -76,6 +76,7 @@ class MemoryDatabase {
   deals: MemDeal[] = [];
   reservations: MemReservation[] = [];
   partnerLeads: any[] = [];
+  dropSubscribers: any[] = [];
 
   getRetailerByUserId(userId?: string): MemRetailer | undefined {
     if (!userId) return undefined;

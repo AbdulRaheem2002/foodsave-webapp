@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { DealItem, Reservation } from '../../types';
 import { X, MapPin, QrCode, CheckCircle2, Sparkles, Wallet, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
+import { PickupDirectionsLink } from './PickupDirectionsLink';
 import confetti from 'canvas-confetti';
 import { createReservationApi } from '../../services/api';
 import { sounds } from '../../lib/soundEffects';
@@ -115,10 +116,20 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 <h3 className="text-sm font-bold text-[#1F2937] truncate mb-1">
                   {deal.title}
                 </h3>
-                <p className="text-xs text-slate-500 mb-1 flex items-center gap-1 font-medium">
-                  <MapPin className="size-3.5 text-[#2D6A4F]" />
-                  {deal.storeName} ({deal.distanceKm} km away)
-                </p>
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <p className="text-xs text-slate-500 flex items-center gap-1 font-medium">
+                    <MapPin className="size-3.5 text-[#2D6A4F]" />
+                    {deal.storeName} ({deal.distanceKm} km away)
+                  </p>
+                  <PickupDirectionsLink
+                    storeName={deal.storeName}
+                    address={deal.location.address}
+                    sector={deal.location.sector}
+                    city={deal.location.city}
+                    label="Maps"
+                    variant="compact"
+                  />
+                </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-lg font-black text-[#FF9800]">
                     {formatCurrency(deal.currentPricePkr)}
@@ -288,20 +299,30 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               )}
             </div>
 
-            <div className="flex gap-2.5 w-full pt-2">
+            <div className="flex flex-wrap gap-2.5 w-full pt-2">
+              <PickupDirectionsLink
+                storeName={deal.storeName}
+                address={deal.location.address}
+                sector={deal.location.sector}
+                city={deal.location.city}
+                label="Google Maps Directions"
+                variant="button"
+                className="flex-1 min-w-[160px]"
+              />
+
               <button
                 onClick={() => {
                   onClose();
                   if (confirmedReservation) onOpenWhatsApp(confirmedReservation);
                 }}
-                className="flex-1 py-3.5 rounded-full bg-[#25D366] hover:bg-[#20bd59] text-slate-950 font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5"
+                className="flex-1 min-w-[150px] py-3 rounded-full bg-[#25D366] hover:bg-[#20bd59] text-slate-950 font-black text-xs transition-all shadow-md flex items-center justify-center gap-1.5"
               >
                 <span>💬 WhatsApp Voucher</span>
               </button>
 
               <button
                 onClick={onClose}
-                className="btn-claim flex-1 py-3.5 text-xs font-bold"
+                className="btn-claim w-full sm:w-auto sm:min-w-[96px] py-3 text-xs font-bold"
               >
                 Done
               </button>

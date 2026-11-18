@@ -2,6 +2,7 @@ import React from 'react';
 import type { DealItem, PakistanCity } from '../../types';
 import { ShoppingBag, MapPin, Navigation } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
+import { PickupDirectionsLink } from './PickupDirectionsLink';
 
 interface DealMapProps {
   deals: DealItem[];
@@ -123,14 +124,24 @@ export const DealMap: React.FC<DealMapProps> = ({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onReserveDeal(selectedDeal)}
-              className="px-3 py-2 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-[11px] shadow-xs flex items-center gap-1 shrink-0"
-            >
-              <ShoppingBag className="size-3" />
-              <span>Claim</span>
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <PickupDirectionsLink
+                storeName={selectedDeal.storeName}
+                address={selectedDeal.location.address}
+                sector={selectedDeal.location.sector}
+                city={selectedDeal.location.city}
+                label="Map"
+                variant="compact"
+              />
+              <button
+                type="button"
+                onClick={() => onReserveDeal(selectedDeal)}
+                className="px-3 py-2 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-[11px] shadow-xs flex items-center gap-1 shrink-0"
+              >
+                <ShoppingBag className="size-3" />
+                <span>Claim</span>
+              </button>
+            </div>
           </div>
         )}
       </div>

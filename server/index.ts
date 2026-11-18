@@ -25,6 +25,7 @@ import {
   updateRetailerApproval,
   deleteAdminRetailer,
   updatePartnerLeadStatus,
+  deleteDropSubscriber,
 } from './controllers/adminController.js';
 import { getDeals } from './controllers/dealController.js';
 import {
@@ -40,6 +41,7 @@ import {
   deleteDeal,
 } from './controllers/retailerController.js';
 import { createPartnerLead, validatePartnerLeadBody } from './controllers/partnerLeadController.js';
+import { subscribeDropAlert, validateDropAlertBody } from './controllers/dropAlertController.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -420,6 +422,45 @@ app.post('/api/partner-leads', async (req: Request, res: Response) => {
   res.status(201).json({
     message: 'Application received! Our BiteHour team will reach out shortly.',
     lead: { id: lead.id, businessName: lead.businessName, city: lead.city, sector: lead.sector, status: lead.status },
+  });
+});
+
+// 2d. Evening Drop Alert Customer Subscription Endpoint
+app.post('/api/drop-alerts', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await subscribeDropAlert(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB subscribeDropAlert fallback to memDb:', mongoErr);
+    }
+  }
+
+  const check = validateDropAlertBody(req.body);
+  if (!check.valid || !check.data) {
+    res.status(400).json({ error: check.error });
+    return;
+  }
+
+  const existing = memDb.dropSubscribers.find((s) => s.phone === check.data?.phone);
+  if (existing) {
+    Object.assign(existing, check.data);
+    res.status(201).json({
+      message: `You're on tonight's Islamabad drop list (${existing.sector})!`,
+      subscriber: existing,
+    });
+    return;
+  }
+
+  const subscriber = {
+    id: `sub-${Date.now()}`,
+    ...check.data,
+    createdAt: new Date().toISOString(),
+  };
+  memDb.dropSubscribers.unshift(subscriber);
+  res.status(201).json({
+    message: `You're on tonight's Islamabad drop list (${subscriber.sector})!`,
+    subscriber,
   });
 });
 
@@ -867,10 +908,12 @@ app.get('/api/admin/overview', authenticateToken, requireAdmin, async (req: Auth
       approvedRetailersCount: approvedRetailers.length,
       partnerLeadsCount: memDb.partnerLeads.length,
       activeDealsCount: memDb.deals.filter((d) => d.status === 'active').length,
+      dropSubscribersCount: memDb.dropSubscribers.length,
     },
     pendingRetailers,
     approvedRetailers,
     partnerLeads: memDb.partnerLeads,
+    dropSubscribers: memDb.dropSubscribers,
   });
 });
 
@@ -935,6 +978,25 @@ app.put('/api/admin/leads/:id/status', authenticateToken, requireAdmin, async (r
   }
   lead.status = String(req.body?.status || 'new');
   res.json({ message: `Lead marked as ${lead.status}`, lead });
+});
+
+app.delete('/api/admin/drop-alerts/:id', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await deleteDropSubscriber(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB deleteDropSubscriber fallback to memDb:', mongoErr);
+    }
+  }
+
+  const idx = memDb.dropSubscribers.findIndex((s) => s.id === req.params.id);
+  if (idx === -1) {
+    res.status(404).json({ error: 'Drop alert subscriber not found.' });
+    return;
+  }
+  memDb.dropSubscribers.splice(idx, 1);
+  res.json({ message: 'Subscriber removed from drop alert list.' });
 });
 
 const startServer = async () => {
