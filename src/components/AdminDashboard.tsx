@@ -12,6 +12,9 @@ import {
   Phone,
   Users,
   AlertCircle,
+  AlertTriangle,
+  X,
+  Trash2,
 } from 'lucide-react';
 import type { AdminOverview, AdminPartnerLead, AdminRetailerRecord } from '../types';
 import {
@@ -27,12 +30,27 @@ function toWhatsAppHref(rawPhone: string, message: string): string {
   return `https://wa.me/${intl}?text=${encodeURIComponent(message)}`;
 }
 
+type ConfirmAction =
+  | { kind: 'approve-store'; store: AdminRetailerRecord }
+  | { kind: 'revoke-store'; store: AdminRetailerRecord }
+  | { kind: 'delete-store'; store: AdminRetailerRecord }
+  | { kind: 'lead-status'; lead: AdminPartnerLead; nextStatus: AdminPartnerLead['status'] };
+
+interface AlertNotice {
+  type: 'success' | 'warning';
+  title: string;
+  message: string;
+  whatsappHref?: string;
+}
+
 export const AdminDashboard: React.FC = () => {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [activeSection, setActiveSection] = useState<'pending' | 'leads' | 'approved'>('pending');
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [alertNotice, setAlertNotice] = useState<AlertNotice | null>(null);
 
   const loadOverview = async () => {
     setIsLoading(true);
@@ -51,38 +69,96 @@ export const AdminDashboard: React.FC = () => {
     loadOverview();
   }, []);
 
-  const handleToggleStoreApproval = async (store: AdminRetailerRecord, approve: boolean) => {
-    setBusyId(store.id);
-    setError(null);
-    try {
-      await updateAdminRetailerStatusApi(store.id, approve);
-      await loadOverview();
-    } catch (err: any) {
-      setError(err?.message || 'Failed to update store approval.');
-    } finally {
-      setBusyId(null);
+  const buildStoreApprovalMsg = (store: AdminRetailerRecord) =>
+    `Assalam-o-Alaikum ${store.ownerName || ''}! Your BiteHour bakery account for ${store.name} (${store.sector || store.city}) is now APPROVED. Sign in at https://foodsave-webapp.vercel.app/merchant to post tonight's closing-hour deals!`;
+
+  const executeConfirmedAction = async () => {
+    if (!confirmAction) return;
+    const action = confirmAction;
+
+    if (action.kind === 'approve-store' || action.kind === 'revoke-store') {
+      const approve = action.kind === 'approve-store';
+      setBusyId(action.store.id);
+      setError(null);
+      try {
+        await updateAdminRetailerStatusApi(action.store.id, approve);
+        await loadOverview();
+        setAlertNotice({
+          type: approve ? 'success' : 'warning',
+          title: approve ? `${action.store.name} Approved` : `${action.store.name} Moved to Pending`,
+          message: approve
+            ? 'Store POS access is unlocked. Send them a WhatsApp or email confirmation below.'
+            : 'Store POS access has been paused until re-approved.',
+          whatsappHref:
+            approve && action.store.contactPhone
+              ? toWhatsAppHref(action.store.contactPhone, buildStoreApprovalMsg(action.store))
+              : undefined,
+        });
+      } catch (err: any) {
+        setError(err?.message || 'Failed to update store approval.');
+      } finally {
+        setBusyId(null);
+        setConfirmAction(null);
+      }
+      return;
+    }
+
+    if (action.kind === 'delete-store') {
+      setBusyId(action.store.id);
+      setError(null);
+      try {
+        await deleteAdminRetailerApi(action.store.id);
+        await loadOverview();
+        setAlertNotice({
+          type: 'warning',
+          title: `${action.store.name} Removed`,
+          message: 'Store application and any linked listings were permanently deleted.',
+        });
+      } catch (err: any) {
+        setError(err?.message || 'Failed to remove store.');
+      } finally {
+        setBusyId(null);
+        setConfirmAction(null);
+      }
+      return;
+    }
+
+    if (action.kind === 'lead-status') {
+      setBusyId(action.lead.id);
+      setError(null);
+      try {
+        await updateAdminLeadStatusApi(action.lead.id, action.nextStatus);
+        await loadOverview();
+        setAlertNotice({
+          type: action.nextStatus === 'rejected' ? 'warning' : 'success',
+          title: `Lead Marked "${action.nextStatus.toUpperCase()}"`,
+          message: `${action.lead.businessName} status updated cleanly.`,
+        });
+      } catch (err: any) {
+        setError(err?.message || 'Failed to update lead status.');
+      } finally {
+        setBusyId(null);
+        setConfirmAction(null);
+      }
     }
   };
 
-  const handleRejectStore = async (store: AdminRetailerRecord) => {
-    setBusyId(store.id);
-    setError(null);
-    try {
-      await deleteAdminRetailerApi(store.id);
-      await loadOverview();
-    } catch (err: any) {
-      setError(err?.message || 'Failed to remove store.');
-    } finally {
-      setBusyId(null);
+  const handleLeadSelect = async (lead: AdminPartnerLead, nextStatus: AdminPartnerLead['status']) => {
+    if (nextStatus === 'rejected' || nextStatus === 'approved') {
+      setConfirmAction({ kind: 'lead-status', lead, nextStatus });
+      return;
     }
-  };
 
-  const handleLeadStatus = async (lead: AdminPartnerLead, status: AdminPartnerLead['status']) => {
     setBusyId(lead.id);
     setError(null);
     try {
-      await updateAdminLeadStatusApi(lead.id, status);
+      await updateAdminLeadStatusApi(lead.id, nextStatus);
       await loadOverview();
+      setAlertNotice({
+        type: 'success',
+        title: `Lead Marked "${nextStatus.toUpperCase()}"`,
+        message: `${lead.businessName} inquiry status saved.`,
+      });
     } catch (err: any) {
       setError(err?.message || 'Failed to update lead status.');
     } finally {
@@ -96,6 +172,46 @@ export const AdminDashboard: React.FC = () => {
     partnerLeadsCount: 0,
     activeDealsCount: 0,
   };
+
+  const confirmModalCopy = (() => {
+    if (!confirmAction) return null;
+    if (confirmAction.kind === 'approve-store') {
+      return {
+        tone: 'emerald' as const,
+        title: `Approve ${confirmAction.store.name}?`,
+        body: 'This unlocks Store POS login so the bakery can publish live closing-hour drops on BiteHour Islamabad.',
+        confirmLabel: 'Yes, Approve Store',
+      };
+    }
+    if (confirmAction.kind === 'revoke-store') {
+      return {
+        tone: 'amber' as const,
+        title: `Pause ${confirmAction.store.name}?`,
+        body: 'Moving this bakery back to pending immediately blocks their Store POS login until you approve it again.',
+        confirmLabel: 'Yes, Move to Pending',
+      };
+    }
+    if (confirmAction.kind === 'delete-store') {
+      return {
+        tone: 'red' as const,
+        title: `Delete ${confirmAction.store.name}?`,
+        body: 'This permanently deletes this store application and any associated items or deals. This action cannot be undone.',
+        confirmLabel: 'Yes, Delete Permanently',
+      };
+    }
+    return {
+      tone: confirmAction.nextStatus === 'rejected' ? ('red' as const) : ('emerald' as const),
+      title: `Mark ${confirmAction.lead.businessName} as ${confirmAction.nextStatus}?`,
+      body: `Confirm updating this /partner inquiry status to "${confirmAction.nextStatus}".`,
+      confirmLabel: `Yes, Mark ${confirmAction.nextStatus}`,
+    };
+  })();
+
+  const isConfirmBusy = Boolean(
+    confirmAction &&
+      busyId ===
+        (confirmAction.kind === 'lead-status' ? confirmAction.lead.id : confirmAction.store.id)
+  );
 
   return (
     <div className="max-w-6xl mx-auto py-4 space-y-6 animate-in fade-in duration-200">
@@ -113,7 +229,7 @@ export const AdminDashboard: React.FC = () => {
               Bakery Approvals &amp; Partner Leads
             </h1>
             <p className="text-xs text-stone-500 mt-0.5">
-              Approve bakeries in one tap and send instant WhatsApp or email confirmation.
+              Review pending stores, confirm approvals safely, and notify owners on WhatsApp or email.
             </p>
           </div>
         </div>
@@ -128,6 +244,51 @@ export const AdminDashboard: React.FC = () => {
           <span>Refresh</span>
         </button>
       </div>
+
+      {/* Action Feedback Alert Notice */}
+      {alertNotice && (
+        <div
+          className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-150 ${
+            alertNotice.type === 'success'
+              ? 'bg-[#edf7ed] border-[#c8e6c9] text-[#1B4332]'
+              : 'bg-[#fff8e1] border-[#ffecb3] text-amber-950'
+          }`}
+        >
+          <div className="flex items-start gap-2.5">
+            {alertNotice.type === 'success' ? (
+              <CheckCircle2 className="size-5 text-[#2e7d32] shrink-0 mt-0.5" />
+            ) : (
+              <AlertTriangle className="size-5 text-[#f37021] shrink-0 mt-0.5" />
+            )}
+            <div>
+              <p className="text-xs sm:text-sm font-extrabold">{alertNotice.title}</p>
+              <p className="text-xs opacity-90 font-medium">{alertNotice.message}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {alertNotice.whatsappHref && (
+              <a
+                href={alertNotice.whatsappHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-1.5 rounded-full bg-[#25D366] hover:bg-[#20bd59] text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-2xs"
+              >
+                <MessageCircle className="size-3.5" />
+                <span>Notify on WhatsApp</span>
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => setAlertNotice(null)}
+              className="p-1.5 rounded-full hover:bg-black/5 transition-colors cursor-pointer"
+              title="Dismiss Alert"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
@@ -215,7 +376,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
           ) : (
             overview.pendingRetailers.map((store) => {
-              const approvalMsg = `Assalam-o-Alaikum ${store.ownerName || ''}! Your BiteHour bakery account for ${store.name} (${store.sector || store.city}) is now APPROVED. Sign in at https://foodsave-webapp.vercel.app/merchant to post tonight's closing-hour deals!`;
+              const approvalMsg = buildStoreApprovalMsg(store);
               const mailHref = store.ownerEmail
                 ? `mailto:${store.ownerEmail}?subject=${encodeURIComponent(
                     `BiteHour Approved: ${store.name}`
@@ -255,7 +416,7 @@ export const AdminDashboard: React.FC = () => {
                     <button
                       type="button"
                       disabled={busyId === store.id}
-                      onClick={() => handleToggleStoreApproval(store, true)}
+                      onClick={() => setConfirmAction({ kind: 'approve-store', store })}
                       className="px-4 py-2 rounded-full bg-[#1B4332] hover:bg-[#133326] disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
                     >
                       <CheckCircle2 className="size-3.5" />
@@ -287,11 +448,11 @@ export const AdminDashboard: React.FC = () => {
                     <button
                       type="button"
                       disabled={busyId === store.id}
-                      onClick={() => handleRejectStore(store)}
+                      onClick={() => setConfirmAction({ kind: 'delete-store', store })}
                       className="px-3.5 py-2 rounded-full bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1 cursor-pointer"
                     >
                       <XCircle className="size-3.5" />
-                      <span>Reject</span>
+                      <span>Reject &amp; Delete</span>
                     </button>
                   </div>
                 </div>
@@ -362,7 +523,7 @@ export const AdminDashboard: React.FC = () => {
                     <select
                       value={lead.status}
                       disabled={busyId === lead.id}
-                      onChange={(e) => handleLeadStatus(lead, e.target.value as AdminPartnerLead['status'])}
+                      onChange={(e) => handleLeadSelect(lead, e.target.value as AdminPartnerLead['status'])}
                       className="px-3 py-2 rounded-full bg-[#F6F2EA] border border-[#E5DFD3] text-xs font-bold text-stone-800 cursor-pointer"
                     >
                       <option value="new">New</option>
@@ -404,17 +565,96 @@ export const AdminDashboard: React.FC = () => {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  disabled={busyId === store.id}
-                  onClick={() => handleToggleStoreApproval(store, false)}
-                  className="px-4 py-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold self-start sm:self-auto cursor-pointer"
-                >
-                  Pause / Revoke
-                </button>
+                <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    disabled={busyId === store.id}
+                    onClick={() => setConfirmAction({ kind: 'revoke-store', store })}
+                    className="px-4 py-2 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold cursor-pointer"
+                  >
+                    Pause / Move to Pending
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busyId === store.id}
+                    onClick={() => setConfirmAction({ kind: 'delete-store', store })}
+                    className="px-3.5 py-2 rounded-full bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="size-3.5" />
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* Confirmation Alert Modal */}
+      {confirmAction && confirmModalCopy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md bg-white border border-[#E7E2D8] rounded-3xl p-6 shadow-2xl space-y-4">
+            <button
+              type="button"
+              disabled={isConfirmBusy}
+              onClick={() => setConfirmAction(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 cursor-pointer"
+            >
+              <X className="size-4" />
+            </button>
+
+            <div className="flex items-start gap-3.5 pr-6">
+              <div
+                className={`size-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                  confirmModalCopy.tone === 'red'
+                    ? 'bg-red-50 text-red-600 border border-red-200'
+                    : confirmModalCopy.tone === 'amber'
+                    ? 'bg-amber-50 text-[#f37021] border border-amber-200'
+                    : 'bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9]'
+                }`}
+              >
+                {confirmModalCopy.tone === 'emerald' ? (
+                  <CheckCircle2 className="size-6" />
+                ) : (
+                  <AlertTriangle className="size-6" />
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-base sm:text-lg font-extrabold text-stone-900">
+                  {confirmModalCopy.title}
+                </h3>
+                <p className="text-xs sm:text-[13px] text-stone-600 leading-relaxed mt-1">
+                  {confirmModalCopy.body}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isConfirmBusy}
+                onClick={() => setConfirmAction(null)}
+                className="flex-1 py-2.5 px-4 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isConfirmBusy}
+                onClick={executeConfirmedAction}
+                className={`flex-1 py-2.5 px-4 rounded-full text-white text-xs font-black shadow-md disabled:opacity-50 cursor-pointer ${
+                  confirmModalCopy.tone === 'red'
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : confirmModalCopy.tone === 'amber'
+                    ? 'bg-[#f37021] hover:bg-[#e26115]'
+                    : 'bg-[#1B4332] hover:bg-[#133326]'
+                }`}
+              >
+                {isConfirmBusy ? 'Please wait...' : confirmModalCopy.confirmLabel}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
