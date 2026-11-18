@@ -32,27 +32,34 @@ export const FaqSection: React.FC = () => {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   return (
-    <section id="faq-section" className="bg-white border border-[#e5e0d8] rounded-3xl p-5 sm:p-8 space-y-5 shadow-2xs">
-      <div>
-        <span className="text-[11px] font-black uppercase tracking-wider text-[#2e7d32]">
+    <section
+      id="faq-section"
+      className="bg-white border border-[#E7E2D8] rounded-[2rem] p-6 sm:p-10 shadow-[0_8px_30px_-14px_rgba(23,25,22,0.06)] grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12"
+    >
+      <div className="lg:col-span-4 space-y-3">
+        <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#2e7d32]">
           Clear Answers
         </span>
-        <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight mt-0.5">
-          Frequently Asked Questions
+        <h2 className="text-2xl sm:text-4xl font-extrabold text-[#171916] tracking-tight leading-tight">
+          Questions, answered{' '}
+          <span className="font-serif-display italic font-semibold text-[#1B4332]">honestly</span>.
         </h2>
+        <p className="text-[13px] sm:text-sm text-stone-500 leading-relaxed font-medium">
+          Everything you should know about counter holds, freshness guarantees, and paying directly in Pakistan.
+        </p>
       </div>
 
-      <div className="divide-y divide-stone-200/80">
+      <div className="lg:col-span-8 divide-y divide-stone-200/80">
         {FAQS.map((item, idx) => {
           const isOpen = openIdx === idx;
           return (
-            <div key={item.q} className="py-3.5 first:pt-0 last:pb-0">
+            <div key={item.q} className="py-4 first:pt-0 last:pb-0">
               <button
                 type="button"
                 onClick={() => setOpenIdx(isOpen ? null : idx)}
-                className="w-full flex items-center justify-between gap-4 text-left"
+                className="w-full flex items-center justify-between gap-4 text-left cursor-pointer"
               >
-                <span className="text-sm font-bold text-stone-900">{item.q}</span>
+                <span className="text-sm sm:text-base font-bold text-[#171916]">{item.q}</span>
                 <ChevronDown
                   className={`size-4 text-stone-500 shrink-0 transition-transform duration-200 ${
                     isOpen ? 'rotate-180 text-[#1b4332]' : ''
@@ -60,7 +67,7 @@ export const FaqSection: React.FC = () => {
                 />
               </button>
               {isOpen && (
-                <p className="mt-2 text-xs sm:text-[13px] text-stone-600 leading-relaxed font-medium pr-6">
+                <p className="mt-2.5 text-[13px] sm:text-sm text-stone-600 leading-relaxed font-medium pr-6">
                   {item.a}
                 </p>
               )}

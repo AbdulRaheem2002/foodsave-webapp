@@ -319,11 +319,13 @@ export function App() {
     }
   };
 
+  const featuredDeal = deals[0] || null;
+
   return (
-    <div className="min-h-screen bg-[#FAFAF7] text-[#1F2937] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#FAF8F3] text-[#171916] flex flex-col font-sans">
       
       {/* Top Utility Bar */}
-      <div className="bg-[#1b4332] text-white py-1.5 px-4 sm:px-6 lg:px-8 text-xs border-b border-[#143527]">
+      <div className="bg-[#142E22] text-white py-2 px-4 sm:px-6 lg:px-8 text-xs border-b border-[#1F4433]">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 overflow-hidden">
             <span className="size-1.5 rounded-full bg-[#85e3a8] shrink-0" />
@@ -455,163 +457,113 @@ export function App() {
             </div>
           )
         ) : (
-          <div className="flex flex-col gap-8 animate-in fade-in duration-300">
+          <div className="flex flex-col gap-12 sm:gap-16 animate-in fade-in duration-300">
             
-            {/* Clean Editorial Hero */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* Editorial Split Hero with Appetite Photography */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center pt-1 lg:pt-4">
               
-              {/* Left Column: Headline & Value Proposition */}
-              <div className="lg:col-span-8 flex flex-col justify-center">
+              {/* Left Column: High-Impact Typography & Clear CTAs */}
+              <div className="lg:col-span-6 flex flex-col justify-center">
                 
                 {/* Top Location Pill */}
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] inline-flex items-center gap-1.5 self-start mb-3 shadow-2xs">
-                  <span className="size-2 rounded-full bg-[#4CAF50] animate-pulse" />
-                  Islamabad Launch • Evening Drops &amp; Surprise Bags | 15-min Hold
+                <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9] inline-flex items-center gap-2 self-start mb-5 shadow-2xs">
+                  <span className="size-2 rounded-full bg-[#2e7d32] animate-pulse" />
+                  Islamabad Closing Drops • Up to 85% OFF
                 </span>
 
-                {/* Big Editorial Headline */}
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-stone-900 tracking-tight leading-tight mb-3">
-                  Rescue Delicious Food at <span className="text-[#1b4332]">Up to 85% OFF</span>
+                {/* Big Display Headline with Editorial Italic Serif Accent */}
+                <h1 className="text-4xl sm:text-5xl lg:text-[3.65rem] font-extrabold text-[#171916] tracking-[-0.03em] leading-[1.03] mb-5">
+                  Rescue Fresh{' '}
+                  <span className="font-serif-display italic font-semibold text-[#1B4332]">
+                    Evening Pastries
+                  </span>{' '}
+                  Before Closing.
                 </h1>
 
-                {/* Subtitle with Pakistani rails */}
-                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-2xl mb-4 font-medium">
-                  Local bakeries, cafés, and restaurants list fresh same-day surplus before closing. Reserve on web in 15 seconds (zero app needed) and pay via <strong>Cash on Pickup, JazzCash, or EasyPaisa</strong>.
+                {/* Generous Lead Subtitle */}
+                <p className="text-base sm:text-lg text-stone-600 leading-relaxed max-w-xl mb-6 font-medium">
+                  Islamabad bakeries, cafés, and kitchens drop fresh same-day surplus before lockup. Reserve on web in 15 seconds — pay via{' '}
+                  <strong className="text-[#171916] font-bold">Cash on Pickup, JazzCash, or EasyPaisa</strong>.
                 </p>
 
-                {/* Crisp Inline Guarantees */}
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-stone-600 font-bold mb-5">
-                  <span className="inline-flex items-center gap-1.5">
-                    <CheckCircle2 className="size-3.5 text-[#2e7d32]" />
-                    Verified Store Surplus
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Clock className="size-3.5 text-[#f37021]" />
-                    15-Min Guaranteed Hold
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <ShieldCheck className="size-3.5 text-[#2e7d32]" />
-                    Sweet / Savory &amp; Exact Slots
-                  </span>
-                </div>
-
-                {/* Focused Action Buttons */}
-                <div className="flex flex-wrap items-center gap-2.5">
+                {/* Primary CTA Pair + App Install */}
+                <div className="flex flex-wrap items-center gap-3 mb-6">
                   <button
                     type="button"
                     onClick={scrollToDeals}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white text-xs font-black shadow-md transition-all"
+                    className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[#1B4332] hover:bg-[#133326] text-white text-sm font-bold shadow-lg shadow-[#1B4332]/20 transition-all cursor-pointer"
                   >
-                    <span>Explore Closing Deals</span>
-                    <ArrowRight className="size-3.5" />
+                    <span>{deals.length > 0 ? 'Explore Live Drops' : 'See Sample Boxes'}</span>
+                    <ArrowRight className="size-4" />
                   </button>
-                  <InstallPwaBanner />
+
                   <button
                     type="button"
                     onClick={() => {
                       setActiveTab('partner');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#fff3e0] hover:bg-[#ffe0b2] text-[#b45309] border border-[#f59e0b]/40 text-xs font-black shadow-2xs transition-all"
+                    className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-[#fff8f1] text-[#171916] border border-[#D8D1C5] hover:border-[#f37021] text-sm font-bold shadow-2xs transition-all cursor-pointer"
                   >
-                    <Store className="size-3.5 text-[#f37021]" />
-                    <span>Partner With Us (0% Fee)</span>
+                    <Store className="size-4 text-[#f37021]" />
+                    <span>Partner Your Bakery (0% Fee)</span>
                   </button>
+
+                  <InstallPwaBanner />
+                </div>
+
+                {/* Crisp Inline Guarantees */}
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-stone-600 font-semibold pt-2 border-t border-[#E7E2D8]">
+                  <span className="inline-flex items-center gap-1.5">
+                    <CheckCircle2 className="size-4 text-[#2e7d32]" />
+                    F-6 • F-7 • Blue Area • H-12
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock className="size-4 text-[#f37021]" />
+                    15-Min Counter Hold
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <ShieldCheck className="size-4 text-[#2e7d32]" />
+                    Sweet &amp; Savory Clarity
+                  </span>
                 </div>
               </div>
 
-              {/* Right Column: Live Marketplace Status OR Launch Highlights */}
-              <div className="lg:col-span-4 p-5 sm:p-6 rounded-[1.75rem] bg-[#f7f5f0] border border-[#e8e2d8] shadow-2xs flex flex-col justify-between gap-4">
-                {deals.length > 0 ? (
-                  <>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
-                          LIVE MARKETPLACE
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] text-[10px] font-bold">
-                          Live Now
-                        </span>
-                      </div>
+              {/* Right Column: Rich Sunlit Artisan Food Photography + Floating Bag Preview */}
+              <div className="lg:col-span-6">
+                <div className="relative rounded-[2rem] overflow-hidden shadow-[0_24px_60px_-20px_rgba(23,25,22,0.22)] border border-[#E7E2D8] bg-stone-100 aspect-[4/3]">
+                  <img
+                    src={featuredDeal?.imageUrl || '/images/hero-pastries.jpg'}
+                    alt={featuredDeal ? featuredDeal.title : 'Fresh golden croissants and evening bakery assortment'}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
 
-                      <h3 className="text-xl sm:text-2xl font-black text-stone-900 mb-1.5">
-                        {deals.length} Active Surplus Deal{deals.length === 1 ? '' : 's'}
-                      </h3>
-
-                      <p className="text-xs text-stone-500 leading-relaxed font-medium">
-                        Connecting {stores.length || 1} verified partner store{stores.length === 1 ? '' : 's'} with local customers before closing.
+                  {/* Single Floating Editorial Drop Pill */}
+                  <div className="absolute bottom-4 left-4 right-4 sm:left-5 sm:right-5 rounded-2xl bg-white/95 backdrop-blur-md p-4 shadow-xl border border-white/60 flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#f37021] block">
+                        {featuredDeal
+                          ? `Live Drop • ${featuredDeal.storeName}`
+                          : 'Sample Evening Drop • Islamabad Bakery Format'}
+                      </span>
+                      <p className="text-sm sm:text-base font-extrabold text-[#171916] truncate">
+                        {featuredDeal
+                          ? featuredDeal.title
+                          : 'Artisan Croissant & Pastry Box (9:30 PM)'}
                       </p>
                     </div>
 
-                    <div className="pt-3 border-t border-stone-200 flex items-center justify-between">
-                      <div>
-                        <span className="text-[10px] uppercase font-bold text-stone-400 block">
-                          Verified Stores
-                        </span>
-                        <span className="text-xs font-black text-stone-800 font-mono">
-                          {stores.length || 1} Partner{stores.length === 1 ? '' : 's'}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={scrollToDeals}
-                        className="px-4 py-2 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all"
-                      >
-                        <span>View Feed</span>
-                        <ArrowRight className="size-3.5" />
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
-                          ISLAMABAD FIRST WAVE
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-[#fff3e0] text-[#b45309] border border-[#f59e0b]/40 text-[10px] font-bold">
-                          0% Partner Fee
-                        </span>
-                      </div>
-
-                      <h3 className="text-xl font-black text-stone-900 mb-2">
-                        Fresh Closing Drops Tonight
-                      </h3>
-
-                      <ul className="space-y-1.5 text-xs text-stone-600 font-medium">
-                        <li className="flex items-center gap-2">
-                          <CheckCircle2 className="size-3.5 text-[#2e7d32] shrink-0" />
-                          <span>F-6, F-7, Blue Area, F-10 &amp; NUST H-12</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <CheckCircle2 className="size-3.5 text-[#2e7d32] shrink-0" />
-                          <span>Save 30%–85% on same-day pastries &amp; meals</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <CheckCircle2 className="size-3.5 text-[#2e7d32] shrink-0" />
-                          <span>Pay Cash on Pickup directly at store counter</span>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <div className="pt-3 border-t border-stone-200 flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-bold text-stone-600">
-                        Run a bakery or café?
+                    <div className="text-right shrink-0">
+                      <span className="text-xs text-stone-400 line-through font-medium block leading-none mb-0.5">
+                        {featuredDeal ? `₨ ${featuredDeal.originalPricePkr}` : '₨ 1,650'}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveTab('partner');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-[#f37021] hover:bg-[#e26115] text-white font-bold text-xs shadow-xs flex items-center gap-1 transition-all shrink-0"
-                      >
-                        <span>List Store Free</span>
-                        <ArrowRight className="size-3.5" />
-                      </button>
+                      <span className="text-lg sm:text-xl font-extrabold text-[#1B4332] leading-none">
+                        {featuredDeal ? `₨ ${featuredDeal.currentPricePkr}` : '₨ 550'}
+                      </span>
                     </div>
-                  </>
-                )}
+                  </div>
+                </div>
               </div>
 
             </div>

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import type { DealItem, CategoryType, FlavorType, PakistanCity } from '../../types';
 import { DealCard } from './DealCard';
-import { Search, Store } from 'lucide-react';
+import { SampleBoxesSection } from './SampleBoxesSection';
+import { Search } from 'lucide-react';
 
 interface DealFeedProps {
   deals: DealItem[];
@@ -183,73 +184,64 @@ export const DealFeed: React.FC<DealFeedProps> = ({
       )}
 
       {/* Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 px-1">
         <div>
-          <h2 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">
-            Today's Closing-Hour Drops
+          <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#2e7d32] block mb-1">
+            {deals.length === 0 ? 'Preview Tonight’s Format' : 'Live Closing Inventory'}
+          </span>
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-[#171916] tracking-tight">
+            {deals.length === 0 ? (
+              <>
+                What Goes Into a{' '}
+                <span className="font-serif-display italic font-semibold text-[#1B4332]">
+                  BiteHour Box
+                </span>
+              </>
+            ) : (
+              "Today's Closing-Hour Drops"
+            )}
           </h2>
-          <p className="text-xs text-stone-500 mt-0.5">
-            Sweet &amp; savory preference tags included. Every bag includes a 15-minute hold.
+          <p className="text-sm text-stone-600 mt-1 font-medium">
+            {deals.length === 0
+              ? 'Sweet vs. Savory clarity and exact counter pickup slots — never random guesswork.'
+              : 'Sweet & savory preference tags included. Every bag locks with a 15-minute counter hold.'}
           </p>
         </div>
 
-        <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] self-start sm:self-auto shadow-2xs">
+        <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] self-start sm:self-auto shadow-2xs">
           {deals.length === 0
-            ? 'Onboarding Partners'
+            ? 'Example Evening Boxes'
             : `${filteredDeals.length} Active Deal${filteredDeals.length === 1 ? '' : 's'}`}
         </span>
       </div>
 
-      {/* Grid of Deals or Crisp Empty State */}
-      {filteredDeals.length === 0 ? (
-        <div className="p-10 sm:p-12 rounded-3xl text-center bg-white border border-[#e5e0d8] space-y-3">
-          <div className="size-14 rounded-full bg-[#f7f5f0] flex items-center justify-center mx-auto text-2xl">
+      {/* Grid of Deals or Appetizing Pre-Launch Sample Boxes */}
+      {deals.length === 0 ? (
+        <SampleBoxesSection onOpenPartnerPage={onOpenPartnerPage} />
+      ) : filteredDeals.length === 0 ? (
+        <div className="p-10 sm:p-12 rounded-[2rem] text-center bg-white border border-[#E7E2D8] space-y-3">
+          <div className="size-14 rounded-full bg-[#F6F2EA] flex items-center justify-center mx-auto text-2xl">
             🥐
           </div>
-          {deals.length === 0 ? (
-            <>
-              <h3 className="text-base font-black text-stone-900">
-                Opening Soon in Your Neighborhood
-              </h3>
-              <p className="text-xs text-stone-500 max-w-md mx-auto leading-relaxed">
-                We are currently onboarding cafés, bakeries, and restaurants across Islamabad (F-6, F-7, Blue Area, H-12) and Lahore. Own a food business? List your evening drops in under 2 minutes with 0% launch fee.
-              </p>
-              {onOpenPartnerPage && (
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={onOpenPartnerPage}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white text-xs font-black shadow-sm"
-                  >
-                    <Store className="size-4 text-[#f37021]" />
-                    <span>Partner Your Bakery or Café With BiteHour →</span>
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <h3 className="text-base font-bold text-stone-900">No Deals Matching Selected Filter</h3>
-              <p className="text-xs text-stone-500 max-w-sm mx-auto">
-                Try clearing your flavor or sector filter or adjusting the minimum discount slider.
-              </p>
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCategory('All');
-                  setSelectedFlavor('All');
-                  setSelectedSector('All Areas');
-                  setMinDiscount(30);
-                }}
-                className="px-5 py-2.5 rounded-xl bg-[#1b4332] text-white text-xs font-bold shadow-sm"
-              >
-                Reset All Filters
-              </button>
-            </>
-          )}
+          <h3 className="text-lg font-extrabold text-[#171916]">No Deals Matching Selected Filter</h3>
+          <p className="text-sm text-stone-500 max-w-sm mx-auto">
+            Try clearing your flavor or sector filter or adjusting the minimum discount slider.
+          </p>
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedCategory('All');
+              setSelectedFlavor('All');
+              setSelectedSector('All Areas');
+              setMinDiscount(30);
+            }}
+            className="px-6 py-2.5 rounded-full bg-[#1b4332] text-white text-xs font-bold shadow-sm cursor-pointer"
+          >
+            Reset All Filters
+          </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredDeals.map((deal) => (
             <DealCard key={deal.id} deal={deal} onReserve={onReserveDeal} onSelect={onSelectDeal} />
           ))}

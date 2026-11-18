@@ -71,7 +71,7 @@ export const InstallPwaBanner: React.FC = () => {
       <button
         type="button"
         onClick={handleInstallClick}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-stone-50 text-[#1b4332] border border-stone-200 hover:border-[#1b4332]/40 text-xs font-black shadow-2xs transition-all"
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white hover:bg-stone-50 text-[#1b4332] border border-[#D8D1C5] text-xs font-bold shadow-2xs transition-all cursor-pointer"
       >
         <Smartphone className="size-4 text-[#f37021]" />
         <span>{deferredPrompt ? 'Install BiteHour App' : 'Save App to Home Screen'}</span>

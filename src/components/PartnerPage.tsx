@@ -112,27 +112,29 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
               <span>For Bakeries, Cafés &amp; Restaurants</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-black text-stone-900 tracking-tight leading-tight">
+            <h1 className="text-3xl sm:text-5xl font-extrabold text-[#171916] tracking-tight leading-[1.06]">
               Turn Closing-Hour Surplus Into{' '}
-              <span className="text-[#1b4332]">Revenue &amp; New Walk-Ins</span>
+              <span className="font-serif-display italic font-semibold text-[#1b4332]">
+                Revenue &amp; New Walk-Ins
+              </span>
             </h1>
 
-            <p className="text-sm text-stone-600 leading-relaxed font-medium">
+            <p className="text-sm sm:text-base text-stone-600 leading-relaxed font-medium">
               Built for busy spots in <strong>Islamabad (F-6, F-7, Blue Area, H-12), Rawalpindi, Lahore &amp; Karachi</strong>.
               Attract university students &amp; young professionals before closing without discounting full-day menu prices.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {BENEFITS.map((b) => {
               const Icon = b.icon;
               return (
-                <div key={b.title} className="bg-white border border-[#e5e0d8] rounded-2xl p-4 space-y-2 shadow-2xs">
-                  <div className="size-9 rounded-xl bg-[#edf7ed] text-[#1b4332] flex items-center justify-center">
-                    <Icon className="size-4" />
+                <div key={b.title} className="bg-white border border-[#E7E2D8] rounded-3xl p-5 space-y-2.5 shadow-[0_6px_20px_-10px_rgba(23,25,22,0.06)]">
+                  <div className="size-10 rounded-2xl bg-[#edf7ed] text-[#1b4332] flex items-center justify-center">
+                    <Icon className="size-4.5" />
                   </div>
-                  <h3 className="text-xs font-black text-stone-900">{b.title}</h3>
-                  <p className="text-[11px] text-stone-500 leading-relaxed font-medium">{b.desc}</p>
+                  <h3 className="text-sm font-extrabold text-[#171916]">{b.title}</h3>
+                  <p className="text-xs sm:text-[13px] text-stone-600 leading-relaxed font-medium">{b.desc}</p>
                 </div>
               );
             })}

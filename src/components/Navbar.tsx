@@ -33,15 +33,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAuth,
 }) => {
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-2xs">
+    <header className="sticky top-0 z-50 bg-[#FAF8F3]/92 backdrop-blur-lg border-b border-[#E7E2D8]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="h-16 flex items-center justify-between gap-4">
+        <div className="h-[72px] flex items-center justify-between gap-4">
           
           {/* Brand Logo (Option B: Bitten-Clock Badge + Bold BiteHour) */}
           <button
             type="button"
             onClick={() => setActiveTab('consumer')}
-            className="flex items-center text-left group shrink-0"
+            className="flex items-center text-left group shrink-0 cursor-pointer"
           >
             <BiteHourLogo showTagline />
           </button>
@@ -49,9 +49,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Center City Selector (Desktop) */}
           <nav
             aria-label="City filter"
-            className="hidden lg:flex items-center gap-0.5 bg-stone-100 p-1 rounded-full border border-stone-200/80"
+            className="hidden lg:flex items-center gap-1 bg-[#F1ECE1] p-1 rounded-full border border-[#E5DFD3]"
           >
-            <MapPin className="size-3.5 text-stone-400 ml-2.5 mr-1 shrink-0" />
+            <MapPin className="size-3.5 text-stone-400 ml-3 mr-1 shrink-0" />
             {CITIES.map((c) => {
               const isActive = selectedCity === c.value;
               return (
@@ -59,10 +59,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                   key={c.value}
                   type="button"
                   onClick={() => setSelectedCity(c.value)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+                  className={`px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all whitespace-nowrap cursor-pointer ${
                     isActive
                       ? 'bg-[#1b4332] text-white shadow-xs'
-                      : 'text-stone-600 hover:text-stone-900 hover:bg-white/60'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-white/70'
                   }`}
                 >
                   {c.label}
@@ -72,7 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0">
             {/* Single Smart Business Action: For Bakeries (/partner), Store POS (logged-in retailer), or ← Live Deals */}
             <button
               type="button"
@@ -90,12 +90,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ? 'Open Your Store POS Dashboard'
                   : 'For Bakeries, Cafés & Restaurants'
               }
-              className={`px-3 sm:px-3.5 py-2 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              className={`px-3.5 sm:px-4 py-2 rounded-full text-[13px] font-bold border flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
                 activeTab !== 'consumer'
-                  ? 'bg-stone-900 border-stone-900 text-white hover:bg-stone-800 shadow-xs'
+                  ? 'bg-[#171916] border-[#171916] text-white hover:bg-stone-800 shadow-xs'
                   : currentUser?.role === 'retailer'
                   ? 'bg-[#edf7ed] border-[#1b4332]/25 text-[#1b4332] hover:bg-[#dcf2dc]'
-                  : 'bg-[#fff8f1] border-[#fed7aa] text-[#c2410c] hover:bg-[#ffedd5]'
+                  : 'bg-white border-[#E5DFD3] text-[#171916] hover:border-[#f37021]/60 hover:bg-[#fff8f1]'
               }`}
             >
               {activeTab !== 'consumer' ? (
@@ -122,7 +122,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onOpenReservations}
-              className="px-3.5 py-2 rounded-full bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-xs shadow-xs flex items-center gap-2 transition-all whitespace-nowrap active:scale-95"
+              className="px-4 py-2 rounded-full bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-[13px] shadow-xs flex items-center gap-2 transition-all whitespace-nowrap active:scale-95 cursor-pointer"
             >
               <ShoppingBag className="size-3.5" />
               <span>My Bag</span>
@@ -137,10 +137,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onOpenAuth}
-              className={`px-3 sm:px-3.5 py-2 rounded-full text-xs font-bold border flex items-center gap-1.5 transition-all whitespace-nowrap ${
+              className={`px-3.5 sm:px-4 py-2 rounded-full text-[13px] font-bold border flex items-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
                 currentUser
                   ? 'bg-[#edf7ed] border-[#c8e6c9] text-[#1b4332] hover:bg-[#dcf2dc]'
-                  : 'bg-stone-50 border-stone-200 text-stone-700 hover:bg-stone-100'
+                  : 'bg-white border-[#E5DFD3] text-stone-700 hover:bg-stone-50'
               }`}
               title={currentUser ? `Signed in as ${currentUser.name}` : 'Sign In or Create Account'}
             >

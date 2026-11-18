@@ -34,46 +34,52 @@ const STEPS = [
 
 export const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ onOpenPartnerPage }) => {
   return (
-    <section id="how-it-works" className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 px-1">
+    <section id="how-it-works" className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 px-1">
         <div>
-          <span className="text-[11px] font-black uppercase tracking-wider text-[#f37021]">
+          <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#f37021]">
             Simple 4-Step Flow
           </span>
-          <h2 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight mt-0.5">
-            Find it. Lock it. Collect fresh before closing.
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-[#171916] tracking-tight mt-1.5">
+            Find it. Lock it.{' '}
+            <span className="font-serif-display italic font-semibold text-[#1B4332]">
+              Collect fresh
+            </span>{' '}
+            before closing.
           </h2>
         </div>
 
         <button
           type="button"
           onClick={onOpenPartnerPage}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#fff8f1] hover:bg-[#ffedd5] text-[#e65100] border border-[#fed7aa] text-xs font-bold self-start sm:self-auto transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-[#fff8f1] text-[#171916] border border-[#E5DFD3] hover:border-[#f37021]/50 text-xs sm:text-[13px] font-bold self-start sm:self-auto transition-all shadow-2xs cursor-pointer"
         >
-          <Store className="size-3.5" />
+          <Store className="size-4 text-[#f37021]" />
           <span>Own a Bakery or Café? Sell With Us</span>
           <ArrowRight className="size-3.5" />
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {STEPS.map((step) => {
           const Icon = step.icon;
           return (
             <div
               key={step.num}
-              className="bg-white border border-[#e5e0d8] rounded-3xl p-5 flex flex-col justify-between gap-4 shadow-2xs hover:border-[#1b4332]/30 transition-colors"
+              className="bg-white border border-[#E7E2D8] rounded-[1.75rem] p-6 flex flex-col justify-between gap-6 shadow-[0_8px_24px_-12px_rgba(23,25,22,0.06)] hover:border-[#1B4332]/30 transition-all"
             >
               <div className="flex items-center justify-between">
-                <div className="size-10 rounded-2xl bg-[#edf7ed] text-[#1b4332] border border-[#c8e6c9] flex items-center justify-center">
+                <div className="size-11 rounded-2xl bg-[#edf7ed] text-[#1b4332] border border-[#c8e6c9] flex items-center justify-center">
                   <Icon className="size-5" />
                 </div>
-                <span className="font-mono text-xs font-black text-stone-300">{step.num}</span>
+                <span className="font-mono text-sm font-bold text-[#1B4332]/25">{step.num}</span>
               </div>
 
               <div>
-                <h3 className="text-sm font-black text-stone-900 mb-1">{step.title}</h3>
-                <p className="text-xs text-stone-600 leading-relaxed font-medium">{step.desc}</p>
+                <h3 className="text-base sm:text-[17px] font-extrabold text-[#171916] mb-1.5 tracking-tight">
+                  {step.title}
+                </h3>
+                <p className="text-[13px] text-stone-600 leading-relaxed font-medium">{step.desc}</p>
               </div>
             </div>
           );
