@@ -16,11 +16,13 @@ import {
   X,
   Trash2,
   BellRing,
+  Smartphone,
 } from 'lucide-react';
 import type {
   AdminDropSubscriber,
   AdminOverview,
   AdminPartnerLead,
+  AdminPushSubscriber,
   AdminRetailerRecord,
 } from '../types';
 import {
@@ -29,6 +31,7 @@ import {
   deleteAdminRetailerApi,
   updateAdminLeadStatusApi,
   deleteAdminDropSubscriberApi,
+  deleteAdminPushSubscriberApi,
 } from '../services/api';
 
 function toWhatsAppHref(rawPhone: string, message: string): string {
@@ -42,7 +45,8 @@ type ConfirmAction =
   | { kind: 'revoke-store'; store: AdminRetailerRecord }
   | { kind: 'delete-store'; store: AdminRetailerRecord }
   | { kind: 'lead-status'; lead: AdminPartnerLead; nextStatus: AdminPartnerLead['status'] }
-  | { kind: 'delete-subscriber'; subscriber: AdminDropSubscriber };
+  | { kind: 'delete-subscriber'; subscriber: AdminDropSubscriber }
+  | { kind: 'delete-push-subscriber'; pushSub: AdminPushSubscriber };
 
 interface AlertNotice {
   type: 'success' | 'warning';
@@ -168,6 +172,26 @@ export const AdminDashboard: React.FC = () => {
         setBusyId(null);
         setConfirmAction(null);
       }
+      return;
+    }
+
+    if (action.kind === 'delete-push-subscriber') {
+      setBusyId(action.pushSub.id);
+      setError(null);
+      try {
+        await deleteAdminPushSubscriberApi(action.pushSub.id);
+        await loadOverview();
+        setAlertNotice({
+          type: 'warning',
+          title: 'Push Device Removed',
+          message: `${action.pushSub.deviceType} subscription (${action.pushSub.sectors.join(', ')}) was removed.`,
+        });
+      } catch (err: any) {
+        setError(err?.message || 'Failed to remove push subscription.');
+      } finally {
+        setBusyId(null);
+        setConfirmAction(null);
+      }
     }
   };
 
@@ -199,6 +223,7 @@ export const AdminDashboard: React.FC = () => {
     approvedRetailersCount: 0,
     partnerLeadsCount: 0,
     dropSubscribersCount: 0,
+    pushSubscribersCount: 0,
     activeDealsCount: 0,
   };
 
@@ -232,8 +257,16 @@ export const AdminDashboard: React.FC = () => {
       return {
         tone: 'red' as const,
         title: `Remove ${confirmAction.subscriber.phone}?`,
-        body: 'Remove this phone number from Islamabad evening drop alerts.',
+        body: 'Remove this phone number from Islamabad evening WhatsApp drop alerts.',
         confirmLabel: 'Yes, Remove Subscriber',
+      };
+    }
+    if (confirmAction.kind === 'delete-push-subscriber') {
+      return {
+        tone: 'red' as const,
+        title: `Remove ${confirmAction.pushSub.deviceType} device?`,
+        body: `Remove this device (${confirmAction.pushSub.sectors.join(', ')}) from automatic push notifications.`,
+        confirmLabel: 'Yes, Remove Device',
       };
     }
     return {
@@ -251,6 +284,8 @@ export const AdminDashboard: React.FC = () => {
           ? confirmAction.lead.id
           : confirmAction.kind === 'delete-subscriber'
           ? confirmAction.subscriber.id
+          : confirmAction.kind === 'delete-push-subscriber'
+          ? confirmAction.pushSub.id
           : confirmAction.store.id)
   );
 
@@ -339,7 +374,7 @@ export const AdminDashboard: React.FC = () => {
       )}
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4">
           <span className="text-[11px] font-bold text-stone-500 block">Pending Stores</span>
           <span className="text-2xl font-extrabold text-[#f37021]">{stats.pendingRetailersCount}</span>
@@ -353,7 +388,11 @@ export const AdminDashboard: React.FC = () => {
           <span className="text-2xl font-extrabold text-[#171916]">{stats.partnerLeadsCount}</span>
         </div>
         <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4">
-          <span className="text-[11px] font-bold text-stone-500 block">Drop Subscribers</span>
+          <span className="text-[11px] font-bold text-stone-500 block">Push Devices</span>
+          <span className="text-2xl font-extrabold text-[#1B4332]">{stats.pushSubscribersCount}</span>
+        </div>
+        <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4">
+          <span className="text-[11px] font-bold text-stone-500 block">WhatsApp List</span>
           <span className="text-2xl font-extrabold text-[#C85610]">{stats.dropSubscribersCount}</span>
         </div>
         <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4">
@@ -400,7 +439,10 @@ export const AdminDashboard: React.FC = () => {
           }`}
         >
           <BellRing className="size-3.5" />
-          <span>Drop Alerts ({overview?.dropSubscribers?.length ?? 0})</span>
+          <span>
+            Drop Alerts (
+            {(overview?.pushSubscribers?.length ?? 0) + (overview?.dropSubscribers?.length ?? 0)})
+          </span>
         </button>
 
         <button
@@ -596,67 +638,186 @@ export const AdminDashboard: React.FC = () => {
           )}
         </div>
       ) : activeSection === 'subscribers' ? (
-        <div className="space-y-3">
-          {!overview?.dropSubscribers?.length ? (
-            <div className="bg-white border border-[#E7E2D8] rounded-3xl p-10 text-center space-y-2">
-              <BellRing className="size-8 text-stone-400 mx-auto" />
-              <p className="text-sm font-bold text-stone-900">No Evening Drop Subscribers Yet</p>
-              <p className="text-xs text-stone-500">
-                Customers who request WhatsApp drop alerts for their Islamabad sector appear here.
-              </p>
+        <div className="space-y-6">
+          {/* 1. Automatic Push Devices */}
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <h2 className="text-sm font-extrabold uppercase tracking-wider text-[#1B4332] flex items-center gap-2">
+                <Smartphone className="size-4" />
+                <span>Instant Push Notification Devices ({overview?.pushSubscribers?.length ?? 0})</span>
+              </h2>
+              {Boolean(overview?.pushSubscribers?.length) && (
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(
+                    (overview?.pushSubscribers || []).reduce<Record<string, number>>((acc, item) => {
+                      for (const sec of item.sectors || ['All Islamabad']) {
+                        acc[sec] = (acc[sec] || 0) + 1;
+                      }
+                      return acc;
+                    }, {})
+                  ).map(([sector, count]) => (
+                    <span
+                      key={sector}
+                      className="px-2.5 py-0.5 rounded-full bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9] text-[10px] font-bold"
+                    >
+                      {sector}: {count}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          ) : (
-            overview.dropSubscribers.map((subscriber) => {
-              const dropPingMsg = `Assalam-o-Alaikum${subscriber.name ? ` ${subscriber.name}` : ''}! Tonight's BiteHour surplus bakery boxes just dropped in ${subscriber.sector}. Reserve your closing-hour bag now before it sells out: https://foodsave-webapp.vercel.app`;
-              return (
+
+            {!overview?.pushSubscribers?.length ? (
+              <div className="bg-white border border-[#E7E2D8] rounded-3xl p-8 text-center space-y-1.5">
+                <BellRing className="size-7 text-stone-400 mx-auto" />
+                <p className="text-sm font-bold text-stone-900">No Push Devices Enabled Yet</p>
+                <p className="text-xs text-stone-500">
+                  Customers who tap &ldquo;Enable Instant Drop Notifications&rdquo; get automatic
+                  alerts on their phone or desktop whenever bakeries post matching drops.
+                </p>
+              </div>
+            ) : (
+              overview.pushSubscribers.map((pushSub) => (
                 <div
-                  key={subscriber.id}
+                  key={pushSub.id}
                   className="bg-white border border-[#E7E2D8] rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs"
                 >
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#FFF3E6] text-[#C85610] border border-[#f37021]/25 text-[10px] font-black uppercase">
-                        {subscriber.sector}
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#1B4332] text-white text-[10px] font-black uppercase">
+                        {pushSub.deviceType}
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 text-[10px] font-bold uppercase">
-                        {subscriber.preference}
-                      </span>
+                      {(pushSub.sectors || ['All Islamabad']).map((sec) => (
+                        <span
+                          key={sec}
+                          className="px-2.5 py-0.5 rounded-full bg-[#FFF3E6] text-[#C85610] border border-[#f37021]/25 text-[10px] font-black uppercase"
+                        >
+                          {sec}
+                        </span>
+                      ))}
+                      {(pushSub.preferences || ['all']).map((pref) => (
+                        <span
+                          key={pref}
+                          className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 text-[10px] font-bold uppercase"
+                        >
+                          {pref}
+                        </span>
+                      ))}
                     </div>
-                    <h3 className="text-base font-extrabold text-stone-900">
-                      {subscriber.name || 'Islamabad Customer'}{' '}
-                      <span className="text-xs font-semibold text-stone-500">({subscriber.phone})</span>
-                    </h3>
-                    <p className="text-xs text-stone-500">
-                      {subscriber.city} • Joined{' '}
-                      {subscriber.createdAt ? new Date(subscriber.createdAt).toLocaleDateString() : 'Recently'}
+                    <p className="text-xs text-stone-500 font-medium">
+                      {pushSub.city} • Updated{' '}
+                      {pushSub.updatedAt
+                        ? new Date(pushSub.updatedAt).toLocaleDateString()
+                        : pushSub.createdAt
+                        ? new Date(pushSub.createdAt).toLocaleDateString()
+                        : 'Recently'}
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                    <a
-                      href={toWhatsAppHref(subscriber.phone, dropPingMsg)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3.5 py-2 rounded-full bg-[#25D366]/15 hover:bg-[#25D366]/25 text-[#15803d] border border-[#25D366]/40 text-xs font-bold flex items-center gap-1.5"
-                    >
-                      <MessageCircle className="size-3.5" />
-                      <span>Send Drop Alert</span>
-                    </a>
-
-                    <button
-                      type="button"
-                      disabled={busyId === subscriber.id}
-                      onClick={() => setConfirmAction({ kind: 'delete-subscriber', subscriber })}
-                      className="px-3.5 py-2 rounded-full bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      <Trash2 className="size-3.5" />
-                      <span>Remove</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    disabled={busyId === pushSub.id}
+                    onClick={() => setConfirmAction({ kind: 'delete-push-subscriber', pushSub })}
+                    className="px-3.5 py-2 rounded-full bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                  >
+                    <Trash2 className="size-3.5" />
+                    <span>Remove</span>
+                  </button>
                 </div>
-              );
-            })
-          )}
+              ))
+            )}
+          </div>
+
+          {/* 2. Secondary WhatsApp Waitlist */}
+          <div className="space-y-3">
+            <h2 className="text-sm font-extrabold uppercase tracking-wider text-stone-700 px-1 flex items-center gap-2">
+              <MessageCircle className="size-4 text-[#15803d]" />
+              <span>WhatsApp Drop Waitlist ({overview?.dropSubscribers?.length ?? 0})</span>
+            </h2>
+
+            {!overview?.dropSubscribers?.length ? (
+              <div className="bg-white border border-[#E7E2D8] rounded-3xl p-8 text-center space-y-1.5">
+                <MessageCircle className="size-7 text-stone-400 mx-auto" />
+                <p className="text-sm font-bold text-stone-900">No WhatsApp Subscribers Yet</p>
+                <p className="text-xs text-stone-500">
+                  Customers who choose the WhatsApp fallback tab appear here for 1-tap evening pings.
+                </p>
+              </div>
+            ) : (
+              overview.dropSubscribers.map((subscriber) => {
+                const sectorList =
+                  subscriber.sectors && subscriber.sectors.length > 0
+                    ? subscriber.sectors
+                    : [subscriber.sector || 'All Islamabad'];
+                const prefList =
+                  subscriber.preferences && subscriber.preferences.length > 0
+                    ? subscriber.preferences
+                    : [subscriber.preference || 'all'];
+                const dropPingMsg = `Assalam-o-Alaikum${subscriber.name ? ` ${subscriber.name}` : ''}! Tonight's BiteHour surplus bakery boxes just dropped in ${sectorList.join(', ')}. Reserve your closing-hour bag now before it sells out: https://foodsave-webapp.vercel.app`;
+                return (
+                  <div
+                    key={subscriber.id}
+                    className="bg-white border border-[#E7E2D8] rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {sectorList.map((sec) => (
+                          <span
+                            key={sec}
+                            className="px-2.5 py-0.5 rounded-full bg-[#FFF3E6] text-[#C85610] border border-[#f37021]/25 text-[10px] font-black uppercase"
+                          >
+                            {sec}
+                          </span>
+                        ))}
+                        {prefList.map((pref) => (
+                          <span
+                            key={pref}
+                            className="px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-700 text-[10px] font-bold uppercase"
+                          >
+                            {pref}
+                          </span>
+                        ))}
+                      </div>
+                      <h3 className="text-base font-extrabold text-stone-900">
+                        {subscriber.name || 'Islamabad Customer'}{' '}
+                        <span className="text-xs font-semibold text-stone-500">
+                          ({subscriber.phone})
+                        </span>
+                      </h3>
+                      <p className="text-xs text-stone-500">
+                        {subscriber.city} • Joined{' '}
+                        {subscriber.createdAt
+                          ? new Date(subscriber.createdAt).toLocaleDateString()
+                          : 'Recently'}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                      <a
+                        href={toWhatsAppHref(subscriber.phone, dropPingMsg)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3.5 py-2 rounded-full bg-[#25D366]/15 hover:bg-[#25D366]/25 text-[#15803d] border border-[#25D366]/40 text-xs font-bold flex items-center gap-1.5"
+                      >
+                        <MessageCircle className="size-3.5" />
+                        <span>Send Drop Alert</span>
+                      </a>
+
+                      <button
+                        type="button"
+                        disabled={busyId === subscriber.id}
+                        onClick={() => setConfirmAction({ kind: 'delete-subscriber', subscriber })}
+                        className="px-3.5 py-2 rounded-full bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="size-3.5" />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       ) : (
         <div className="space-y-3">

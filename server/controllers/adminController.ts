@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Retailer } from '../models/Retailer.js';
 import { PartnerLead } from '../models/PartnerLead.js';
 import { DropAlertSubscriber } from '../models/DropAlertSubscriber.js';
+import { PushSubscription } from '../models/PushSubscription.js';
 import { Item } from '../models/Item.js';
 import { Deal } from '../models/Deal.js';
 import type { AuthRequest } from '../middleware/auth.js';
@@ -31,10 +32,11 @@ export function formatAdminRetailerDto(retailer: any) {
 
 export const getAdminOverview = async (_req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const [retailers, partnerLeads, dropSubscribers, activeDealsCount] = await Promise.all([
+    const [retailers, partnerLeads, dropSubscribers, pushSubscribers, activeDealsCount] = await Promise.all([
       Retailer.find().populate('userRef', 'name email contactPhone').sort({ createdAt: -1 }),
       PartnerLead.find().sort({ createdAt: -1 }),
       DropAlertSubscriber.find().sort({ createdAt: -1 }),
+      PushSubscription.find({ isActive: true }).sort({ updatedAt: -1 }),
       Deal.countDocuments({ status: 'active' }),
     ]);
 
@@ -63,8 +65,32 @@ export const getAdminOverview = async (_req: AuthRequest, res: Response): Promis
       email: sub.email || '',
       city: sub.city || 'Islamabad',
       sector: sub.sector || 'All Islamabad',
+      sectors:
+        Array.isArray(sub.sectors) && sub.sectors.length > 0
+          ? sub.sectors
+          : [sub.sector || 'All Islamabad'],
       preference: sub.preference || 'all',
+      preferences:
+        Array.isArray(sub.preferences) && sub.preferences.length > 0
+          ? sub.preferences
+          : [sub.preference || 'all'],
       createdAt: sub.createdAt,
+    }));
+
+    const mappedPushSubscribers = pushSubscribers.map((sub: any) => ({
+      id: sub._id.toString(),
+      city: sub.city || 'Islamabad',
+      sectors:
+        Array.isArray(sub.sectors) && sub.sectors.length > 0
+          ? sub.sectors
+          : ['All Islamabad'],
+      preferences:
+        Array.isArray(sub.preferences) && sub.preferences.length > 0
+          ? sub.preferences
+          : ['all'],
+      deviceType: sub.deviceType || 'other',
+      createdAt: sub.createdAt,
+      updatedAt: sub.updatedAt,
     }));
 
     res.json({
@@ -73,12 +99,14 @@ export const getAdminOverview = async (_req: AuthRequest, res: Response): Promis
         approvedRetailersCount: approvedRetailers.length,
         partnerLeadsCount: mappedLeads.length,
         dropSubscribersCount: mappedSubscribers.length,
+        pushSubscribersCount: mappedPushSubscribers.length,
         activeDealsCount,
       },
       pendingRetailers,
       approvedRetailers,
       partnerLeads: mappedLeads,
       dropSubscribers: mappedSubscribers,
+      pushSubscribers: mappedPushSubscribers,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Could not load admin dashboard.' });
@@ -195,5 +223,25 @@ export const deleteDropSubscriber = async (req: AuthRequest, res: Response): Pro
     res.json({ message: 'Drop alert subscriber removed.' });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Could not remove subscriber.' });
+  }
+};
+
+export const deletePushSubscriber = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = String(req.params.id || '');
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ error: 'Invalid push subscription ID.' });
+      return;
+    }
+
+    const removed = await PushSubscription.findByIdAndDelete(id);
+    if (!removed) {
+      res.status(404).json({ error: 'Push subscription not found.' });
+      return;
+    }
+
+    res.json({ message: 'Device removed from instant push alerts.' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Could not remove push subscription.' });
   }
 };

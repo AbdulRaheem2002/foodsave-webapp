@@ -6,7 +6,9 @@ export interface IDropAlertSubscriber extends Document {
   email?: string;
   city: string;
   sector: string;
+  sectors: string[];
   preference: 'all' | 'sweet' | 'savory' | 'drinks';
+  preferences: ('all' | 'sweet' | 'savory' | 'drinks')[];
   isActive: boolean;
   createdAt: Date;
 }
@@ -18,10 +20,16 @@ const DropAlertSubscriberSchema: Schema = new Schema(
     email: { type: String, lowercase: true, trim: true },
     city: { type: String, default: 'Islamabad', trim: true },
     sector: { type: String, default: 'All Islamabad', trim: true },
+    sectors: { type: [String], default: ['All Islamabad'] },
     preference: {
       type: String,
       enum: ['all', 'sweet', 'savory', 'drinks'],
       default: 'all',
+    },
+    preferences: {
+      type: [String],
+      enum: ['all', 'sweet', 'savory', 'drinks'],
+      default: ['all'],
     },
     isActive: { type: Boolean, default: true },
   },

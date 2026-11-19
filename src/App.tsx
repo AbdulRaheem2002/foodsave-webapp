@@ -45,6 +45,21 @@ export function App() {
   });
   const [selectedCity] = useState<PakistanCity>('All Pakistan');
   const [selectedSector, setSelectedSector] = useState<string>('All Areas');
+  const [pendingDeepLinkDealId, setPendingDeepLinkDealId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return new URLSearchParams(window.location.search).get('deal');
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    const handleSwMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'OPEN_DEAL' && typeof event.data.dealId === 'string') {
+        setPendingDeepLinkDealId(event.data.dealId);
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', handleSwMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -137,6 +152,29 @@ export function App() {
   useEffect(() => {
     refreshMarketplaceData();
   }, []);
+
+  useEffect(() => {
+    if (!pendingDeepLinkDealId || deals.length === 0) return;
+    const found = deals.find((d) => d.id === pendingDeepLinkDealId);
+    if (!found) return;
+
+    setActiveTab('consumer');
+    setSelectedSector('All Areas');
+    setSelectedDeal(found);
+    setPendingDeepLinkDealId(null);
+
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('deal')) {
+        url.searchParams.delete('deal');
+        const cleaned = `${url.pathname}${url.search}${url.hash}`;
+        window.history.replaceState(null, '', cleaned || '/');
+      }
+      window.requestAnimationFrame(() => {
+        document.getElementById('deals-feed-section')?.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+  }, [pendingDeepLinkDealId, deals]);
 
   // Filter Deals by Selected City
   const filteredDealsByCity = useMemo(() => {

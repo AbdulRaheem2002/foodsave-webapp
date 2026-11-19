@@ -120,6 +120,7 @@ export interface AdminPartnerLead {
 }
 
 export type DropAlertPreference = 'all' | 'sweet' | 'savory' | 'drinks';
+export type PushDeviceType = 'desktop' | 'android' | 'ios' | 'other';
 
 export interface AdminDropSubscriber {
   id: string;
@@ -128,8 +129,20 @@ export interface AdminDropSubscriber {
   email?: string;
   city: string;
   sector: string;
+  sectors?: string[];
   preference: DropAlertPreference;
+  preferences?: DropAlertPreference[];
   createdAt: string;
+}
+
+export interface AdminPushSubscriber {
+  id: string;
+  city: string;
+  sectors: string[];
+  preferences: DropAlertPreference[];
+  deviceType: PushDeviceType;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface AdminOverview {
@@ -138,12 +151,14 @@ export interface AdminOverview {
     approvedRetailersCount: number;
     partnerLeadsCount: number;
     dropSubscribersCount: number;
+    pushSubscribersCount: number;
     activeDealsCount: number;
   };
   pendingRetailers: AdminRetailerRecord[];
   approvedRetailers: AdminRetailerRecord[];
   partnerLeads: AdminPartnerLead[];
   dropSubscribers: AdminDropSubscriber[];
+  pushSubscribers: AdminPushSubscriber[];
 }
 
 export interface DonationRecord {

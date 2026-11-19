@@ -26,6 +26,7 @@ import {
   deleteAdminRetailer,
   updatePartnerLeadStatus,
   deleteDropSubscriber,
+  deletePushSubscriber,
 } from './controllers/adminController.js';
 import { getDeals } from './controllers/dealController.js';
 import {
@@ -42,6 +43,18 @@ import {
 } from './controllers/retailerController.js';
 import { createPartnerLead, validatePartnerLeadBody } from './controllers/partnerLeadController.js';
 import { subscribeDropAlert, validateDropAlertBody } from './controllers/dropAlertController.js';
+import {
+  getPushConfig,
+  sendTestPush,
+  subscribePush,
+  unsubscribePush,
+  validatePushSubscribeBody,
+} from './controllers/pushController.js';
+import {
+  isPushConfigured,
+  notifyMatchingPushSubscribers,
+  sendSinglePushNotification,
+} from './services/pushService.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -464,6 +477,131 @@ app.post('/api/drop-alerts', async (req: Request, res: Response) => {
   });
 });
 
+// 2e. Web Push Drop Notification Endpoints (Android, Desktop, iOS Installed PWA)
+app.get('/api/push/vapid-public-key', (req: Request, res: Response) => {
+  getPushConfig(req, res);
+});
+
+app.post('/api/push/subscribe', optionalAuth, async (req: AuthRequest, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await subscribePush(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB subscribePush fallback to memDb:', mongoErr);
+    }
+  }
+
+  const check = validatePushSubscribeBody(req.body);
+  if (!check.valid || !check.data) {
+    res.status(400).json({ error: check.error });
+    return;
+  }
+
+  const existing = memDb.pushSubscriptions.find((s) => s.endpoint === check.data?.endpoint);
+  if (existing) {
+    Object.assign(existing, {
+      ...check.data,
+      userRef: req.user?.id || existing.userRef,
+      updatedAt: new Date().toISOString(),
+    });
+    res.status(201).json({
+      message: `Instant drop alerts active for ${existing.sectors.join(', ')}!`,
+      subscription: {
+        id: existing.id,
+        sectors: existing.sectors,
+        preferences: existing.preferences,
+        deviceType: existing.deviceType,
+      },
+    });
+    return;
+  }
+
+  const created = {
+    id: `push-${Date.now()}`,
+    ...check.data,
+    userRef: req.user?.id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  memDb.pushSubscriptions.unshift(created);
+  res.status(201).json({
+    message: `Instant drop alerts active for ${created.sectors.join(', ')}!`,
+    subscription: {
+      id: created.id,
+      sectors: created.sectors,
+      preferences: created.preferences,
+      deviceType: created.deviceType,
+    },
+  });
+});
+
+app.post('/api/push/unsubscribe', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await unsubscribePush(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB unsubscribePush fallback to memDb:', mongoErr);
+    }
+  }
+
+  const endpoint = String(req.body?.endpoint || '').trim();
+  if (!endpoint) {
+    res.status(400).json({ error: 'Push subscription endpoint is required.' });
+    return;
+  }
+
+  memDb.pushSubscriptions = memDb.pushSubscriptions.filter((s) => s.endpoint !== endpoint);
+  res.json({ message: 'Instant push notifications turned off for this device.' });
+});
+
+app.post('/api/push/test', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await sendTestPush(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB sendTestPush fallback to memDb:', mongoErr);
+    }
+  }
+
+  const endpoint = String(req.body?.endpoint || '').trim();
+  if (!endpoint) {
+    res.status(400).json({ error: 'Push subscription endpoint is required.' });
+    return;
+  }
+
+  if (!isPushConfigured()) {
+    res.status(503).json({ error: 'Web Push VAPID keys are not configured on the server yet.' });
+    return;
+  }
+
+  const sub = memDb.pushSubscriptions.find((s) => s.endpoint === endpoint && s.isActive !== false);
+  if (!sub) {
+    res.status(404).json({ error: 'No active push subscription found for this device.' });
+    return;
+  }
+
+  try {
+    await sendSinglePushNotification(sub, {
+      title: '🔔 BiteHour Drop Alerts Active!',
+      body: `You will be notified immediately when ${sub.sectors.join(', ')} bakeries post closing-hour boxes.`,
+      url: '/',
+      tag: 'bitehour-test',
+    });
+    res.json({ message: 'Test notification sent! Check your device tray.' });
+  } catch (pushErr: any) {
+    const code = pushErr?.statusCode;
+    if (code === 404 || code === 410) {
+      memDb.pushSubscriptions = memDb.pushSubscriptions.filter((s) => s.endpoint !== endpoint);
+      res.status(410).json({ error: 'Push subscription expired in browser. Please re-enable alerts.' });
+      return;
+    }
+    res.status(500).json({ error: pushErr?.message || 'Failed to send test push notification.' });
+  }
+});
+
 // 3. Deals Endpoint (Calculate Rule-Based Time Decay & Filter)
 app.get('/api/deals', async (req: Request, res: Response) => {
   if (isMongoConnected()) {
@@ -594,8 +732,22 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
   };
   memDb.deals.unshift(newDeal);
 
+  const pushResult = await notifyMatchingPushSubscribers({
+    dealId,
+    itemName: newItem.name,
+    storeName: retailer.name,
+    sector: retailer.location?.sector || '',
+    flavorProfile: newItem.flavorProfile,
+    originalPricePkr: price,
+    currentPricePkr: newDeal.currentDiscountedPricePkr,
+    discountPercent: newDeal.discountPercent,
+    pickupWindowText: windowLabel,
+    useMemoryStore: true,
+  });
+
   res.status(201).json({
     message: 'Surplus item listed with time-decay schedule',
+    notificationsSent: pushResult.sent,
     item: newItem,
     deal: newDeal,
   });
@@ -909,11 +1061,23 @@ app.get('/api/admin/overview', authenticateToken, requireAdmin, async (req: Auth
       partnerLeadsCount: memDb.partnerLeads.length,
       activeDealsCount: memDb.deals.filter((d) => d.status === 'active').length,
       dropSubscribersCount: memDb.dropSubscribers.length,
+      pushSubscribersCount: memDb.pushSubscriptions.filter((s) => s.isActive !== false).length,
     },
     pendingRetailers,
     approvedRetailers,
     partnerLeads: memDb.partnerLeads,
     dropSubscribers: memDb.dropSubscribers,
+    pushSubscribers: memDb.pushSubscriptions
+      .filter((s) => s.isActive !== false)
+      .map((s) => ({
+        id: s.id,
+        city: s.city || 'Islamabad',
+        sectors: s.sectors || ['All Islamabad'],
+        preferences: s.preferences || ['all'],
+        deviceType: s.deviceType || 'other',
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+      })),
   });
 });
 
@@ -997,6 +1161,25 @@ app.delete('/api/admin/drop-alerts/:id', authenticateToken, requireAdmin, async 
   }
   memDb.dropSubscribers.splice(idx, 1);
   res.json({ message: 'Subscriber removed from drop alert list.' });
+});
+
+app.delete('/api/admin/push-subscriptions/:id', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await deletePushSubscriber(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB deletePushSubscriber fallback to memDb:', mongoErr);
+    }
+  }
+
+  const idx = memDb.pushSubscriptions.findIndex((s) => s.id === req.params.id);
+  if (idx === -1) {
+    res.status(404).json({ error: 'Push subscription not found.' });
+    return;
+  }
+  memDb.pushSubscriptions.splice(idx, 1);
+  res.json({ message: 'Device removed from instant push alerts.' });
 });
 
 const startServer = async () => {

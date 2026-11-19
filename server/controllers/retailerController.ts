@@ -5,6 +5,7 @@ import { Item } from '../models/Item.js';
 import { Deal } from '../models/Deal.js';
 import { Reservation } from '../models/Reservation.js';
 import { calculateTimeDecay } from '../utils/decayCalculator.js';
+import { notifyMatchingPushSubscribers } from '../services/pushService.js';
 import type { AuthRequest } from '../middleware/auth.js';
 
 async function resolveRetailerForUser(userId?: string) {
@@ -104,8 +105,21 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
       pickupWindowText: windowLabel,
     });
 
+    const pushResult = await notifyMatchingPushSubscribers({
+      dealId: deal._id.toString(),
+      itemName: item.name,
+      storeName: retailer.name,
+      sector: retailer.location?.sector || '',
+      flavorProfile: item.flavorProfile,
+      originalPricePkr: item.originalPricePkr,
+      currentPricePkr: deal.currentDiscountedPricePkr,
+      discountPercent: deal.discountPercent,
+      pickupWindowText: deal.pickupWindowText,
+    });
+
     res.status(201).json({
       message: 'Item and Deal listed successfully',
+      notificationsSent: pushResult.sent,
       item: {
         id: item._id.toString(),
         name: item.name,

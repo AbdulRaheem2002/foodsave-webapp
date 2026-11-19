@@ -3,6 +3,7 @@ import type {
   AdminOverview,
   DealItem,
   DropAlertPreference,
+  PushDeviceType,
   Reservation,
   RetailerStore,
 } from '../types';
@@ -386,8 +387,10 @@ export async function subscribeDropAlertApi(payload: {
   phone: string;
   email?: string;
   city?: string;
-  sector: string;
-  preference: DropAlertPreference;
+  sector?: string;
+  sectors?: string[];
+  preference?: DropAlertPreference;
+  preferences?: DropAlertPreference[];
 }): Promise<{ message: string; subscriber: AdminDropSubscriber }> {
   const res = await fetch(`${API_BASE_URL}/drop-alerts`, {
     method: 'POST',
@@ -409,6 +412,86 @@ export async function deleteAdminDropSubscriberApi(subscriberId: string): Promis
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error || 'Unable to remove drop subscriber.');
+  }
+  return data;
+}
+
+export async function fetchPushConfigApi(): Promise<{
+  configured: boolean;
+  publicKey: string | null;
+}> {
+  const res = await fetch(`${API_BASE_URL}/push/vapid-public-key`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to load push configuration.');
+  }
+  return {
+    configured: Boolean(data.configured),
+    publicKey: data.publicKey || null,
+  };
+}
+
+export async function subscribePushApi(payload: {
+  subscription: PushSubscriptionJSON;
+  city?: string;
+  sectors: string[];
+  preferences: DropAlertPreference[];
+  deviceType: PushDeviceType;
+}): Promise<{
+  message: string;
+  subscription: {
+    id: string;
+    sectors: string[];
+    preferences: DropAlertPreference[];
+    deviceType: PushDeviceType;
+  };
+}> {
+  const res = await fetch(`${API_BASE_URL}/push/subscribe`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to activate instant drop notifications.');
+  }
+  return data;
+}
+
+export async function unsubscribePushApi(endpoint: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE_URL}/push/unsubscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to disable instant drop notifications.');
+  }
+  return data;
+}
+
+export async function sendTestPushApi(endpoint: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE_URL}/push/test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to send test notification.');
+  }
+  return data;
+}
+
+export async function deleteAdminPushSubscriberApi(subscriptionId: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE_URL}/admin/push-subscriptions/${subscriptionId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(false),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to remove push device.');
   }
   return data;
 }
