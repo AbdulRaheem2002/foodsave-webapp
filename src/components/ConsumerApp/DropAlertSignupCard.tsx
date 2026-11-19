@@ -311,8 +311,6 @@ export const DropAlertSignupCard: React.FC<DropAlertSignupCardProps> = ({ defaul
     }
   };
 
-  const pushReadyToUse = pushSupported && !iosNeedsInstall && (!pushConfig.loaded || pushConfig.configured);
-
   return (
     <section className="rounded-[2rem] bg-white border border-[#E7E2D8] p-6 sm:p-8 shadow-sm">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
@@ -409,7 +407,7 @@ export const DropAlertSignupCard: React.FC<DropAlertSignupCardProps> = ({ defaul
                       Use WhatsApp Alerts Instead
                     </button>
                   </div>
-                ) : !pushReadyToUse ? (
+                ) : !pushSupported ? (
                   <div className="p-4 rounded-xl bg-white border border-[#E2DDD2] space-y-2.5">
                     <p className="text-xs font-bold text-[#171916]">
                       Instant browser notifications aren&apos;t available in this browser view.
@@ -417,6 +415,22 @@ export const DropAlertSignupCard: React.FC<DropAlertSignupCardProps> = ({ defaul
                     <p className="text-xs text-[#666960]">
                       Open BiteHour in Chrome, Edge, Android, or use WhatsApp alerts to get pinged on
                       drop nights.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setActiveChannel('whatsapp')}
+                      className="px-4 py-2 rounded-full bg-[#1B4332] text-white text-xs font-bold cursor-pointer"
+                    >
+                      Switch to WhatsApp Alerts
+                    </button>
+                  </div>
+                ) : pushConfig.loaded && !pushConfig.configured ? (
+                  <div className="p-4 rounded-xl bg-white border border-[#E2DDD2] space-y-2.5">
+                    <p className="text-xs font-bold text-[#171916]">
+                      Instant push notifications are currently being activated on BiteHour.
+                    </p>
+                    <p className="text-xs text-[#666960]">
+                      Use WhatsApp alerts right now so you don&apos;t miss tonight&apos;s drops.
                     </p>
                     <button
                       type="button"
@@ -516,13 +530,15 @@ export const DropAlertSignupCard: React.FC<DropAlertSignupCardProps> = ({ defaul
                     ) : (
                       <button
                         type="button"
-                        disabled={pushBusy || permissionState === 'denied'}
+                        disabled={pushBusy || !pushConfig.loaded || permissionState === 'denied'}
                         onClick={handleEnableOrUpdatePush}
                         className="w-full h-11 px-6 rounded-full bg-[#f37021] hover:bg-[#d95d12] disabled:opacity-60 text-white text-xs sm:text-sm font-bold shadow-sm transition-colors cursor-pointer flex items-center justify-center gap-2"
                       >
                         <BellRing className="size-4" />
                         <span>
-                          {pushBusy
+                          {!pushConfig.loaded
+                            ? 'Checking notification availability...'
+                            : pushBusy
                             ? 'Activating Notifications...'
                             : 'Enable Instant Drop Notifications'}
                         </span>
