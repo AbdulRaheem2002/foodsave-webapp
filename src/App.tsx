@@ -23,6 +23,7 @@ import {
   fetchMyReservationsApi,
   deleteRetailerItemApi,
   updateReservationStatusApi,
+  dismissReservationApi,
   TOKEN_STORAGE_KEY,
 } from './services/api';
 import { isDealExpired } from './lib/utils';
@@ -177,9 +178,12 @@ export function App() {
     }
   }, [pendingDeepLinkDealId, deals]);
 
+  const [clockTickMs, setClockTickMs] = useState<number>(() => Date.now());
+
   // Periodically prune expired deals so they disappear cleanly when expiry hits
   useEffect(() => {
     const timer = window.setInterval(() => {
+      setClockTickMs(Date.now());
       setDeals((prev) => {
         const next = prev.filter((d) => !isDealExpired(d));
         return next.length === prev.length ? prev : next;
@@ -187,6 +191,14 @@ export function App() {
     }, 15000);
     return () => window.clearInterval(timer);
   }, []);
+
+  const activePassesCount = useMemo(
+    () =>
+      reservations.filter(
+        (r) => r.status === 'pending' && new Date(r.pickupWindowEnd).getTime() > clockTickMs
+      ).length,
+    [reservations, clockTickMs]
+  );
 
   const handleDealExpired = (dealId: string) => {
     setDeals((prev) => prev.filter((d) => d.id !== dealId));
@@ -297,6 +309,30 @@ export function App() {
     setReservations((prev) =>
       prev.filter((r) => r.id !== reservationId && r.pickupCode !== reservationId)
     );
+  };
+
+  const handleDismissReservation = async (reservationId: string) => {
+    try {
+      await dismissReservationApi(reservationId);
+    } catch (e) {
+      console.warn('API dismiss reservation fallback:', e);
+    }
+    setReservations((prev) =>
+      prev.filter((r) => r.id !== reservationId && r.pickupCode !== reservationId)
+    );
+  };
+
+  const handleClearExpiredReservations = async () => {
+    const nowMs = Date.now();
+    const toClear = reservations.filter(
+      (r) =>
+        r.status === 'no-show' ||
+        r.status === 'cancelled' ||
+        (r.status === 'pending' && new Date(r.pickupWindowEnd).getTime() <= nowMs)
+    );
+    await Promise.allSettled(toClear.map((r) => dismissReservationApi(r.id)));
+    const clearIds = new Set(toClear.map((r) => r.id));
+    setReservations((prev) => prev.filter((r) => !clearIds.has(r.id)));
   };
 
   const handleAuthSuccess = (user: AuthUser, token: string) => {
@@ -412,7 +448,7 @@ export function App() {
             onClick={() => setIsPassesDrawerOpen(true)}
             className="text-[11px] font-bold text-[#a7f3d0] hover:text-white hover:underline shrink-0 whitespace-nowrap"
           >
-            Active Passes ({reservations.length})
+            Active Passes ({activePassesCount})
           </button>
         </div>
       </div>
@@ -423,7 +459,7 @@ export function App() {
         setActiveTab={setActiveTab}
         selectedSector={selectedSector}
         setSelectedSector={setSelectedSector}
-        reservationCount={reservations.length}
+        reservationCount={activePassesCount}
         onOpenReservations={() => setIsPassesDrawerOpen(true)}
         currentUser={currentUser}
         onOpenAuth={() => {
@@ -780,6 +816,8 @@ export function App() {
         onClose={() => setIsPassesDrawerOpen(false)}
         reservations={reservations}
         onCancelReservation={handleCancelReservation}
+        onDismissReservation={handleDismissReservation}
+        onClearExpired={handleClearExpiredReservations}
         onRateDeal={(deal) => setRatingDeal(deal)}
       />
 

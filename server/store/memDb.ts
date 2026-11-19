@@ -67,6 +67,7 @@ export interface MemReservation {
   paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Cash on Pickup';
   paymentStatus: 'paid' | 'pending';
   paymentReference?: string;
+  dismissedByUser?: boolean;
   createdAt: string;
 }
 

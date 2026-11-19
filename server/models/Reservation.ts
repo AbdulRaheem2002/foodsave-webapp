@@ -12,6 +12,7 @@ export interface IReservation extends Document {
   paymentMethod: 'JazzCash' | 'EasyPaisa' | 'Cash on Pickup';
   paymentStatus: 'paid' | 'pending';
   paymentReference?: string;
+  dismissedByUser?: boolean;
 }
 
 const ReservationSchema: Schema = new Schema(
@@ -27,6 +28,7 @@ const ReservationSchema: Schema = new Schema(
     paymentMethod: { type: String, enum: ['JazzCash', 'EasyPaisa', 'Cash on Pickup'], default: 'Cash on Pickup' },
     paymentStatus: { type: String, enum: ['paid', 'pending'], default: 'pending' },
     paymentReference: { type: String, default: '' },
+    dismissedByUser: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

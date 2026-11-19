@@ -231,6 +231,15 @@ export async function updateReservationStatusApi(id: string, status: string) {
   return res.json();
 }
 
+export async function dismissReservationApi(reservationId: string) {
+  const res = await fetch(`${API_BASE_URL}/reservations/${reservationId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(false),
+  });
+  if (!res.ok) throw new Error(await parseErrorMessage(res, 'Failed to remove pass from bag'));
+  return res.json();
+}
+
 export async function addRetailerItemApi(itemData: any) {
   const res = await fetch(`${API_BASE_URL}/retailer/items`, {
     method: 'POST',

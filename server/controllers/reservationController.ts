@@ -108,7 +108,10 @@ export const getMyReservations = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    const reservations = await Reservation.find({ userRef: req.user.id })
+    const reservations = await Reservation.find({
+      userRef: req.user.id,
+      dismissedByUser: { $ne: true },
+    })
       .populate({ path: 'dealRef', populate: { path: 'itemRef' } })
       .populate('retailerRef')
       .sort({ createdAt: -1 });
@@ -271,6 +274,9 @@ export const updateReservationStatus = async (req: AuthRequest, res: Response): 
     if (status === 'collected') {
       reservation.paymentStatus = 'paid';
     } else if (status === 'no-show' || status === 'cancelled' || status === 'expired') {
+      if (status === 'cancelled') {
+        reservation.dismissedByUser = true;
+      }
       const deal: any = await Deal.findById(reservation.dealRef).populate('itemRef');
       if (deal) {
         deal.stockQuantity += reservation.quantity;
@@ -283,5 +289,56 @@ export const updateReservationStatus = async (req: AuthRequest, res: Response): 
     res.json({ message: `Reservation status updated to ${status}`, reservation });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+export const dismissMyReservation = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user?.id || !mongoose.Types.ObjectId.isValid(req.user.id)) {
+      res.status(401).json({ error: 'Authentication required to manage your bag passes.' });
+      return;
+    }
+
+    const id = String(req.params.id || '');
+    let reservation: any = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      reservation = await Reservation.findById(id);
+    }
+    if (!reservation) {
+      reservation = await Reservation.findOne({ pickupCode: id.toUpperCase() });
+    }
+    if (!reservation) {
+      res.status(404).json({ error: 'Reservation pass not found.' });
+      return;
+    }
+
+    if (reservation.userRef?.toString() !== req.user.id) {
+      res.status(403).json({ error: 'You can only remove passes belonging to your account.' });
+      return;
+    }
+
+    const now = new Date();
+    if (reservation.status === 'pending') {
+      if (new Date(reservation.pickupWindowEnd) >= now) {
+        res.status(400).json({ error: 'Cancel an active hold before removing it.' });
+        return;
+      }
+      reservation.status = 'no-show';
+      const deal: any = await Deal.findById(reservation.dealRef).populate('itemRef');
+      if (deal) {
+        deal.stockQuantity += reservation.quantity;
+        deal.status = isItemExpired(deal.itemRef?.expiryDeadline, now.getTime())
+          ? 'expired'
+          : 'active';
+        await deal.save();
+      }
+    }
+
+    reservation.dismissedByUser = true;
+    await reservation.save();
+
+    res.json({ message: 'Pass removed from your bag.', id: reservation._id.toString() });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to remove pass from bag.' });
   }
 };

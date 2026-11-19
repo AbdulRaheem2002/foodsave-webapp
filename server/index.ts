@@ -34,6 +34,7 @@ import {
   getMyReservations,
   verifyPickupCode,
   updateReservationStatus,
+  dismissMyReservation,
 } from './controllers/reservationController.js';
 import {
   getRetailerProfile,
@@ -1007,7 +1008,9 @@ app.get('/api/reservations/me', authenticateToken, async (req: AuthRequest, res:
     }
   }
 
-  const userReservations = memDb.reservations.filter((r) => r.userId === req.user?.id);
+  const userReservations = memDb.reservations.filter(
+    (r) => r.userId === req.user?.id && !r.dismissedByUser
+  );
   const result = userReservations.map((resItem) => {
     const deal = memDb.deals.find((d) => d.id === resItem.dealId);
     const item = memDb.items.find((i) => i.id === deal?.itemId);
@@ -1107,6 +1110,9 @@ app.put('/api/reservations/:id/status', optionalAuth, async (req: AuthRequest, r
   if (status === 'collected') {
     reservation.paymentStatus = 'paid';
   } else if (status === 'no-show' || status === 'cancelled' || status === 'expired') {
+    if (status === 'cancelled') {
+      reservation.dismissedByUser = true;
+    }
     // Restore stock back to deal only if deal hasn't expired
     const deal = memDb.deals.find((d) => d.id === reservation.dealId);
     if (deal) {
@@ -1120,6 +1126,47 @@ app.put('/api/reservations/:id/status', optionalAuth, async (req: AuthRequest, r
     message: `Reservation updated to ${status}`,
     reservation,
   });
+});
+
+app.delete('/api/reservations/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await dismissMyReservation(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB dismissMyReservation fallback to memDb:', mongoErr);
+    }
+  }
+
+  const { id } = req.params;
+  const reservation = memDb.reservations.find((r) => r.id === id || r.pickupCode === id);
+  if (!reservation) {
+    res.status(404).json({ error: 'Reservation pass not found.' });
+    return;
+  }
+
+  if (reservation.userId !== req.user?.id) {
+    res.status(403).json({ error: 'You can only remove passes belonging to your account.' });
+    return;
+  }
+
+  const now = Date.now();
+  if (reservation.status === 'pending') {
+    if (new Date(reservation.pickupWindowEnd).getTime() >= now) {
+      res.status(400).json({ error: 'Cancel an active hold before removing it.' });
+      return;
+    }
+    reservation.status = 'no-show';
+    const deal = memDb.deals.find((d) => d.id === reservation.dealId);
+    if (deal) {
+      const item = memDb.items.find((i) => i.id === deal.itemId);
+      deal.stockQuantity += reservation.quantity;
+      deal.status = isItemExpired(item?.expiryDeadline, now) ? 'expired' : 'active';
+    }
+  }
+
+  reservation.dismissedByUser = true;
+  res.json({ message: 'Pass removed from your bag.', id: reservation.id });
 });
 
 // 7. Founder Admin Endpoints (Protected by JWT + Admin Role from ADMIN_EMAIL)
