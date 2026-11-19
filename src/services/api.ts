@@ -5,8 +5,10 @@ import type {
   DropAlertPreference,
   PushDeviceType,
   Reservation,
+  RetailerOrdersResponse,
   RetailerStore,
 } from '../types';
+import { isDealExpired } from '../lib/utils';
 
 export const TOKEN_STORAGE_KEY = 'foodsave_token_v2';
 
@@ -84,40 +86,48 @@ export async function fetchDealsApi(category?: string, minDiscount?: number): Pr
     if (!res.ok) throw new Error('API request failed');
     const data = await res.json();
 
-    return data.map((d: any) => {
-      const cat: 'grocery' | 'bakery' | 'restaurant' = d.item?.category || d.retailer?.category || 'grocery';
-      const idSeed = String(d.retailer?.id || d.id || 'store');
-      return {
-        id: d.id,
-        storeId: d.retailer?.id || '',
-        storeName: d.retailer?.name || 'Registered Store',
-        storeType: d.retailer?.category || cat,
-        storeRating: d.retailer?.rating ?? 5.0,
-        title: d.item?.name || 'Surplus Item',
-        category: cat,
-        flavorProfile: d.item?.flavorProfile || 'mixed',
-        isMysteryBag: Boolean(d.item?.isMysteryBag),
-        originalPricePkr: d.item?.originalPricePkr || 0,
-        currentPricePkr: d.currentDiscountedPricePkr || 0,
-        discountPercent: d.discountPercent || 0,
-        expiryHoursLeft: d.hoursRemaining || 2.0,
-        stockQuantity: d.stockQuantity || 0,
-        pickupDeadline: d.pickupWindowText || 'Pick up today',
-        distanceKm: Number((0.4 + (deterministicCoord(idSeed, 7) % 25) / 10).toFixed(1)),
-        imageUrl: d.item?.imageUrl || CATEGORY_FALLBACK_IMAGES[cat],
-        isVerified: Boolean(d.retailer?.isVerified ?? true),
-        location: {
-          x: deterministicCoord(idSeed, 13),
-          y: deterministicCoord(idSeed, 37),
-          address: d.retailer?.location?.address || '',
-          city: d.retailer?.location?.city || 'Islamabad',
-          sector: d.retailer?.location?.sector || '',
-        },
-        decaySchedule: d.decaySchedule || [],
-        hoursRemaining: d.hoursRemaining || 2.0,
-        manualOverridePricePkr: d.manualOverridePricePkr,
-      };
-    });
+    return data
+      .map((d: any) => {
+        const cat: 'grocery' | 'bakery' | 'restaurant' = d.item?.category || d.retailer?.category || 'grocery';
+        const idSeed = String(d.retailer?.id || d.id || 'store');
+        const expiryDeadline = d.item?.expiryDeadline ? String(d.item.expiryDeadline) : undefined;
+        const expiryMs = expiryDeadline ? new Date(expiryDeadline).getTime() : NaN;
+        const computedHoursLeft = Number.isFinite(expiryMs)
+          ? Math.max(0, (expiryMs - Date.now()) / 3600000)
+          : Number(d.hoursRemaining || 2.0);
+        return {
+          id: d.id,
+          storeId: d.retailer?.id || '',
+          storeName: d.retailer?.name || 'Registered Store',
+          storeType: d.retailer?.category || cat,
+          storeRating: d.retailer?.rating ?? 5.0,
+          title: d.item?.name || 'Surplus Item',
+          category: cat,
+          flavorProfile: d.item?.flavorProfile || 'mixed',
+          isMysteryBag: Boolean(d.item?.isMysteryBag),
+          originalPricePkr: d.item?.originalPricePkr || 0,
+          currentPricePkr: d.currentDiscountedPricePkr || 0,
+          discountPercent: d.discountPercent || 0,
+          expiryDeadline,
+          expiryHoursLeft: computedHoursLeft,
+          stockQuantity: d.stockQuantity || 0,
+          pickupDeadline: d.pickupWindowText || 'Pick up today',
+          distanceKm: Number((0.4 + (deterministicCoord(idSeed, 7) % 25) / 10).toFixed(1)),
+          imageUrl: d.item?.imageUrl || CATEGORY_FALLBACK_IMAGES[cat],
+          isVerified: Boolean(d.retailer?.isVerified ?? true),
+          location: {
+            x: deterministicCoord(idSeed, 13),
+            y: deterministicCoord(idSeed, 37),
+            address: d.retailer?.location?.address || '',
+            city: d.retailer?.location?.city || 'Islamabad',
+            sector: d.retailer?.location?.sector || '',
+          },
+          decaySchedule: d.decaySchedule || [],
+          hoursRemaining: computedHoursLeft,
+          manualOverridePricePkr: d.manualOverridePricePkr,
+        };
+      })
+      .filter((deal: DealItem) => !isDealExpired(deal));
   } catch (error) {
     console.warn('API fetch failed:', error);
     return [];
@@ -492,6 +502,17 @@ export async function deleteAdminPushSubscriberApi(subscriptionId: string): Prom
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error || 'Unable to remove push device.');
+  }
+  return data;
+}
+
+export async function fetchRetailerOrdersApi(): Promise<RetailerOrdersResponse> {
+  const res = await fetch(`${API_BASE_URL}/retailer/orders`, {
+    headers: getAuthHeaders(false),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to load store sales and buyer orders.');
   }
   return data;
 }

@@ -17,7 +17,11 @@ import {
   Trash2,
   BellRing,
   Smartphone,
+  TrendingUp,
+  PackageCheck,
 } from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
+import { OrdersHistoryPanel } from './OrdersHistoryPanel';
 import type {
   AdminDropSubscriber,
   AdminOverview,
@@ -57,7 +61,8 @@ interface AlertNotice {
 
 export const AdminDashboard: React.FC = () => {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
-  const [activeSection, setActiveSection] = useState<'pending' | 'leads' | 'subscribers' | 'approved'>('pending');
+  const [activeSection, setActiveSection] = useState<'pending' | 'leads' | 'subscribers' | 'sales' | 'approved'>('pending');
+  const [selectedSalesStoreId, setSelectedSalesStoreId] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -227,6 +232,20 @@ export const AdminDashboard: React.FC = () => {
     activeDealsCount: 0,
   };
 
+  const platformSales = overview?.platformSales || {
+    totalCollectedRevenuePkr: 0,
+    totalPendingRevenuePkr: 0,
+    totalGrossRevenuePkr: 0,
+    totalOrdersCount: 0,
+    collectedOrdersCount: 0,
+    pendingOrdersCount: 0,
+    cancelledOrNoShowCount: 0,
+    totalUnitsSold: 0,
+    totalUnitsPending: 0,
+    totalUniqueBuyers: 0,
+    totalWastedValueAvoidedPkr: 0,
+  };
+
   const confirmModalCopy = (() => {
     if (!confirmAction) return null;
     if (confirmAction.kind === 'approve-store') {
@@ -374,7 +393,7 @@ export const AdminDashboard: React.FC = () => {
       )}
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
         <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4">
           <span className="text-[11px] font-bold text-stone-500 block">Pending Stores</span>
           <span className="text-2xl font-extrabold text-[#f37021]">{stats.pendingRetailersCount}</span>
@@ -399,6 +418,16 @@ export const AdminDashboard: React.FC = () => {
           <span className="text-[11px] font-bold text-stone-500 block">Active Live Deals</span>
           <span className="text-2xl font-extrabold text-[#2e7d32]">{stats.activeDealsCount}</span>
         </div>
+        <button
+          type="button"
+          onClick={() => setActiveSection('sales')}
+          className="bg-[#FFF8F1] hover:bg-[#FFF1E4] border border-[#f37021]/30 rounded-2xl p-4 text-left transition-colors cursor-pointer"
+        >
+          <span className="text-[11px] font-bold text-[#C85610] block">Collected Sales</span>
+          <span className="text-xl font-extrabold text-[#f37021]">
+            {formatCurrency(platformSales.totalCollectedRevenuePkr)}
+          </span>
+        </button>
       </div>
 
       {/* Section Switch Tabs */}
@@ -443,6 +472,19 @@ export const AdminDashboard: React.FC = () => {
             Drop Alerts (
             {(overview?.pushSubscribers?.length ?? 0) + (overview?.dropSubscribers?.length ?? 0)})
           </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSection('sales')}
+          className={`px-4 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+            activeSection === 'sales'
+              ? 'bg-[#1B4332] text-white border-[#1B4332]'
+              : 'bg-white text-stone-700 border-[#E5DFD3] hover:bg-stone-50'
+          }`}
+        >
+          <TrendingUp className="size-3.5" />
+          <span>Sales &amp; Stores ({platformSales.totalOrdersCount})</span>
         </button>
 
         <button
@@ -817,6 +859,196 @@ export const AdminDashboard: React.FC = () => {
                 );
               })
             )}
+          </div>
+        </div>
+      ) : activeSection === 'sales' ? (
+        <div className="space-y-6">
+          {/* Platform-Wide Sales Summary Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4">
+            <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4 space-y-1">
+              <span className="text-[11px] font-bold text-stone-500 block">Collected Revenue</span>
+              <span className="text-xl font-black text-[#f37021] block">
+                {formatCurrency(platformSales.totalCollectedRevenuePkr)}
+              </span>
+              <span className="text-[11px] text-stone-500">
+                {platformSales.collectedOrdersCount} completed pickups
+              </span>
+            </div>
+
+            <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4 space-y-1">
+              <span className="text-[11px] font-bold text-stone-500 block">Pending Pickup Value</span>
+              <span className="text-xl font-black text-amber-700 block">
+                {formatCurrency(platformSales.totalPendingRevenuePkr)}
+              </span>
+              <span className="text-[11px] text-stone-500">
+                {platformSales.totalUnitsPending} boxes reserved
+              </span>
+            </div>
+
+            <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4 space-y-1">
+              <span className="text-[11px] font-bold text-stone-500 block">Total Boxes Sold</span>
+              <span className="text-xl font-black text-[#1B4332] block">
+                {platformSales.totalUnitsSold} Boxes
+              </span>
+              <span className="text-[11px] text-stone-500">
+                Across {overview?.storeAnalytics?.length ?? 0} stores
+              </span>
+            </div>
+
+            <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4 space-y-1">
+              <span className="text-[11px] font-bold text-stone-500 block">Unique Buyers</span>
+              <span className="text-xl font-black text-[#171916] block">
+                {platformSales.totalUniqueBuyers} Buyers
+              </span>
+              <span className="text-[11px] text-stone-500">
+                {platformSales.totalOrdersCount} total reservations
+              </span>
+            </div>
+
+            <div className="bg-white border border-[#E7E2D8] rounded-2xl p-4 space-y-1 col-span-2 md:col-span-1">
+              <span className="text-[11px] font-bold text-stone-500 block">Food Value Rescued</span>
+              <span className="text-xl font-black text-[#2e7d32] block">
+                {formatCurrency(platformSales.totalWastedValueAvoidedPkr)}
+              </span>
+              <span className="text-[11px] text-stone-500">Retail value saved</span>
+            </div>
+          </div>
+
+          {/* Per-Store Performance Breakdown */}
+          <div className="bg-white p-5 sm:p-6 rounded-[2rem] border border-[#E7E2D8] shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2 className="text-base font-black text-[#171916] flex items-center gap-2">
+                  <PackageCheck className="size-4 text-[#1B4332]" />
+                  <span>Every Store&apos;s Performance ({overview?.storeAnalytics?.length ?? 0})</span>
+                </h2>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Per-bakery revenue, sold boxes, active vs expired deals, unique buyers, and top items.
+                </p>
+              </div>
+            </div>
+
+            {!overview?.storeAnalytics?.length ? (
+              <div className="p-8 rounded-2xl bg-[#FAF8F3] border border-[#E7E2D8] text-center text-xs text-stone-500">
+                No registered stores yet.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#FAF8F3] text-stone-600 uppercase font-bold text-[10px] tracking-wider border-b border-[#E7E2D8]">
+                    <tr>
+                      <th className="p-3">Store &amp; Owner</th>
+                      <th className="p-3">Deals</th>
+                      <th className="p-3">Sold / Pending</th>
+                      <th className="p-3">Collected Revenue</th>
+                      <th className="p-3">Buyers</th>
+                      <th className="p-3">Top Item</th>
+                      <th className="p-3 text-right">Orders</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#EFEBE2]">
+                    {overview.storeAnalytics.map((st) => (
+                      <tr key={st.storeId} className="hover:bg-[#FAF8F3]/70 transition-colors align-top">
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-stone-900">{st.storeName}</span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                st.isVerified
+                                  ? 'bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9]'
+                                  : 'bg-amber-50 text-amber-800 border border-amber-200'
+                              }`}
+                            >
+                              {st.isVerified ? 'Live' : 'Pending'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-stone-500">
+                            {st.sector ? `${st.sector}, ` : ''}
+                            {st.city}
+                            {st.ownerName ? ` • ${st.ownerName}` : ''}
+                            {st.contactPhone ? ` (${st.contactPhone})` : ''}
+                          </p>
+                        </td>
+
+                        <td className="p-3">
+                          <span className="font-bold text-[#1B4332]">{st.activeDealsCount} live</span>
+                          <p className="text-[11px] text-stone-500">{st.expiredDealsCount} expired</p>
+                        </td>
+
+                        <td className="p-3">
+                          <span className="font-bold text-stone-900">{st.unitsSold} sold</span>
+                          <p className="text-[11px] text-stone-500">{st.unitsPending} pending</p>
+                        </td>
+
+                        <td className="p-3">
+                          <span className="font-black text-[#f37021]">
+                            {formatCurrency(st.collectedRevenuePkr)}
+                          </span>
+                          {st.pendingRevenuePkr > 0 && (
+                            <p className="text-[11px] text-amber-700 font-medium">
+                              +{formatCurrency(st.pendingRevenuePkr)} pending
+                            </p>
+                          )}
+                        </td>
+
+                        <td className="p-3">
+                          <span className="font-bold text-stone-900">{st.uniqueBuyersCount}</span>
+                          <p className="text-[11px] text-stone-500">{st.totalOrdersCount} orders</p>
+                        </td>
+
+                        <td className="p-3">
+                          {st.topItems[0] ? (
+                            <div>
+                              <p className="font-semibold text-stone-900">{st.topItems[0].itemName}</p>
+                              <span className="text-[11px] text-stone-500">
+                                {st.topItems[0].unitsSold} pcs •{' '}
+                                {formatCurrency(st.topItems[0].revenuePkr)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-stone-400">No sales yet</span>
+                          )}
+                        </td>
+
+                        <td className="p-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedSalesStoreId(st.storeId);
+                              document
+                                .getElementById('admin-orders-history')
+                                ?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className="px-3 py-1.5 rounded-full bg-[#F6F2EA] hover:bg-[#EDE6D8] border border-[#E5DFD3] text-[11px] font-bold text-[#1B4332] cursor-pointer"
+                          >
+                            View Orders
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* All Platform Orders & Buyer Details */}
+          <div id="admin-orders-history">
+            <OrdersHistoryPanel
+              title="All Platform Orders & Buyer Info"
+              subtitle="Every customer purchase across all stores with buyer contact, payment ref, and pickup code"
+              orders={overview?.recentOrders || []}
+              showStoreColumn={true}
+              storeFilterOptions={(overview?.storeAnalytics || []).map((s) => ({
+                id: s.storeId,
+                name: s.storeName,
+              }))}
+              selectedStoreFilter={selectedSalesStoreId}
+              onSelectStoreFilter={setSelectedSalesStoreId}
+              exportFilename="BiteHour_Platform_Sales_Orders.csv"
+              onRefresh={() => void loadOverview()}
+              isRefreshing={isLoading}
+            />
           </div>
         </div>
       ) : (

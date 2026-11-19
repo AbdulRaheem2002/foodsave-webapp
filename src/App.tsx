@@ -25,6 +25,7 @@ import {
   updateReservationStatusApi,
   TOKEN_STORAGE_KEY,
 } from './services/api';
+import { isDealExpired } from './lib/utils';
 import { ArrowRight, CheckCircle2, ShieldCheck, Clock, Store, Lock } from 'lucide-react';
 
 const STORAGE_KEYS = {
@@ -176,10 +177,28 @@ export function App() {
     }
   }, [pendingDeepLinkDealId, deals]);
 
-  // Filter Deals by Selected City
+  // Periodically prune expired deals so they disappear cleanly when expiry hits
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setDeals((prev) => {
+        const next = prev.filter((d) => !isDealExpired(d));
+        return next.length === prev.length ? prev : next;
+      });
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const handleDealExpired = (dealId: string) => {
+    setDeals((prev) => prev.filter((d) => d.id !== dealId));
+    setSelectedDeal((prev) => (prev?.id === dealId ? null : prev));
+    setReserveModalDeal((prev) => (prev?.id === dealId ? null : prev));
+  };
+
+  // Filter Deals by Selected City (excluding expired deals)
   const filteredDealsByCity = useMemo(() => {
-    if (selectedCity === 'All Pakistan') return deals;
-    return deals.filter(
+    const nonExpired = deals.filter((d) => !isDealExpired(d));
+    if (selectedCity === 'All Pakistan') return nonExpired;
+    return nonExpired.filter(
       (d) => d.location.city.toLowerCase() === selectedCity.toLowerCase()
     );
   }, [deals, selectedCity]);
@@ -213,6 +232,9 @@ export function App() {
       originalPricePkr: partialItem.originalPricePkr || 0,
       currentPricePkr: partialItem.currentPricePkr || 0,
       discountPercent: partialItem.discountPercent || 0,
+      expiryDeadline:
+        partialItem.expiryDeadline ||
+        new Date(Date.now() + (partialItem.expiryHoursLeft || 2) * 3600000).toISOString(),
       expiryHoursLeft: partialItem.expiryHoursLeft || 2,
       stockQuantity: partialItem.stockQuantity || 1,
       pickupDeadline: partialItem.pickupDeadline || `Pick up within ${partialItem.expiryHoursLeft || 2} hrs`,
@@ -691,6 +713,7 @@ export function App() {
               selectedSector={selectedSector}
               onSelectSector={setSelectedSector}
               onReserveDeal={handleOpenReserveModal}
+              onDealExpired={handleDealExpired}
               onOpenPartnerPage={() => {
                 setActiveTab('partner');
                 window.scrollTo({ top: 0, behavior: 'smooth' });

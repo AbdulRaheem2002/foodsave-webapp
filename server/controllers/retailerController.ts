@@ -6,6 +6,12 @@ import { Deal } from '../models/Deal.js';
 import { Reservation } from '../models/Reservation.js';
 import { calculateTimeDecay } from '../utils/decayCalculator.js';
 import { notifyMatchingPushSubscribers } from '../services/pushService.js';
+import {
+  buildStoreSalesSummary,
+  expireStalePendingReservationsMongo,
+  isItemExpired,
+  mapReservationToOrderRecord,
+} from '../utils/salesAnalytics.js';
 import type { AuthRequest } from '../middleware/auth.js';
 
 async function resolveRetailerForUser(userId?: string) {
@@ -209,5 +215,80 @@ export const deleteDeal = async (req: AuthRequest, res: Response): Promise<void>
     res.json({ message: 'Deal and item deleted successfully', id });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+export const getRetailerOrdersAndStats = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const retailer = await resolveRetailerForUser(req.user?.id);
+    if (!retailer) {
+      res.status(404).json({ error: 'Merchant store profile not found for this account.' });
+      return;
+    }
+
+    await expireStalePendingReservationsMongo({ retailerRef: retailer._id });
+
+    const now = Date.now();
+    const [deals, reservations] = await Promise.all([
+      Deal.find({ retailerRef: retailer._id }).populate('itemRef').sort({ createdAt: -1 }),
+      Reservation.find({ retailerRef: retailer._id })
+        .populate('userRef', 'name email contactPhone')
+        .populate({ path: 'dealRef', populate: { path: 'itemRef' } })
+        .populate('retailerRef')
+        .sort({ createdAt: -1 }),
+    ]);
+
+    const staleDealIds: any[] = [];
+    for (const d of deals as any[]) {
+      if (d.status === 'active' && (!d.itemRef || isItemExpired(d.itemRef.expiryDeadline, now))) {
+        staleDealIds.push(d._id);
+        d.status = 'expired';
+      }
+    }
+    if (staleDealIds.length > 0) {
+      await Deal.updateMany({ _id: { $in: staleDealIds } }, { $set: { status: 'expired' } });
+    }
+
+    const orders = reservations.map((r: any) => mapReservationToOrderRecord(r));
+    const dealSummaryInputs = (deals as any[]).map((d) => ({
+      status: d.status,
+      stockQuantity: d.stockQuantity,
+      expiryDeadline: d.itemRef?.expiryDeadline,
+    }));
+
+    const summary = buildStoreSalesSummary(
+      {
+        id: retailer._id.toString(),
+        name: retailer.name,
+        category: retailer.category,
+        sector: retailer.location?.sector || '',
+        city: retailer.location?.city || 'Islamabad',
+        isVerified: Boolean(retailer.isVerified),
+        contactPhone: retailer.contactPhone || '',
+      },
+      orders,
+      dealSummaryInputs,
+      now
+    );
+
+    const expiredDeals = (deals as any[])
+      .filter((d) => d.status === 'expired' || isItemExpired(d.itemRef?.expiryDeadline, now))
+      .slice(0, 20)
+      .map((d) => ({
+        id: d._id.toString(),
+        title: d.itemRef?.name || 'Surplus Listing',
+        category: d.itemRef?.category || retailer.category || 'bakery',
+        originalPricePkr: Number(d.itemRef?.originalPricePkr || 0),
+        currentPricePkr: Number(d.manualOverridePricePkr ?? d.currentDiscountedPricePkr ?? 0),
+        stockRemaining: Number(d.stockQuantity || 0),
+        expiryDeadline: d.itemRef?.expiryDeadline
+          ? new Date(d.itemRef.expiryDeadline).toISOString()
+          : new Date().toISOString(),
+        pickupWindowText: String(d.pickupWindowText || ''),
+      }));
+
+    res.json({ summary, orders, expiredDeals });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Could not load store sales and orders.' });
   }
 };

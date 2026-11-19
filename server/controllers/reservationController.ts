@@ -5,6 +5,7 @@ import { Deal } from '../models/Deal.js';
 import { User } from '../models/User.js';
 import { Retailer } from '../models/Retailer.js';
 import type { AuthRequest } from '../middleware/auth.js';
+import { isItemExpired } from '../utils/salesAnalytics.js';
 
 export const createReservation = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -23,6 +24,13 @@ export const createReservation = async (req: AuthRequest, res: Response): Promis
     const deal: any = await Deal.findById(dealId).populate('itemRef').populate('retailerRef');
     if (!deal || deal.status !== 'active') {
       res.status(400).json({ error: 'Deal is no longer available' });
+      return;
+    }
+
+    if (isItemExpired(deal.itemRef?.expiryDeadline)) {
+      deal.status = 'expired';
+      await deal.save();
+      res.status(400).json({ error: 'This deal has expired and is no longer available.' });
       return;
     }
 
@@ -112,11 +120,13 @@ export const getMyReservations = async (req: AuthRequest, res: Response): Promis
         resItem.status = 'no-show';
         await resItem.save();
 
-        // Return stock to deal
-        const deal = await Deal.findById(resItem.dealRef);
+        // Return stock to deal only if deal hasn't expired
+        const deal: any = await Deal.findById(resItem.dealRef).populate('itemRef');
         if (deal) {
           deal.stockQuantity += resItem.quantity;
-          deal.status = 'active';
+          deal.status = isItemExpired(deal.itemRef?.expiryDeadline, now.getTime())
+            ? 'expired'
+            : 'active';
           await deal.save();
         }
       }
@@ -261,10 +271,10 @@ export const updateReservationStatus = async (req: AuthRequest, res: Response): 
     if (status === 'collected') {
       reservation.paymentStatus = 'paid';
     } else if (status === 'no-show' || status === 'cancelled' || status === 'expired') {
-      const deal = await Deal.findById(reservation.dealRef);
+      const deal: any = await Deal.findById(reservation.dealRef).populate('itemRef');
       if (deal) {
         deal.stockQuantity += reservation.quantity;
-        deal.status = 'active';
+        deal.status = isItemExpired(deal.itemRef?.expiryDeadline) ? 'expired' : 'active';
         await deal.save();
       }
     }

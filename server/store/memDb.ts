@@ -1,4 +1,5 @@
 import { calculateTimeDecay } from '../utils/decayCalculator.js';
+import { isItemExpired } from '../utils/salesAnalytics.js';
 
 export interface MemUser {
   id: string;
@@ -85,13 +86,28 @@ class MemoryDatabase {
   }
 
   getPopulatedDeals(categoryFilter?: string, minDiscountFilter?: number) {
-    const activeDeals = this.deals.filter((d) => d.status === 'active' && d.stockQuantity > 0);
+    const now = Date.now();
+    const activeDeals: MemDeal[] = [];
+
+    for (const deal of this.deals) {
+      if (deal.status !== 'active' || deal.stockQuantity <= 0) continue;
+      const item = this.items.find((i) => i.id === deal.itemId);
+      if (!item || isItemExpired(item.expiryDeadline, now)) {
+        deal.status = 'expired';
+        continue;
+      }
+      activeDeals.push(deal);
+    }
 
     let result = activeDeals.map((deal) => {
       const item = this.items.find((i) => i.id === deal.itemId);
       const retailer = this.retailers.find((r) => r.id === deal.retailerId);
 
-      const hrs = deal.hoursRemaining || 2.0;
+      const expiry = item?.expiryDeadline ? new Date(item.expiryDeadline).getTime() : 0;
+      const hrs =
+        expiry && Number.isFinite(expiry)
+          ? Math.max(0.05, (expiry - now) / (1000 * 60 * 60))
+          : deal.hoursRemaining || 2.0;
       const decay = calculateTimeDecay(item?.originalPricePkr || 1000, hrs, item?.category || 'grocery');
 
       const price = deal.manualOverridePricePkr ?? decay.currentDiscountedPricePkr;
@@ -109,7 +125,7 @@ class MemoryDatabase {
         status: deal.status,
         stockQuantity: deal.stockQuantity,
         pickupWindowText: deal.pickupWindowText,
-        hoursRemaining: hrs,
+        hoursRemaining: Number(hrs.toFixed(3)),
         manualOverridePricePkr: deal.manualOverridePricePkr,
       };
     });

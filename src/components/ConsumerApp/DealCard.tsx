@@ -1,29 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import type { DealItem } from '../../types';
 import { ShoppingBag, Eye, Clock, ShieldCheck } from 'lucide-react';
-import { formatCurrency, formatTimeLeft } from '../../lib/utils';
+import { formatCurrency, formatTimeLeft, getDealSecondsRemaining } from '../../lib/utils';
 
 interface DealCardProps {
   deal: DealItem;
   onReserve: (deal: DealItem) => void;
   onSelect: (deal: DealItem) => void;
+  onExpired?: (dealId: string) => void;
 }
 
-export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect }) => {
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(
-    Math.floor(deal.expiryHoursLeft * 3600)
+export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, onExpired }) => {
+  const { id, expiryDeadline, expiryHoursLeft } = deal;
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(() =>
+    getDealSecondsRemaining({ expiryDeadline, expiryHoursLeft })
   );
 
   useEffect(() => {
-    setSecondsRemaining(Math.max(0, Math.floor(deal.expiryHoursLeft * 3600)));
-  }, [deal.id, deal.expiryHoursLeft]);
-
-  useEffect(() => {
+    setSecondsRemaining(getDealSecondsRemaining({ expiryDeadline, expiryHoursLeft }));
     const timer = setInterval(() => {
-      setSecondsRemaining((prev) => (prev > 0 ? prev - 1 : 0));
+      setSecondsRemaining((prev) =>
+        expiryDeadline
+          ? getDealSecondsRemaining({ expiryDeadline, expiryHoursLeft })
+          : Math.max(0, prev - 1)
+      );
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [id, expiryDeadline, expiryHoursLeft]);
+
+  useEffect(() => {
+    if (secondsRemaining <= 0) {
+      onExpired?.(id);
+    }
+  }, [secondsRemaining, id, onExpired]);
+
+  if (secondsRemaining <= 0) {
+    return null;
+  }
 
   const savedAmountPkr = Math.max(0, deal.originalPricePkr - deal.currentPricePkr);
 

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import type { DealItem, RetailerStore, Reservation, DonationRecord } from '../../types';
+import type { DealItem, RetailerStore, Reservation, DonationRecord, RetailerOrdersResponse } from '../../types';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { ShieldCheck, DollarSign, Leaf, Zap, Plus, TrendingUp, Edit3, Download, CheckCircle2, QrCode, X, Image as ImageIcon, Heart, MapPin } from 'lucide-react';
+import { ShieldCheck, DollarSign, Leaf, Plus, TrendingUp, Edit3, Download, CheckCircle2, QrCode, X, Image as ImageIcon, Heart, MapPin, Users, ShoppingBag, Clock } from 'lucide-react';
 
-import { formatCurrency } from '../../lib/utils';
-import { addRetailerItemApi, overridePriceApi, verifyPickupCodeApi, updateReservationStatusApi } from '../../services/api';
+import { downloadCsvFile, formatCurrency } from '../../lib/utils';
+import { addRetailerItemApi, overridePriceApi, verifyPickupCodeApi, updateReservationStatusApi, fetchRetailerOrdersApi } from '../../services/api';
 import { DonationModal } from './DonationModal';
 import { CsrCertificateModal } from './CsrCertificateModal';
+import { OrdersHistoryPanel } from '../OrdersHistoryPanel';
 import { sounds } from '../../lib/soundEffects';
 
 interface RetailerDashboardProps {
@@ -71,6 +72,27 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [addItemError, setAddItemError] = useState<string | null>(null);
 
+  // Store Sales & Buyer History State
+  const [ordersData, setOrdersData] = useState<RetailerOrdersResponse | null>(null);
+  const [isLoadingOrders, setIsLoadingOrders] = useState<boolean>(false);
+  const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
+
+  const loadStoreOrders = async () => {
+    setIsLoadingOrders(true);
+    try {
+      const data = await fetchRetailerOrdersApi();
+      setOrdersData(data);
+    } catch (err) {
+      console.warn('Could not load retailer orders:', err);
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadStoreOrders();
+  }, [selectedStoreId]);
+
   // Cashier Pass Redemption State
   const [verifyCodeInput, setVerifyCodeInput] = useState<string>('');
   const [verifiedPass, setVerifiedPass] = useState<any | null>(null);
@@ -95,7 +117,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
     const headers = ['Listing ID', 'Item Name', 'Category', 'Original Price (PKR)', 'Discount Price (PKR)', 'Discount %', 'Quantity', 'Store City'];
     const rows = storeDeals.map((d) => [
       d.id,
-      `"${d.title}"`,
+      d.title,
       d.category,
       d.originalPricePkr,
       d.currentPricePkr,
@@ -103,16 +125,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       d.stockQuantity,
       d.location.city || selectedStore?.city || 'Islamabad',
     ]);
-
-    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `BiteHour_Daily_Recovery_Report_${storeLabel}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCsvFile(`BiteHour_Daily_Recovery_Report_${storeLabel}.csv`, headers, rows);
   };
 
   const handleCreateSurplusItem = async (e: React.FormEvent) => {
@@ -170,6 +183,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       setIsAddItemOpen(false);
       setNewItemName('');
       setNewItemPickupSlot('');
+      void loadStoreOrders();
     } catch (err: any) {
       setAddItemError(err?.message || 'Could not save listing. Please make sure you are signed in as a Retailer.');
     }
@@ -246,8 +260,25 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       if (onCollectReservation) {
         onCollectReservation(verifiedPass.id);
       }
+      void loadStoreOrders();
     } catch (err: any) {
       setVerifyError(err?.message || 'Failed to mark reservation as collected.');
+    }
+  };
+
+  const handleMarkOrderCollected = async (orderId: string) => {
+    setBusyOrderId(orderId);
+    try {
+      await updateReservationStatusApi(orderId, 'collected');
+      sounds.playSuccessFanfare();
+      if (onCollectReservation) {
+        onCollectReservation(orderId);
+      }
+      await loadStoreOrders();
+    } catch (err: any) {
+      setVerifyError(err?.message || 'Failed to mark order as collected.');
+    } finally {
+      setBusyOrderId(null);
     }
   };
 
@@ -343,18 +374,18 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
         </div>
       </div>
 
-      {/* Daily Recovery Total Statistics */}
+      {/* Store Sales & Buyer Statistics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        
-        {/* Metric 1: ₨ Recovered */}
+        {/* Metric 1: Collected Revenue */}
         <div className="bg-white p-5 rounded-2xl border border-[#2D6A4F]/15 flex items-start justify-between shadow-2xs">
           <div>
-            <span className="text-xs text-slate-500 font-medium block mb-1">Daily Recovery Total</span>
+            <span className="text-xs text-slate-500 font-medium block mb-1">Collected Revenue</span>
             <div className="text-2xl font-black text-[#FF9800] tracking-tight mb-1">
-              {formatCurrency(selectedStore.totalRecoveredPkr)}
+              {formatCurrency(ordersData?.summary?.collectedRevenuePkr ?? selectedStore.totalRecoveredPkr)}
             </div>
             <span className="text-[11px] text-[#4CAF50] flex items-center gap-1 font-semibold">
-              <TrendingUp className="size-3.5" /> Recovered Revenue
+              <TrendingUp className="size-3.5" /> +{' '}
+              {formatCurrency(ordersData?.summary?.pendingRevenuePkr ?? 0)} pending pickup
             </span>
           </div>
           <div className="p-3 rounded-2xl bg-[#FF9800]/15 text-[#FF9800]">
@@ -362,54 +393,57 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
           </div>
         </div>
 
-        {/* Metric 2: Wasted Value Avoided */}
+        {/* Metric 2: Boxes Sold */}
         <div className="bg-white p-5 rounded-2xl border border-[#2D6A4F]/15 flex items-start justify-between shadow-2xs">
           <div>
-            <span className="text-xs text-slate-500 font-medium block mb-1">Wasted Value Diverted</span>
-            <div className="text-2xl font-black text-[#2D6A4F] tracking-tight mb-1">
-              {formatCurrency(selectedStore.totalWastedValueAvoidedPkr)}
+            <span className="text-xs text-slate-500 font-medium block mb-1">Boxes Sold</span>
+            <div className="text-2xl font-black text-[#1B4332] tracking-tight mb-1">
+              {ordersData?.summary?.unitsSold ?? 0} Sold
             </div>
             <span className="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
-              <Leaf className="size-3.5 text-[#4CAF50]" /> Edible Food Rescued
+              <ShoppingBag className="size-3.5 text-[#f37021]" />{' '}
+              {ordersData?.summary?.unitsPending ?? 0} awaiting counter pickup
             </span>
           </div>
           <div className="p-3 rounded-2xl bg-[#2D6A4F]/15 text-[#2D6A4F]">
+            <ShoppingBag className="size-6" />
+          </div>
+        </div>
+
+        {/* Metric 3: Unique Buyers */}
+        <div className="bg-white p-5 rounded-2xl border border-[#2D6A4F]/15 flex items-start justify-between shadow-2xs">
+          <div>
+            <span className="text-xs text-slate-500 font-medium block mb-1">Unique Buyers</span>
+            <div className="text-2xl font-black text-[#171916] tracking-tight mb-1">
+              {ordersData?.summary?.uniqueBuyersCount ?? 0} Buyers
+            </div>
+            <span className="text-[11px] text-slate-500 font-medium">
+              {ordersData?.summary?.totalOrdersCount ?? 0} total orders
+              {donationsList.length > 0 ? ` • ${donationsList.length} donated` : ''}
+            </span>
+          </div>
+          <div className="p-3 rounded-2xl bg-stone-100 text-[#1B4332]">
+            <Users className="size-6" />
+          </div>
+        </div>
+
+        {/* Metric 4: Food Waste Value Rescued */}
+        <div className="bg-white p-5 rounded-2xl border border-[#2D6A4F]/15 flex items-start justify-between shadow-2xs">
+          <div>
+            <span className="text-xs text-slate-500 font-medium block mb-1">Food Value Rescued</span>
+            <div className="text-2xl font-black text-[#2D6A4F] tracking-tight mb-1">
+              {formatCurrency(
+                ordersData?.summary?.wastedValueAvoidedPkr ?? selectedStore.totalWastedValueAvoidedPkr
+              )}
+            </div>
+            <span className="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
+              <Leaf className="size-3.5 text-[#4CAF50]" /> Retail food saved from waste
+            </span>
+          </div>
+          <div className="p-3 rounded-2xl bg-[#4CAF50]/15 text-[#4CAF50]">
             <Leaf className="size-6" />
           </div>
         </div>
-
-        {/* Metric 3: NGO Charity Donations */}
-        <div className="bg-white p-5 rounded-2xl border border-[#2D6A4F]/15 flex items-start justify-between shadow-2xs">
-          <div>
-            <span className="text-xs text-slate-500 font-medium block mb-1">NGO Rescue Donations</span>
-            <div className="text-2xl font-black text-rose-500 tracking-tight mb-1">
-              {donationsList.length} Dispatched
-            </div>
-            <span className="text-[11px] text-rose-500 flex items-center gap-1 font-semibold">
-              <Heart className="size-3.5 fill-rose-500" /> Saylani / Edhi / JDC
-            </span>
-          </div>
-          <div className="p-3 rounded-2xl bg-rose-500/15 text-rose-500">
-            <Heart className="size-6" />
-          </div>
-        </div>
-
-        {/* Metric 4: Rule Decay Proof */}
-        <div className="bg-white p-5 rounded-2xl border border-[#2D6A4F]/15 flex items-start justify-between shadow-2xs">
-          <div>
-            <span className="text-xs text-slate-500 font-medium block mb-1">Auto Price Decay</span>
-            <div className="text-xl font-black text-[#1F2937] tracking-tight mb-1">
-              Rule Active
-            </div>
-            <p className="text-[11px] text-slate-500 leading-snug">
-              30% → 50% → 75% steps before expiry.
-            </p>
-          </div>
-          <div className="p-3 rounded-2xl bg-[#4CAF50]/15 text-[#4CAF50]">
-            <Zap className="size-6" />
-          </div>
-        </div>
-
       </div>
 
       {/* Auto-Generated Time-Decay Curve Graph */}
@@ -618,6 +652,55 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
         </div>
         )}
       </div>
+
+      {/* Store Orders & Buyer History (What Sold & Who Bought) */}
+      <OrdersHistoryPanel
+        title="Orders & Buyer History (What Sold & Who Bought)"
+        subtitle={`Customer reservations, buyer contacts, and payment details scoped to ${selectedStore.name}`}
+        orders={ordersData?.orders || []}
+        showStoreColumn={false}
+        exportFilename={`BiteHour_Orders_${(selectedStore.name || 'Store').replace(/\s+/g, '_')}.csv`}
+        onRefresh={() => void loadStoreOrders()}
+        isRefreshing={isLoadingOrders}
+        onMarkCollected={handleMarkOrderCollected}
+        busyOrderId={busyOrderId}
+      />
+
+      {/* Recently Expired Listings Archive (hidden from customers automatically) */}
+      {Boolean(ordersData?.expiredDeals?.length) && (
+        <div className="bg-white p-5 sm:p-6 rounded-[2rem] border border-[#E7E2D8] shadow-xs space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-black text-stone-800 flex items-center gap-2">
+                <Clock className="size-4 text-stone-500" />
+                <span>Recently Expired Listings ({ordersData?.expiredDeals.length})</span>
+              </h3>
+              <p className="text-xs text-stone-500">
+                Automatically hidden from customers once their closing expiry passed.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {(ordersData?.expiredDeals || []).map((exp) => (
+              <div
+                key={exp.id}
+                className="p-3.5 rounded-2xl bg-[#FAF8F3] border border-[#E5DFD3] flex items-center justify-between gap-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-xs font-extrabold text-stone-900 truncate">{exp.title}</p>
+                  <p className="text-[11px] text-stone-500">
+                    Expired {new Date(exp.expiryDeadline).toLocaleString()}
+                  </p>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-stone-200 text-stone-700 text-[10px] font-bold shrink-0">
+                  {exp.stockRemaining} unsold
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Cashier Verification Modal */}
       {isVerifyPassOpen && (

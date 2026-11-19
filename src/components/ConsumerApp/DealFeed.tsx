@@ -4,6 +4,7 @@ import { DropAlertSignupCard } from './DropAlertSignupCard';
 import { DealCard } from './DealCard';
 import { SampleBoxesSection } from './SampleBoxesSection';
 import { Search } from 'lucide-react';
+import { isDealExpired } from '../../lib/utils';
 
 interface DealFeedProps {
   deals: DealItem[];
@@ -13,6 +14,7 @@ interface DealFeedProps {
   onReserveDeal: (deal: DealItem) => void;
   onSelectDeal: (deal: DealItem) => void;
   onOpenPartnerPage?: () => void;
+  onDealExpired?: (dealId: string) => void;
 }
 
 const CATEGORIES: { key: CategoryType; label: string; icon: string }[] = [
@@ -41,6 +43,7 @@ export const DealFeed: React.FC<DealFeedProps> = ({
   onReserveDeal,
   onSelectDeal,
   onOpenPartnerPage,
+  onDealExpired,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('All');
@@ -56,6 +59,7 @@ export const DealFeed: React.FC<DealFeedProps> = ({
 
   const filteredDeals = useMemo(() => {
     return deals.filter((deal) => {
+      if (isDealExpired(deal)) return false;
       const q = searchTerm.toLowerCase();
       const matchesSearch =
         !q ||
@@ -254,7 +258,13 @@ export const DealFeed: React.FC<DealFeedProps> = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredDeals.map((deal) => (
-            <DealCard key={deal.id} deal={deal} onReserve={onReserveDeal} onSelect={onSelectDeal} />
+            <DealCard
+              key={deal.id}
+              deal={deal}
+              onReserve={onReserveDeal}
+              onSelect={onSelectDeal}
+              onExpired={onDealExpired}
+            />
           ))}
         </div>
       )}

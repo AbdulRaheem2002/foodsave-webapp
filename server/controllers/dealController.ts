@@ -1,34 +1,45 @@
 import { Request, Response } from 'express';
 import { Deal } from '../models/Deal.js';
 import { calculateTimeDecay } from '../utils/decayCalculator.js';
+import { isItemExpired } from '../utils/salesAnalytics.js';
 
 
 export const getDeals = async (req: Request, res: Response): Promise<void> => {
   try {
     const { category, minDiscount } = req.query;
+    const now = Date.now();
 
     const deals = await Deal.find({ status: 'active', stockQuantity: { $gt: 0 } })
       .populate({ path: 'itemRef', populate: { path: 'retailerRef' } })
       .populate('retailerRef');
 
-    const updatedDeals = deals.map((deal: any) => {
+    const expiredDealIds: any[] = [];
+    const activeDeals: any[] = [];
+
+    for (const deal of deals as any[]) {
       const item = deal.itemRef;
       const retailer = deal.retailerRef || item?.retailerRef;
 
-      if (!item) return deal;
+      if (!item || isItemExpired(item.expiryDeadline, now)) {
+        expiredDealIds.push(deal._id);
+        continue;
+      }
 
-      // Compute dynamic time-decay price based on expiry deadline
-      const now = new Date().getTime();
       const expiry = new Date(item.expiryDeadline).getTime();
-      const hoursRemaining = Math.max(0.2, (expiry - now) / (1000 * 60 * 60));
-
-      const decay = calculateTimeDecay(item.originalPricePkr, hoursRemaining, item.category);
+      const rawHoursRemaining = (expiry - now) / (1000 * 60 * 60);
+      const decay = calculateTimeDecay(
+        item.originalPricePkr,
+        Math.max(0.05, rawHoursRemaining),
+        item.category
+      );
 
       // Check if manual override price exists
       const effectivePrice = deal.manualOverridePricePkr ?? decay.currentDiscountedPricePkr;
-      const effectiveDiscount = Math.round(((item.originalPricePkr - effectivePrice) / item.originalPricePkr) * 100);
+      const effectiveDiscount = Math.round(
+        ((item.originalPricePkr - effectivePrice) / item.originalPricePkr) * 100
+      );
 
-      return {
+      activeDeals.push({
         id: deal._id.toString(),
         item: {
           id: item._id.toString(),
@@ -44,7 +55,7 @@ export const getDeals = async (req: Request, res: Response): Promise<void> => {
           id: retailer?._id?.toString(),
           name: retailer?.name || 'Registered Store',
           category: retailer?.category || item.category,
-          location: retailer?.location || { lat: 31.5204, lng: 74.3587, address: '', city: 'Lahore' },
+          location: retailer?.location || { lat: 33.6844, lng: 73.0479, address: '', city: 'Islamabad' },
           isVerified: retailer?.isVerified ?? true,
           rating: retailer?.rating || 5.0,
         },
@@ -54,13 +65,17 @@ export const getDeals = async (req: Request, res: Response): Promise<void> => {
         status: deal.status,
         stockQuantity: deal.stockQuantity,
         pickupWindowText: deal.pickupWindowText,
-        hoursRemaining: Number(hoursRemaining.toFixed(1)),
+        hoursRemaining: Number(rawHoursRemaining.toFixed(3)),
         manualOverridePricePkr: deal.manualOverridePricePkr,
-      };
-    });
+      });
+    }
+
+    if (expiredDealIds.length > 0) {
+      await Deal.updateMany({ _id: { $in: expiredDealIds } }, { $set: { status: 'expired' } });
+    }
 
     // Filter by category if requested
-    let filtered = updatedDeals;
+    let filtered = activeDeals;
     if (category && category !== 'all') {
       filtered = filtered.filter((d: any) => d.item?.category === category);
     }

@@ -6,6 +6,15 @@ import { DropAlertSubscriber } from '../models/DropAlertSubscriber.js';
 import { PushSubscription } from '../models/PushSubscription.js';
 import { Item } from '../models/Item.js';
 import { Deal } from '../models/Deal.js';
+import { Reservation } from '../models/Reservation.js';
+import {
+  buildPlatformSalesSummary,
+  buildStoreSalesSummary,
+  expireStalePendingReservationsMongo,
+  isItemExpired,
+  mapReservationToOrderRecord,
+  type StoreOrderRecord,
+} from '../utils/salesAnalytics.js';
 import type { AuthRequest } from '../middleware/auth.js';
 
 const ALLOWED_LEAD_STATUSES = ['new', 'contacted', 'approved', 'rejected'] as const;
@@ -32,17 +41,90 @@ export function formatAdminRetailerDto(retailer: any) {
 
 export const getAdminOverview = async (_req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const [retailers, partnerLeads, dropSubscribers, pushSubscribers, activeDealsCount] = await Promise.all([
-      Retailer.find().populate('userRef', 'name email contactPhone').sort({ createdAt: -1 }),
-      PartnerLead.find().sort({ createdAt: -1 }),
-      DropAlertSubscriber.find().sort({ createdAt: -1 }),
-      PushSubscription.find({ isActive: true }).sort({ updatedAt: -1 }),
-      Deal.countDocuments({ status: 'active' }),
-    ]);
+    await expireStalePendingReservationsMongo({});
+
+    const now = Date.now();
+    const [retailers, partnerLeads, dropSubscribers, pushSubscribers, allDeals, allReservations] =
+      await Promise.all([
+        Retailer.find().populate('userRef', 'name email contactPhone').sort({ createdAt: -1 }),
+        PartnerLead.find().sort({ createdAt: -1 }),
+        DropAlertSubscriber.find().sort({ createdAt: -1 }),
+        PushSubscription.find({ isActive: true }).sort({ updatedAt: -1 }),
+        Deal.find().populate('itemRef'),
+        Reservation.find()
+          .populate('userRef', 'name email contactPhone')
+          .populate({ path: 'dealRef', populate: { path: 'itemRef' } })
+          .populate('retailerRef')
+          .sort({ createdAt: -1 }),
+      ]);
+
+    const staleDealIds: any[] = [];
+    for (const deal of allDeals as any[]) {
+      if (
+        deal.status === 'active' &&
+        (!deal.itemRef || isItemExpired(deal.itemRef.expiryDeadline, now))
+      ) {
+        staleDealIds.push(deal._id);
+        deal.status = 'expired';
+      }
+    }
+    if (staleDealIds.length > 0) {
+      await Deal.updateMany({ _id: { $in: staleDealIds } }, { $set: { status: 'expired' } });
+    }
+
+    const activeDealsCount = (allDeals as any[]).filter(
+      (d) =>
+        d.status === 'active' &&
+        Number(d.stockQuantity || 0) > 0 &&
+        !isItemExpired(d.itemRef?.expiryDeadline, now)
+    ).length;
 
     const mappedRetailers = retailers.map(formatAdminRetailerDto);
     const pendingRetailers = mappedRetailers.filter((r) => !r.isVerified);
     const approvedRetailers = mappedRetailers.filter((r) => r.isVerified);
+
+    const allOrders = allReservations.map((r: any) => mapReservationToOrderRecord(r));
+    const ordersByStore = new Map<string, StoreOrderRecord[]>();
+    for (const order of allOrders) {
+      const sid = order.store.id;
+      if (!sid) continue;
+      const list = ordersByStore.get(sid) || [];
+      list.push(order);
+      ordersByStore.set(sid, list);
+    }
+
+    const dealsByStore = new Map<
+      string,
+      Array<{ status?: string; stockQuantity?: number; expiryDeadline?: Date | string | null }>
+    >();
+    for (const d of allDeals as any[]) {
+      const sid = d.retailerRef?.toString() || d.itemRef?.retailerRef?.toString() || '';
+      if (!sid) continue;
+      const list = dealsByStore.get(sid) || [];
+      list.push({
+        status: d.status,
+        stockQuantity: d.stockQuantity,
+        expiryDeadline: d.itemRef?.expiryDeadline,
+      });
+      dealsByStore.set(sid, list);
+    }
+
+    const platformSales = buildPlatformSalesSummary(allOrders);
+    const storeAnalytics = mappedRetailers
+      .map((store) =>
+        buildStoreSalesSummary(
+          store,
+          ordersByStore.get(store.id) || [],
+          dealsByStore.get(store.id) || [],
+          now
+        )
+      )
+      .sort(
+        (a, b) =>
+          b.totalGrossRevenuePkr - a.totalGrossRevenuePkr ||
+          b.collectedOrdersCount - a.collectedOrdersCount ||
+          b.totalOrdersCount - a.totalOrdersCount
+      );
 
     const mappedLeads = partnerLeads.map((lead: any) => ({
       id: lead._id.toString(),
@@ -107,6 +189,9 @@ export const getAdminOverview = async (_req: AuthRequest, res: Response): Promis
       partnerLeads: mappedLeads,
       dropSubscribers: mappedSubscribers,
       pushSubscribers: mappedPushSubscribers,
+      platformSales,
+      storeAnalytics,
+      recentOrders: allOrders.slice(0, 200),
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Could not load admin dashboard.' });

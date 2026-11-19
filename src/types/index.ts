@@ -37,6 +37,7 @@ export interface DealItem {
   originalPricePkr: number;
   currentPricePkr: number;
   discountPercent: number;
+  expiryDeadline?: string;
   expiryHoursLeft: number;
   stockQuantity: number;
   pickupDeadline: string;
@@ -145,6 +146,98 @@ export interface AdminPushSubscriber {
   updatedAt?: string;
 }
 
+export interface StoreOrderRecord {
+  id: string;
+  pickupCode: string;
+  status: string;
+  quantity: number;
+  totalAmountPkr: number;
+  originalValuePkr: number;
+  savedPkr: number;
+  paymentMethod: string;
+  paymentStatus: string;
+  paymentReference: string;
+  createdAt: string;
+  pickupWindowEnd: string;
+  item: {
+    id: string;
+    name: string;
+    category: string;
+    flavorProfile: string;
+    originalPricePkr: number;
+    discountedPricePkr: number;
+  };
+  store: {
+    id: string;
+    name: string;
+    sector: string;
+    city: string;
+  };
+  buyer: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
+}
+
+export interface StoreSalesSummary {
+  storeId: string;
+  storeName: string;
+  category: string;
+  sector: string;
+  city: string;
+  isVerified: boolean;
+  ownerName: string;
+  ownerEmail: string;
+  contactPhone: string;
+  activeDealsCount: number;
+  expiredDealsCount: number;
+  totalOrdersCount: number;
+  collectedOrdersCount: number;
+  pendingOrdersCount: number;
+  cancelledOrNoShowCount: number;
+  unitsSold: number;
+  unitsPending: number;
+  collectedRevenuePkr: number;
+  pendingRevenuePkr: number;
+  totalGrossRevenuePkr: number;
+  wastedValueAvoidedPkr: number;
+  uniqueBuyersCount: number;
+  topItems: Array<{ itemName: string; unitsSold: number; revenuePkr: number }>;
+}
+
+export interface PlatformSalesSummary {
+  totalCollectedRevenuePkr: number;
+  totalPendingRevenuePkr: number;
+  totalGrossRevenuePkr: number;
+  totalOrdersCount: number;
+  collectedOrdersCount: number;
+  pendingOrdersCount: number;
+  cancelledOrNoShowCount: number;
+  totalUnitsSold: number;
+  totalUnitsPending: number;
+  totalUniqueBuyers: number;
+  totalWastedValueAvoidedPkr: number;
+}
+
+export interface RetailerExpiredDeal {
+  id: string;
+  title: string;
+  category: string;
+  originalPricePkr: number;
+  currentPricePkr: number;
+  stockRemaining: number;
+  expiryDeadline: string;
+  pickupWindowText: string;
+}
+
+export interface RetailerOrdersResponse {
+  summary: StoreSalesSummary;
+  orders: StoreOrderRecord[];
+  expiredDeals: RetailerExpiredDeal[];
+}
+
 export interface AdminOverview {
   stats: {
     pendingRetailersCount: number;
@@ -159,6 +252,9 @@ export interface AdminOverview {
   partnerLeads: AdminPartnerLead[];
   dropSubscribers: AdminDropSubscriber[];
   pushSubscribers: AdminPushSubscriber[];
+  platformSales?: PlatformSalesSummary;
+  storeAnalytics?: StoreSalesSummary[];
+  recentOrders?: StoreOrderRecord[];
 }
 
 export interface DonationRecord {

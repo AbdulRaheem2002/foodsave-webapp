@@ -37,10 +37,18 @@ import {
 } from './controllers/reservationController.js';
 import {
   getRetailerProfile,
+  getRetailerOrdersAndStats,
   addItemAndDeal,
   overrideDealPrice,
   deleteDeal,
 } from './controllers/retailerController.js';
+import {
+  buildPlatformSalesSummary,
+  buildStoreSalesSummary,
+  isItemExpired,
+  mapReservationToOrderRecord,
+  type StoreOrderRecord,
+} from './utils/salesAnalytics.js';
 import { createPartnerLead, validatePartnerLeadBody } from './controllers/partnerLeadController.js';
 import { subscribeDropAlert, validateDropAlertBody } from './controllers/dropAlertController.js';
 import {
@@ -652,6 +660,83 @@ app.get('/api/retailer/me', authenticateToken, requireRetailer, async (req: Auth
   });
 });
 
+app.get('/api/retailer/orders', authenticateToken, requireRetailer, async (req: AuthRequest, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await getRetailerOrdersAndStats(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB getRetailerOrdersAndStats fallback to memDb:', mongoErr);
+    }
+  }
+
+  const retailer = memDb.getRetailerByUserId(req.user?.id);
+  if (!retailer) {
+    res.status(404).json({ error: 'Merchant store profile not found for this account.' });
+    return;
+  }
+
+  const now = Date.now();
+  const storeDeals = memDb.deals.filter((d) => d.retailerId === retailer.id);
+  const dealSummaryInputs = storeDeals.map((d) => {
+    const item = memDb.items.find((i) => i.id === d.itemId);
+    if (d.status === 'active' && (!item || isItemExpired(item.expiryDeadline, now))) {
+      d.status = 'expired';
+    }
+    return {
+      status: d.status,
+      stockQuantity: d.stockQuantity,
+      expiryDeadline: item?.expiryDeadline,
+    };
+  });
+
+  const orders = memDb.reservations
+    .filter((r) => r.retailerId === retailer.id)
+    .map((r) => {
+      const user = memDb.users.find((u) => u.id === r.userId);
+      const deal = memDb.deals.find((d) => d.id === r.dealId);
+      const item = memDb.items.find((i) => i.id === deal?.itemId);
+      return mapReservationToOrderRecord(r, { user, deal, item, retailer });
+    });
+
+  const summary = buildStoreSalesSummary(
+    {
+      id: retailer.id,
+      name: retailer.name,
+      category: retailer.category,
+      sector: retailer.location?.sector || '',
+      city: retailer.location?.city || 'Islamabad',
+      isVerified: retailer.isVerified,
+      contactPhone: retailer.contactPhone || '',
+    },
+    orders,
+    dealSummaryInputs,
+    now
+  );
+
+  const expiredDeals = storeDeals
+    .filter((d) => {
+      const item = memDb.items.find((i) => i.id === d.itemId);
+      return d.status === 'expired' || isItemExpired(item?.expiryDeadline, now);
+    })
+    .slice(0, 20)
+    .map((d) => {
+      const item = memDb.items.find((i) => i.id === d.itemId);
+      return {
+        id: d.id,
+        title: item?.name || 'Surplus Listing',
+        category: item?.category || retailer.category,
+        originalPricePkr: Number(item?.originalPricePkr || 0),
+        currentPricePkr: Number(d.manualOverridePricePkr ?? d.currentDiscountedPricePkr ?? 0),
+        stockRemaining: Number(d.stockQuantity || 0),
+        expiryDeadline: item?.expiryDeadline || new Date().toISOString(),
+        pickupWindowText: d.pickupWindowText,
+      };
+    });
+
+  res.json({ summary, orders, expiredDeals });
+});
+
 app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: AuthRequest, res: Response) => {
   if (isMongoConnected()) {
     try {
@@ -840,6 +925,13 @@ app.post('/api/reservations', authenticateToken, async (req: AuthRequest, res: R
     return;
   }
 
+  const dealItem = memDb.items.find((i) => i.id === deal.itemId);
+  if (isItemExpired(dealItem?.expiryDeadline)) {
+    deal.status = 'expired';
+    res.status(400).json({ error: 'This deal has expired and is no longer available.' });
+    return;
+  }
+
   const qty = Number(quantity || 1);
   if (!Number.isInteger(qty) || qty < 1 || deal.stockQuantity < qty) {
     res.status(400).json({ error: 'Insufficient stock remaining' });
@@ -1015,11 +1107,12 @@ app.put('/api/reservations/:id/status', optionalAuth, async (req: AuthRequest, r
   if (status === 'collected') {
     reservation.paymentStatus = 'paid';
   } else if (status === 'no-show' || status === 'cancelled' || status === 'expired') {
-    // Restore stock back to deal
+    // Restore stock back to deal only if deal hasn't expired
     const deal = memDb.deals.find((d) => d.id === reservation.dealId);
     if (deal) {
+      const item = memDb.items.find((i) => i.id === deal.itemId);
       deal.stockQuantity += reservation.quantity;
-      deal.status = 'active';
+      deal.status = isItemExpired(item?.expiryDeadline) ? 'expired' : 'active';
     }
   }
 
@@ -1040,6 +1133,7 @@ app.get('/api/admin/overview', authenticateToken, requireAdmin, async (req: Auth
     }
   }
 
+  const now = Date.now();
   const mappedRetailers = memDb.retailers.map((r) => {
     const owner = memDb.users.find((u) => u.id === r.userId);
     return {
@@ -1054,12 +1148,63 @@ app.get('/api/admin/overview', authenticateToken, requireAdmin, async (req: Auth
   const pendingRetailers = mappedRetailers.filter((r) => !r.isVerified);
   const approvedRetailers = mappedRetailers.filter((r) => r.isVerified);
 
+  for (const d of memDb.deals) {
+    const item = memDb.items.find((i) => i.id === d.itemId);
+    if (d.status === 'active' && (!item || isItemExpired(item.expiryDeadline, now))) {
+      d.status = 'expired';
+    }
+  }
+
+  const activeDealsCount = memDb.deals.filter((d) => {
+    const item = memDb.items.find((i) => i.id === d.itemId);
+    return d.status === 'active' && d.stockQuantity > 0 && !isItemExpired(item?.expiryDeadline, now);
+  }).length;
+
+  const allOrders = memDb.reservations.map((r) => {
+    const user = memDb.users.find((u) => u.id === r.userId);
+    const deal = memDb.deals.find((d) => d.id === r.dealId);
+    const item = memDb.items.find((i) => i.id === deal?.itemId);
+    const retailer = memDb.retailers.find((rt) => rt.id === r.retailerId);
+    return mapReservationToOrderRecord(r, { user, deal, item, retailer });
+  });
+
+  const ordersByStore = new Map<string, StoreOrderRecord[]>();
+  for (const order of allOrders) {
+    if (!order.store.id) continue;
+    const list = ordersByStore.get(order.store.id) || [];
+    list.push(order);
+    ordersByStore.set(order.store.id, list);
+  }
+
+  const platformSales = buildPlatformSalesSummary(allOrders);
+  const storeAnalytics = mappedRetailers
+    .map((store) => {
+      const storeDeals = memDb.deals
+        .filter((d) => d.retailerId === store.id)
+        .map((d) => ({
+          status: d.status,
+          stockQuantity: d.stockQuantity,
+          expiryDeadline: memDb.items.find((i) => i.id === d.itemId)?.expiryDeadline,
+        }));
+      return buildStoreSalesSummary(
+        {
+          ...store,
+          id: String(store.id || ''),
+          name: String(store.name || 'Partner Store'),
+        },
+        ordersByStore.get(store.id) || [],
+        storeDeals,
+        now
+      );
+    })
+    .sort((a, b) => b.totalGrossRevenuePkr - a.totalGrossRevenuePkr);
+
   res.json({
     stats: {
       pendingRetailersCount: pendingRetailers.length,
       approvedRetailersCount: approvedRetailers.length,
       partnerLeadsCount: memDb.partnerLeads.length,
-      activeDealsCount: memDb.deals.filter((d) => d.status === 'active').length,
+      activeDealsCount,
       dropSubscribersCount: memDb.dropSubscribers.length,
       pushSubscribersCount: memDb.pushSubscriptions.filter((s) => s.isActive !== false).length,
     },
@@ -1078,6 +1223,9 @@ app.get('/api/admin/overview', authenticateToken, requireAdmin, async (req: Auth
         createdAt: s.createdAt,
         updatedAt: s.updatedAt,
       })),
+    platformSales,
+    storeAnalytics,
+    recentOrders: allOrders.slice(0, 200),
   });
 });
 
