@@ -57,6 +57,7 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
       isMysteryBag,
       pickupWindowText,
       originalPricePkr,
+      boxPricePkr,
       quantity,
       expiryHoursLeft,
       imageUrl,
@@ -75,8 +76,18 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
       return;
     }
 
-    if (!String(name || '').trim() || Number(originalPricePkr) <= 0 || Number(quantity) < 1) {
-      res.status(400).json({ error: 'Valid item title, original price (> 0), and quantity (>= 1) are required.' });
+    const worthNum = Number(originalPricePkr);
+    const hasFixedBoxPrice =
+      boxPricePkr !== undefined && boxPricePkr !== null && String(boxPricePkr).trim() !== '';
+    const boxPriceNum = Number(boxPricePkr);
+
+    if (!String(name || '').trim() || worthNum <= 0 || Number(quantity) < 1) {
+      res.status(400).json({ error: 'Valid box title, Worth value (> 0), and quantity (>= 1) are required.' });
+      return;
+    }
+
+    if (hasFixedBoxPrice && (!Number.isFinite(boxPriceNum) || boxPriceNum <= 0 || boxPriceNum >= worthNum)) {
+      res.status(400).json({ error: 'Box price must be greater than ₨ 0 and lower than Worth value.' });
       return;
     }
 
@@ -88,23 +99,28 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
 
     const item = await Item.create({
       name: String(name).trim(),
-      category: category || 'grocery',
+      category: category || 'bakery',
       flavorProfile: safeFlavor,
-      isMysteryBag: Boolean(isMysteryBag),
-      originalPricePkr: Number(originalPricePkr),
+      isMysteryBag: isMysteryBag === undefined ? true : Boolean(isMysteryBag),
+      originalPricePkr: worthNum,
       quantity: Number(quantity || 1),
       expiryDeadline,
       retailerRef: retailer._id,
-      imageUrl: imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
+      imageUrl: imageUrl || '/images/box-sweet.jpg',
     });
 
-    const decay = calculateTimeDecay(Number(originalPricePkr), Number(expiryHoursLeft || 2), category || 'grocery');
+    const decay = calculateTimeDecay(worthNum, Number(expiryHoursLeft || 2), category || 'bakery');
+    const effectivePrice = hasFixedBoxPrice ? Math.round(boxPriceNum) : decay.currentDiscountedPricePkr;
+    const effectiveDiscount = hasFixedBoxPrice
+      ? Math.max(1, Math.round(((worthNum - effectivePrice) / worthNum) * 100))
+      : decay.currentDiscountPercent;
 
     const deal = await Deal.create({
       itemRef: item._id,
       retailerRef: retailer._id,
-      currentDiscountedPricePkr: decay.currentDiscountedPricePkr,
-      discountPercent: decay.currentDiscountPercent,
+      currentDiscountedPricePkr: effectivePrice,
+      discountPercent: effectiveDiscount,
+      manualOverridePricePkr: hasFixedBoxPrice ? effectivePrice : undefined,
       decaySchedule: decay.decaySchedule,
       status: 'active',
       stockQuantity: Number(quantity || 1),

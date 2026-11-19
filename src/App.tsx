@@ -416,8 +416,8 @@ export function App() {
 
   const storeDealsForModal = useMemo(() => {
     if (!selectedStoreProfile) return [];
-    return deals.filter((d) => d.storeName === selectedStoreProfile.name);
-  }, [deals, selectedStoreProfile]);
+    return filteredDealsByCity.filter((d) => d.storeName === selectedStoreProfile.name);
+  }, [filteredDealsByCity, selectedStoreProfile]);
 
   const scrollToDeals = () => {
     const el = document.getElementById('deals-feed-section');
@@ -426,7 +426,7 @@ export function App() {
     }
   };
 
-  const featuredDeal = deals[0] || null;
+  const featuredDeal = filteredDealsByCity[0] || null;
 
   return (
     <div className="min-h-screen bg-[#FAF8F3] text-[#171916] flex flex-col font-sans">
@@ -438,8 +438,8 @@ export function App() {
             <span className="size-1.5 rounded-full bg-[#85e3a8] shrink-0" />
             <span className="truncate text-[11px] font-medium text-stone-100">
               {filteredDealsByCity.length > 0
-                ? `${filteredDealsByCity.length} live surplus ${filteredDealsByCity.length === 1 ? 'bag' : 'bags'} available in Islamabad • 15-min hold`
-                : 'Islamabad Launch • Closing-hour bakery & café deals up to 85% OFF • Zero app required'}
+                ? `${filteredDealsByCity.length} live surprise ${filteredDealsByCity.length === 1 ? 'box' : 'boxes'} available in Islamabad • 15-min hold`
+                : 'Islamabad Launch • Bakery Surprise Boxes (Worth ₨ 1,200 for ₨ 450) • Zero app required'}
             </span>
           </div>
 
@@ -640,7 +640,7 @@ export function App() {
                 {/* Top Location Pill */}
                 <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9] inline-flex items-center gap-2 self-start mb-4 sm:mb-5 shadow-2xs">
                   <span className="size-2 rounded-full bg-[#2e7d32] animate-pulse" />
-                  Islamabad Closing Drops • Up to 85% OFF
+                  Islamabad Bakery Surprise Boxes • Packed Fresh at Closing
                 </span>
 
                 {/* Big Display Headline with Editorial Italic Serif Accent */}
@@ -649,12 +649,12 @@ export function App() {
                   <span className="font-serif-display italic font-semibold text-[#1B4332]">
                     Evening Pastries
                   </span>{' '}
-                  Before Closing.
+                  in Surprise Boxes.
                 </h1>
 
                 {/* Generous Lead Subtitle */}
                 <p className="text-[15px] sm:text-lg text-stone-600 leading-relaxed max-w-xl mb-5 sm:mb-6 font-medium">
-                  Islamabad bakeries, cafés, and kitchens drop fresh same-day surplus before lockup. Reserve on web in 15 seconds — pay via{' '}
+                  Reserve a Bakery Surprise Box (e.g. Worth ₨ 1,200 for ₨ 450) in 15 seconds. Pick your craving — pay via{' '}
                   <strong className="text-[#171916] font-bold">Cash on Pickup, JazzCash, or EasyPaisa</strong>.
                 </p>
 
@@ -718,22 +718,25 @@ export function App() {
                     <div className="min-w-0">
                       <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#f37021] block truncate">
                         {featuredDeal
-                          ? `Live Drop • ${featuredDeal.storeName}`
-                          : 'Sample Evening Drop • Islamabad Bakery'}
+                          ? `Live Surprise Box • ${featuredDeal.storeName}`
+                          : 'Example Format • Islamabad Bakery'}
                       </span>
                       <p className="text-xs sm:text-base font-extrabold text-[#171916] truncate">
                         {featuredDeal
                           ? featuredDeal.title
-                          : 'Artisan Croissant & Pastry Box (9:30 PM)'}
+                          : 'Sweet Bakery Surprise Box (9:30 PM)'}
                       </p>
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="text-[11px] sm:text-xs text-stone-400 line-through font-medium block leading-none mb-0.5">
-                        {featuredDeal ? `₨ ${featuredDeal.originalPricePkr}` : '₨ 1,650'}
+                      <span className="text-[11px] sm:text-xs text-stone-500 font-semibold block leading-none mb-0.5">
+                        Worth{' '}
+                        <span className="line-through text-stone-400">
+                          {featuredDeal ? `₨ ${featuredDeal.originalPricePkr.toLocaleString()}` : '₨ 1,200'}
+                        </span>
                       </span>
                       <span className="text-base sm:text-xl font-extrabold text-[#1B4332] leading-none">
-                        {featuredDeal ? `₨ ${featuredDeal.currentPricePkr}` : '₨ 550'}
+                        For {featuredDeal ? `₨ ${featuredDeal.currentPricePkr.toLocaleString()}` : '₨ 450'}
                       </span>
                     </div>
                   </div>

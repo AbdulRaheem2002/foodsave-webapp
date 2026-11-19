@@ -18,11 +18,10 @@ interface DealFeedProps {
 }
 
 const CATEGORIES: { key: CategoryType; label: string; icon: string }[] = [
-  { key: 'All', label: 'All Deals', icon: '' },
-  { key: 'mystery-bag', label: 'Surprise Bags', icon: '🎁' },
-  { key: 'bakery', label: 'Bakery & Café', icon: '🥐' },
-  { key: 'restaurant', label: 'Hot Meals', icon: '🍗' },
-  { key: 'grocery', label: 'Grocery', icon: '🥑' },
+  { key: 'All', label: 'All Boxes', icon: '' },
+  { key: 'bakery', label: 'Bakery Boxes', icon: '🥐' },
+  { key: 'restaurant', label: 'Café & Meals', icon: '🍗' },
+  { key: 'grocery', label: 'Grocery Boxes', icon: '🥑' },
 ];
 
 const FLAVORS: { key: FlavorType; label: string }[] = [
@@ -49,7 +48,7 @@ export const DealFeed: React.FC<DealFeedProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('All');
   const [selectedFlavor, setSelectedFlavor] = useState<FlavorType>('All');
   const [internalSector, setInternalSector] = useState<string>('All Areas');
-  const [minDiscount, setMinDiscount] = useState<number>(30);
+  const [maxBoxPrice, setMaxBoxPrice] = useState<number>(0);
 
   const selectedSector = controlledSector ?? internalSector;
   const setSelectedSector = (sector: string) => {
@@ -85,11 +84,11 @@ export const DealFeed: React.FC<DealFeedProps> = ({
               selectedSector.toLowerCase().replace(' / ', ' ').split(' ')[0]
             );
 
-      const matchesDiscount = deal.discountPercent >= minDiscount;
+      const matchesBudget = maxBoxPrice === 0 || deal.currentPricePkr <= maxBoxPrice;
 
-      return matchesSearch && matchesCategory && matchesFlavor && matchesSector && matchesDiscount;
+      return matchesSearch && matchesCategory && matchesFlavor && matchesSector && matchesBudget;
     });
-  }, [deals, searchTerm, selectedCategory, selectedFlavor, selectedSector, minDiscount]);
+  }, [deals, searchTerm, selectedCategory, selectedFlavor, selectedSector, maxBoxPrice]);
 
   const showSectorChips = selectedCity === 'Islamabad' || selectedCity === 'All Pakistan';
 
@@ -110,18 +109,18 @@ export const DealFeed: React.FC<DealFeedProps> = ({
               />
             </div>
 
-            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[#f7f5f0] border border-[#e8e3d8] text-xs">
-              <span className="text-stone-600 font-semibold whitespace-nowrap text-[11px]">Min Discount</span>
-              <input
-                type="range"
-                min="30"
-                max="80"
-                step="5"
-                value={minDiscount}
-                onChange={(e) => setMinDiscount(Number(e.target.value))}
-                className="flex-1 sm:flex-none sm:w-20 accent-[#1b4332] cursor-pointer"
-              />
-              <span className="font-extrabold text-[#1b4332] font-mono text-[11px] w-9">{minDiscount}%+</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#f7f5f0] border border-[#e8e3d8] text-xs">
+              <span className="text-stone-600 font-semibold whitespace-nowrap text-[11px]">Box Budget</span>
+              <select
+                value={maxBoxPrice}
+                onChange={(e) => setMaxBoxPrice(Number(e.target.value))}
+                className="bg-transparent font-extrabold text-[#1b4332] text-xs focus:outline-none cursor-pointer"
+              >
+                <option value={0}>Any Price</option>
+                <option value={500}>Under ₨ 500</option>
+                <option value={750}>Under ₨ 750</option>
+                <option value={1000}>Under ₨ 1,000</option>
+              </select>
             </div>
 
             <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
@@ -202,31 +201,31 @@ export const DealFeed: React.FC<DealFeedProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 px-1">
         <div>
           <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#2e7d32] block mb-1">
-            {deals.length === 0 ? 'Preview Tonight’s Format' : 'Live Closing Inventory'}
+            {deals.length === 0 ? 'Preview Tonight’s Format' : 'Live Closing Surprise Boxes'}
           </span>
           <h2 className="text-2xl sm:text-4xl font-extrabold text-[#171916] tracking-tight">
             {deals.length === 0 ? (
               <>
                 What Goes Into a{' '}
                 <span className="font-serif-display italic font-semibold text-[#1B4332]">
-                  BiteHour Box
+                  BiteHour Surprise Box
                 </span>
               </>
             ) : (
-              "Today's Closing-Hour Drops"
+              "Today's Closing Surprise Boxes"
             )}
           </h2>
           <p className="text-sm text-stone-600 mt-1 font-medium">
             {deals.length === 0
-              ? 'Sweet vs. Savory clarity and exact counter pickup slots — never random guesswork.'
-              : 'Sweet & savory preference tags included. Every bag locks with a 15-minute counter hold.'}
+              ? 'Guaranteed box value (e.g. Worth ₨ 1,200 for ₨ 450) with Sweet vs. Savory clarity — staff pack fresh leftovers at closing.'
+              : 'No cherry-picking individual dishes — reserve your Surprise Box by flavor & value and collect fresh before closing.'}
           </p>
         </div>
 
         <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] self-start sm:self-auto shadow-2xs">
           {deals.length === 0
-            ? 'Example Evening Boxes'
-            : `${filteredDeals.length} Active Deal${filteredDeals.length === 1 ? '' : 's'}`}
+            ? 'Example Surprise Boxes'
+            : `${filteredDeals.length} Live Surprise Box${filteredDeals.length === 1 ? '' : 'es'}`}
         </span>
       </div>
 
@@ -248,7 +247,7 @@ export const DealFeed: React.FC<DealFeedProps> = ({
               setSelectedCategory('All');
               setSelectedFlavor('All');
               setSelectedSector('All Areas');
-              setMinDiscount(30);
+              setMaxBoxPrice(0);
             }}
             className="px-6 py-2.5 rounded-full bg-[#1b4332] text-white text-xs font-bold shadow-sm cursor-pointer"
           >

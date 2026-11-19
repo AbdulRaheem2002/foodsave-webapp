@@ -43,10 +43,17 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
   const flavorLabels: Record<string, string> = {
     sweet: '🥐 Sweet',
     savory: '🍗 Savory',
-    drinks: '☕ Drinks',
-    mixed: '🍱 Mixed Box',
+    drinks: '☕ Coffee & Bake',
+    mixed: '🍱 Assorted',
   };
-  const flavorBadge = flavorLabels[deal.flavorProfile || 'mixed'] || '🍱 Mixed';
+  const flavorDescriptionWord: Record<string, string> = {
+    sweet: 'sweet pastry',
+    savory: 'savory café',
+    drinks: 'coffee & bake',
+    mixed: 'assorted bakery',
+  };
+  const flavorBadge = flavorLabels[deal.flavorProfile || 'mixed'] || '🍱 Assorted';
+  const boxWord = flavorDescriptionWord[deal.flavorProfile || 'mixed'] || 'assorted bakery';
   const areaLabel = deal.location.sector
     ? `${deal.location.sector}, ${deal.location.city}`
     : deal.location.city || 'Islamabad';
@@ -63,23 +70,25 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
 
-        {/* Top-Left: Red Discount + Flavor Badge */}
+        {/* Top-Left: Surprise Box Value + Craving Tag */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5">
-          <span className="px-2.5 py-1 rounded-full bg-[#e53935] text-white font-extrabold text-xs shadow-sm tracking-wide">
-            {deal.discountPercent}% OFF
+          <span className="px-2.5 py-1 rounded-full bg-[#1B4332] text-white font-extrabold text-xs shadow-sm tracking-wide">
+            Surprise Box
           </span>
           <span className="px-2.5 py-1 rounded-full bg-white/95 text-stone-800 font-bold text-xs shadow-sm">
             {flavorBadge}
           </span>
         </div>
 
-        {/* Top-Right: Surplus Scarcity Badge */}
+        {/* Top-Right: Scarcity Badge */}
         <div
           className={`absolute top-3 right-3 px-2.5 py-1 rounded-full bg-[#f37021] text-white font-bold text-xs shadow-sm flex items-center gap-1 ${
             deal.stockQuantity <= 2 ? 'animate-pulse' : ''
           }`}
         >
-          <span>Only {deal.stockQuantity} left</span>
+          <span>
+            Only {deal.stockQuantity} {deal.stockQuantity === 1 ? 'box' : 'boxes'} left
+          </span>
         </div>
 
         {/* Bottom-Left: Store Name & Rating Capsule */}
@@ -111,11 +120,11 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
             {deal.title}
           </h3>
 
-          {/* Short Description */}
+          {/* Closing Assortment Description (Prevents Cherry-Picking) */}
           <p className="text-[13px] text-stone-600 line-clamp-2 leading-relaxed font-medium">
-            {deal.isMysteryBag && deal.mysteryBagContents
-              ? `Surplus mystery bag containing: ${deal.mysteryBagContents.join(', ')}.`
-              : `Fresh bakery & kitchen surplus from ${deal.storeName}. Prepared today and collected before closing.`}
+            {deal.mysteryBagContents?.length
+              ? `Assorted closing surprise box (worth ${formatCurrency(deal.originalPricePkr)}+): e.g. ${deal.mysteryBagContents.join(', ')}.`
+              : `Fresh ${boxWord} assortment packed at closing from ${deal.storeName} (worth ${formatCurrency(deal.originalPricePkr)}+). Exact items vary daily.`}
           </p>
 
           {/* Pickup Window & Freshness Guarantee */}
@@ -131,29 +140,30 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
           </div>
         </div>
 
-        {/* Pricing & Savings Bar */}
+        {/* Box Value & Price Bar */}
         <div className="pt-1 flex flex-col gap-2">
           
           <div className="flex items-baseline justify-between">
-            <span className="text-xs text-stone-400 line-through font-medium">
-              {formatCurrency(deal.originalPricePkr)}
+            <span className="text-xs text-stone-500 font-bold">
+              Worth <span className="line-through text-stone-400 font-medium">{formatCurrency(deal.originalPricePkr)}</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] text-[11px] font-bold">
               Save {formatCurrency(savedAmountPkr)}
             </span>
           </div>
 
-          <div className="flex items-baseline justify-between -mt-1">
+          <div className="flex items-baseline gap-1.5 -mt-1">
+            <span className="text-xs font-bold text-stone-500">For</span>
             <span className="text-[1.65rem] font-extrabold text-[#171916] tracking-tight">
               {formatCurrency(deal.currentPricePkr)}
             </span>
           </div>
 
-          {/* Full-Width Claim Bag Button */}
+          {/* Full-Width Claim Box Button */}
           <div className="flex items-center gap-2 pt-1">
             <button
               onClick={() => onSelect(deal)}
-              title="Inspect Details"
+              title="Store Details"
               className="p-3 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 transition-colors cursor-pointer"
             >
               <Eye className="size-4" />
@@ -164,7 +174,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
               className="flex-1 py-3 px-4 rounded-full bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-[13px] shadow-md shadow-[#1b4332]/20 flex items-center justify-center gap-2 transition-all transform active:scale-98 cursor-pointer"
             >
               <ShoppingBag className="size-4" />
-              <span>Claim Bag (15m Hold)</span>
+              <span>Reserve Surprise Box</span>
             </button>
           </div>
 

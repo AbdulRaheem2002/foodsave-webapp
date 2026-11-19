@@ -7,8 +7,8 @@ const FAQS = [
     a: 'No! Unlike app-only platforms, you can browse live Islamabad, Rawalpindi, Lahore, and Karachi deals and lock a pickup pass directly in your phone browser in 15 seconds. You can also save BiteHour to your home screen in 2 taps.',
   },
   {
-    q: 'Can I filter Sweet vs. Savory items before claiming?',
-    a: 'Yes. Stores tag listings as Sweet, Savory, Coffee & Drinks, or Mixed — and can list exact closing-hour boxes as well as Surprise Bags — so you know what flavor profile to expect.',
+    q: 'What is inside a BiteHour Surprise Box?',
+    a: 'Instead of listing single leftover pastries at steep markdowns, partner bakeries pack today’s freshest closing leftovers matching your chosen craving (Sweet, Savory, Coffee & Bake, or Assorted) guaranteed at full box value — e.g. Worth ₨ 1,200+ for ₨ 450.',
   },
   {
     q: 'How do payments work — do I have to pay online first?',

@@ -755,6 +755,7 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
     isMysteryBag,
     pickupWindowText,
     originalPricePkr,
+    boxPricePkr,
     quantity,
     expiryHoursLeft,
     imageUrl,
@@ -773,16 +774,25 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
     return;
   }
 
-  if (!String(name || '').trim() || Number(originalPricePkr) <= 0 || Number(quantity) < 1) {
-    res.status(400).json({ error: 'Valid item title, original price (> 0), and quantity (>= 1) are required.' });
+  const price = Number(originalPricePkr);
+  const hasFixedBoxPrice =
+    boxPricePkr !== undefined && boxPricePkr !== null && String(boxPricePkr).trim() !== '';
+  const boxPriceNum = Number(boxPricePkr);
+
+  if (!String(name || '').trim() || price <= 0 || Number(quantity) < 1) {
+    res.status(400).json({ error: 'Valid box title, Worth value (> 0), and quantity (>= 1) are required.' });
+    return;
+  }
+
+  if (hasFixedBoxPrice && (!Number.isFinite(boxPriceNum) || boxPriceNum <= 0 || boxPriceNum >= price)) {
+    res.status(400).json({ error: 'Box price must be greater than ₨ 0 and lower than Worth value.' });
     return;
   }
 
   const itemId = `itm-${Date.now()}`;
   const dealId = `dl-${Date.now()}`;
-  const price = Number(originalPricePkr);
   const hrs = Math.max(0.5, Number(expiryHoursLeft || 2.0));
-  const cat = (category as 'grocery' | 'bakery' | 'restaurant') || 'grocery';
+  const cat = (category as 'grocery' | 'bakery' | 'restaurant') || 'bakery';
   const qty = Number(quantity);
   const allowedFlavors = ['savory', 'sweet', 'drinks', 'mixed'];
   const safeFlavor = allowedFlavors.includes(flavorProfile) ? flavorProfile : 'mixed';
@@ -793,23 +803,28 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
     name: String(name).trim(),
     category: cat,
     flavorProfile: safeFlavor as 'savory' | 'sweet' | 'drinks' | 'mixed',
-    isMysteryBag: Boolean(isMysteryBag),
+    isMysteryBag: isMysteryBag === undefined ? true : Boolean(isMysteryBag),
     originalPricePkr: price,
     quantity: qty,
     expiryDeadline: new Date(Date.now() + hrs * 3600 * 1000).toISOString(),
     retailerId: retailer.id,
-    imageUrl: imageUrl || '',
+    imageUrl: imageUrl || '/images/box-sweet.jpg',
   };
   memDb.items.push(newItem);
 
   const decay = calculateTimeDecay(price, hrs, cat);
+  const effectivePrice = hasFixedBoxPrice ? Math.round(boxPriceNum) : decay.currentDiscountedPricePkr;
+  const effectiveDiscount = hasFixedBoxPrice
+    ? Math.max(1, Math.round(((price - effectivePrice) / price) * 100))
+    : decay.currentDiscountPercent;
 
   const newDeal = {
     id: dealId,
     itemId,
     retailerId: retailer.id,
-    currentDiscountedPricePkr: decay.currentDiscountedPricePkr,
-    discountPercent: decay.currentDiscountPercent,
+    currentDiscountedPricePkr: effectivePrice,
+    discountPercent: effectiveDiscount,
+    manualOverridePricePkr: hasFixedBoxPrice ? effectivePrice : undefined,
     decaySchedule: decay.decaySchedule,
     status: 'active' as const,
     stockQuantity: qty,

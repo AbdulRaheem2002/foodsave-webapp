@@ -130,17 +130,20 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                     variant="compact"
                   />
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-black text-[#FF9800]">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-lg font-black text-[#1B4332]">
                     {formatCurrency(deal.currentPricePkr)}
                   </span>
-                  <span className="text-xs line-through text-slate-400 font-medium">
-                    {formatCurrency(deal.originalPricePkr)}
+                  <span className="text-xs text-slate-500 font-semibold">
+                    (Worth <span className="line-through text-slate-400">{formatCurrency(deal.originalPricePkr)}</span>)
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#FF9800]/20 text-[#FF9800]">
-                    {deal.discountPercent}% OFF
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9]">
+                    Surprise Box
                   </span>
                 </div>
+                <p className="text-[11px] text-stone-500 mt-1 font-medium">
+                  Packed fresh at closing from unsold assortment — exact items vary daily.
+                </p>
               </div>
             </div>
 
@@ -270,7 +273,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             </div>
 
             <div>
-              <h2 className="text-2xl font-black text-[#1F2937] mb-1">Surplus Bag Reserved!</h2>
+              <h2 className="text-2xl font-black text-[#1F2937] mb-1">Surprise Box Reserved!</h2>
               <p className="text-xs text-slate-600">
                 Present your pickup code at <strong>{deal.storeName}</strong> counter within 15 minutes.
               </p>

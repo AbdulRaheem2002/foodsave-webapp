@@ -225,8 +225,8 @@ export async function notifyMatchingPushSubscribers(dealInput: {
     const sectorLabel = dealInput.sector ? `${dealInput.sector} ` : 'Islamabad ';
     const emoji = flavorEmojiFor(dealInput.flavorProfile);
     const payload: PushNotificationPayload = {
-      title: `${emoji} New ${sectorLabel}Drop — ${dealInput.discountPercent}% OFF at ${dealInput.storeName}`,
-      body: `${dealInput.itemName} • ₨ ${Math.round(dealInput.currentPricePkr).toLocaleString()} (was ₨ ${Math.round(dealInput.originalPricePkr).toLocaleString()}) • ${dealInput.pickupWindowText}`,
+      title: `${emoji} New ${sectorLabel}Surprise Box at ${dealInput.storeName} — For ₨ ${Math.round(dealInput.currentPricePkr).toLocaleString()}`,
+      body: `${dealInput.itemName} (Worth ₨ ${Math.round(dealInput.originalPricePkr).toLocaleString()}+ inside) • ${dealInput.pickupWindowText}`,
       url: `/?deal=${encodeURIComponent(dealInput.dealId)}`,
       dealId: dealInput.dealId,
       tag: `bitehour-deal-${dealInput.dealId}`,

@@ -35,8 +35,8 @@ const BENEFITS = [
   },
   {
     icon: Clock,
-    title: 'Sell Exact Items or Surprise Boxes',
-    desc: 'Avoid customer complaints: tag items as Sweet, Savory, or Coffee & Drinks, and set your exact closing pickup window.',
+    title: 'Sell Surprise Boxes — Zero Itemized Markdowns',
+    desc: 'Never discount single menu items ("Chicken Croissant 60% off"). Pack assorted leftovers into a Bakery Surprise Box (Worth ₨ 1,200 for ₨ 450) in 30 seconds — zero cherry-picking.',
   },
 ];
 

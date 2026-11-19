@@ -15,8 +15,8 @@ const STEPS = [
   {
     num: '02',
     icon: SlidersHorizontal,
-    title: 'Reserve in 15 Seconds',
-    desc: 'Zero app download needed. Lock your item or surprise box online with clear Original vs. Closing-Hour price before stock runs out.',
+    title: 'Reserve a Surprise Box in 15s',
+    desc: 'Pick by craving & guaranteed value (e.g. Worth ₨ 1,200 for ₨ 450). Staff pack fresh closing leftovers cleanly — zero cherry-picking.',
   },
   {
     num: '03',

@@ -7,34 +7,34 @@ interface SampleBoxesSectionProps {
 
 const SAMPLE_BOXES = [
   {
-    title: 'Sweet Bakery Box',
-    subtitle: 'Artisan Croissants, Brownies & Glazed Rolls',
+    title: 'Sweet Bakery Surprise Box',
+    subtitle: 'Fresh assortment packed at closing — e.g. croissants, brownies & glazed rolls',
     window: '9:30 PM – 11:00 PM',
     image: '/images/box-sweet.jpg',
     tag: '🥐 Sweet',
-    typicalOriginal: '₨ 1,650',
-    typicalPrice: '₨ 550',
-    discount: '~65% OFF',
+    worth: '₨ 1,200',
+    boxPrice: '₨ 450',
+    valuePill: 'Worth ₨ 1,200',
   },
   {
-    title: 'Savory Café & Wrap Box',
-    subtitle: 'Grilled Paninis, Herb Pastries & Flatbreads',
+    title: 'Savory Café Surprise Box',
+    subtitle: 'Chef selection packed in 30s — e.g. paninis, savory puffs & flatbreads',
     window: '9:00 PM – 10:30 PM',
     image: '/images/box-savory.jpg',
     tag: '🍗 Savory',
-    typicalOriginal: '₨ 1,850',
-    typicalPrice: '₨ 650',
-    discount: '~65% OFF',
+    worth: '₨ 1,400',
+    boxPrice: '₨ 500',
+    valuePill: 'Worth ₨ 1,400',
   },
   {
-    title: 'Coffee & Pastry Combo',
-    subtitle: 'Closing Brew + Fresh Almond Bake',
+    title: 'Coffee & Bake Surprise Box',
+    subtitle: 'Closing brew paired with freshly left-over almond bake or muffin',
     window: '8:30 PM – 10:30 PM',
     image: '/images/box-coffee.jpg',
     tag: '☕ Drinks',
-    typicalOriginal: '₨ 1,400',
-    typicalPrice: '₨ 490',
-    discount: '~65% OFF',
+    worth: '₨ 1,000',
+    boxPrice: '₨ 400',
+    valuePill: 'Worth ₨ 1,000',
   },
 ];
 
@@ -69,8 +69,8 @@ export const SampleBoxesSection: React.FC<SampleBoxesSectionProps> = ({ onOpenPa
                   </span>
                 </div>
 
-                <span className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-[#f37021] text-white font-extrabold text-xs shadow-sm">
-                  {box.discount}
+                <span className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-[#1B4332] text-white font-extrabold text-xs shadow-sm">
+                  {box.valuePill}
                 </span>
               </div>
 
@@ -91,16 +91,16 @@ export const SampleBoxesSection: React.FC<SampleBoxesSectionProps> = ({ onOpenPa
             </div>
 
             <div className="mt-4 pt-3.5 px-1 border-t border-stone-100 flex items-baseline justify-between">
-              <div>
-                <span className="text-xs text-stone-400 line-through font-medium mr-2">
-                  {box.typicalOriginal}
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xs font-bold text-stone-400">
+                  Worth <span className="line-through">{box.worth}</span> for
                 </span>
                 <span className="text-xl font-extrabold text-[#1B4332]">
-                  {box.typicalPrice}
+                  {box.boxPrice}
                 </span>
               </div>
               <span className="text-[11px] font-bold text-[#2e7d32] bg-[#edf7ed] px-2.5 py-1 rounded-full border border-[#c8e6c9]">
-                Cash / Wallet
+                Surprise Box
               </span>
             </div>
           </div>
@@ -120,7 +120,7 @@ export const SampleBoxesSection: React.FC<SampleBoxesSectionProps> = ({ onOpenPa
             </span>
           </h3>
           <p className="text-sm text-emerald-100/85 leading-relaxed font-medium">
-            Own a bakery, café, or restaurant in Islamabad? Publish your first evening box in under 2 minutes with 0% launch commission and collect Cash on Pickup the very same night.
+            Own a bakery or café in Islamabad? Never mark down single menu items — let staff pack closing Surprise Boxes (Worth ₨ 1,200 for ₨ 450) in 30 seconds and collect cash the very same night.
           </p>
         </div>
 
