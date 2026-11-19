@@ -185,7 +185,7 @@ function flavorEmojiFor(flavor?: string): string {
     case 'sweet':
       return '🥐';
     case 'savory':
-      return '🥪';
+      return '🌶️';
     case 'drinks':
       return '☕';
     default:
@@ -199,6 +199,7 @@ export async function notifyMatchingPushSubscribers(dealInput: {
   storeName: string;
   sector?: string;
   flavorProfile?: string;
+  isMysteryBag?: boolean;
   originalPricePkr: number;
   currentPricePkr: number;
   discountPercent: number;
@@ -224,13 +225,24 @@ export async function notifyMatchingPushSubscribers(dealInput: {
 
     const sectorLabel = dealInput.sector ? `${dealInput.sector} ` : 'Islamabad ';
     const emoji = flavorEmojiFor(dealInput.flavorProfile);
-    const payload: PushNotificationPayload = {
-      title: `${emoji} New ${sectorLabel}Surprise Box at ${dealInput.storeName} — For ₨ ${Math.round(dealInput.currentPricePkr).toLocaleString()}`,
-      body: `${dealInput.itemName} (Worth ₨ ${Math.round(dealInput.originalPricePkr).toLocaleString()}+ inside) • ${dealInput.pickupWindowText}`,
-      url: `/?deal=${encodeURIComponent(dealInput.dealId)}`,
-      dealId: dealInput.dealId,
-      tag: `bitehour-deal-${dealInput.dealId}`,
-    };
+    const isBox = dealInput.isMysteryBag !== false;
+    const priceNum = Math.round(dealInput.currentPricePkr).toLocaleString();
+    const worthNum = Math.round(dealInput.originalPricePkr).toLocaleString();
+    const payload: PushNotificationPayload = isBox
+      ? {
+          title: `${emoji} New ${sectorLabel}Surprise Box at ${dealInput.storeName} — For ₨ ${priceNum}`,
+          body: `${dealInput.itemName} (Worth ₨ ${worthNum}+ inside) • ${dealInput.pickupWindowText}`,
+          url: `/?deal=${encodeURIComponent(dealInput.dealId)}`,
+          dealId: dealInput.dealId,
+          tag: `bitehour-deal-${dealInput.dealId}`,
+        }
+      : {
+          title: `🔥 New ${sectorLabel}Deal at ${dealInput.storeName} — ${dealInput.discountPercent}% OFF`,
+          body: `${dealInput.itemName} • ₨ ${priceNum} (was ₨ ${worthNum}) • ${dealInput.pickupWindowText}`,
+          url: `/?deal=${encodeURIComponent(dealInput.dealId)}`,
+          dealId: dealInput.dealId,
+          tag: `bitehour-deal-${dealInput.dealId}`,
+        };
 
     const results = await Promise.allSettled(
       matchingSubs.map((sub: any) => sendSinglePushNotification(sub, payload))

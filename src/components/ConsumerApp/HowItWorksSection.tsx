@@ -10,13 +10,13 @@ const STEPS = [
     num: '01',
     icon: MapPin,
     title: 'Pick Your Sector & Craving',
-    desc: 'Filter live closing-hour drops in F-6, F-7, Blue Area, NUST H-12, Lahore, or Karachi — and choose Sweet, Savory, Coffee, or Mixed.',
+    desc: 'Filter live closing drops in F-6, F-7, Blue Area, NUST H-12, Lahore, or Karachi — Spicy & Savory, Sweet Pastries, Coffee, or Mixed.',
   },
   {
     num: '02',
     icon: SlidersHorizontal,
-    title: 'Reserve a Surprise Box in 15s',
-    desc: 'Pick by craving & guaranteed value (e.g. Worth ₨ 1,200 for ₨ 450). Staff pack fresh closing leftovers cleanly — zero cherry-picking.',
+    title: 'Claim a Box or Exact Meal in 15s',
+    desc: 'Reserve an assorted Surprise Box (Worth ₨ 1,200 for ₨ 450) OR grab a single Spicy Biryani, Burger, or Hotel Buffet meal at up to 75% off.',
   },
   {
     num: '03',
@@ -28,7 +28,7 @@ const STEPS = [
     num: '04',
     icon: ShoppingBag,
     title: 'Pay Cash or Digital Wallet',
-    desc: 'Pay Cash on Pickup directly at the counter (or JazzCash / EasyPaisa) and enjoy same-day artisan pastries, cafés & meals for less.',
+    desc: 'Pay Cash on Pickup directly at the counter (or JazzCash / EasyPaisa) and enjoy fresh restaurant, hotel, bakery & mart food for less.',
   },
 ];
 
@@ -55,7 +55,7 @@ export const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ onOpenPart
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-[#fff8f1] text-[#171916] border border-[#E5DFD3] hover:border-[#f37021]/50 text-xs sm:text-[13px] font-bold self-start sm:self-auto transition-all shadow-2xs cursor-pointer"
         >
           <Store className="size-4 text-[#f37021]" />
-          <span>Own a Bakery or Café? Sell With Us</span>
+          <span>Own a Restaurant, Hotel or Bakery? Sell With Us</span>
           <ArrowRight className="size-3.5" />
         </button>
       </div>

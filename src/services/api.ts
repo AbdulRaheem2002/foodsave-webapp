@@ -297,7 +297,7 @@ export async function registerAuthApi(userData: {
 export async function submitPartnerLeadApi(leadData: {
   ownerName: string;
   businessName: string;
-  businessType: 'bakery' | 'cafe' | 'restaurant' | 'grocery' | 'dessert';
+  businessType: 'bakery' | 'cafe' | 'restaurant' | 'hotel' | 'grocery' | 'dessert';
   city: string;
   sector: string;
   phone: string;

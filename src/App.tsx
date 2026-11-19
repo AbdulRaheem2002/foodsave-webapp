@@ -438,8 +438,8 @@ export function App() {
             <span className="size-1.5 rounded-full bg-[#85e3a8] shrink-0" />
             <span className="truncate text-[11px] font-medium text-stone-100">
               {filteredDealsByCity.length > 0
-                ? `${filteredDealsByCity.length} live surprise ${filteredDealsByCity.length === 1 ? 'box' : 'boxes'} available in Islamabad • 15-min hold`
-                : 'Islamabad Launch • Bakery Surprise Boxes (Worth ₨ 1,200 for ₨ 450) • Zero app required'}
+                ? `${filteredDealsByCity.length} live closing ${filteredDealsByCity.length === 1 ? 'deal' : 'deals'} available in Islamabad • 15-min hold`
+                : 'Islamabad Launch • Closing Surprise Boxes & Spicy / Kitchen Deals • Zero app required'}
             </span>
           </div>
 
@@ -640,21 +640,21 @@ export function App() {
                 {/* Top Location Pill */}
                 <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9] inline-flex items-center gap-2 self-start mb-4 sm:mb-5 shadow-2xs">
                   <span className="size-2 rounded-full bg-[#2e7d32] animate-pulse" />
-                  Islamabad Bakery Surprise Boxes • Packed Fresh at Closing
+                  Islamabad Bakeries, Restaurants, Hotels &amp; Cafés • Closing Drops
                 </span>
 
                 {/* Big Display Headline with Editorial Italic Serif Accent */}
                 <h1 className="text-[2.1rem] sm:text-5xl lg:text-[3.65rem] font-extrabold text-[#171916] tracking-[-0.03em] leading-[1.06] sm:leading-[1.03] mb-4 sm:mb-5">
                   Rescue Fresh{' '}
                   <span className="font-serif-display italic font-semibold text-[#1B4332]">
-                    Evening Pastries
+                    Closing Meals
                   </span>{' '}
-                  in Surprise Boxes.
+                  &amp; Surprise Boxes.
                 </h1>
 
                 {/* Generous Lead Subtitle */}
                 <p className="text-[15px] sm:text-lg text-stone-600 leading-relaxed max-w-xl mb-5 sm:mb-6 font-medium">
-                  Reserve a Bakery Surprise Box (e.g. Worth ₨ 1,200 for ₨ 450) in 15 seconds. Pick your craving — pay via{' '}
+                  Grab Bakery &amp; Hotel Surprise Boxes OR exact Spicy Kitchen, Biryani &amp; Grill deals before closing — pay via{' '}
                   <strong className="text-[#171916] font-bold">Cash on Pickup, JazzCash, or EasyPaisa</strong>.
                 </p>
 
@@ -665,7 +665,7 @@ export function App() {
                     onClick={scrollToDeals}
                     className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-[#1B4332] hover:bg-[#133326] text-white text-sm font-bold shadow-lg shadow-[#1B4332]/20 transition-all cursor-pointer w-full sm:w-auto"
                   >
-                    <span>{deals.length > 0 ? 'Explore Live Drops' : 'See Sample Boxes'}</span>
+                    <span>{deals.length > 0 ? 'Explore Live Drops' : 'See Sample Deals'}</span>
                     <ArrowRight className="size-4" />
                   </button>
 
@@ -678,7 +678,7 @@ export function App() {
                     className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-[#fff8f1] text-[#171916] border border-[#D8D1C5] hover:border-[#f37021] text-sm font-bold shadow-2xs transition-all cursor-pointer w-full sm:w-auto"
                   >
                     <Store className="size-4 text-[#f37021]" />
-                    <span>Partner Your Bakery (0% Fee)</span>
+                    <span>Partner Your Kitchen (0% Fee)</span>
                   </button>
 
                   <div className="flex justify-center sm:justify-start">
@@ -698,7 +698,7 @@ export function App() {
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <ShieldCheck className="size-4 text-[#2e7d32]" />
-                    Sweet &amp; Savory Clarity
+                    Boxes &amp; Single Meals
                   </span>
                 </div>
               </div>
@@ -708,7 +708,7 @@ export function App() {
                 <div className="relative rounded-3xl sm:rounded-[2rem] overflow-hidden shadow-[0_24px_60px_-20px_rgba(23,25,22,0.22)] border border-[#E7E2D8] bg-stone-100 aspect-[4/3]">
                   <img
                     src={featuredDeal?.imageUrl || '/images/hero-pastries.jpg'}
-                    alt={featuredDeal ? featuredDeal.title : 'Fresh golden croissants and evening bakery assortment'}
+                    alt={featuredDeal ? featuredDeal.title : 'Fresh evening bakery, café, and restaurant closing assortment'}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
@@ -718,8 +718,8 @@ export function App() {
                     <div className="min-w-0">
                       <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#f37021] block truncate">
                         {featuredDeal
-                          ? `Live Surprise Box • ${featuredDeal.storeName}`
-                          : 'Example Format • Islamabad Bakery'}
+                          ? `${featuredDeal.isMysteryBag !== false ? 'Live Surprise Box' : `-${featuredDeal.discountPercent}% Closing Deal`} • ${featuredDeal.storeName}`
+                          : 'Example Format • Islamabad Partners'}
                       </span>
                       <p className="text-xs sm:text-base font-extrabold text-[#171916] truncate">
                         {featuredDeal
@@ -730,13 +730,14 @@ export function App() {
 
                     <div className="text-right shrink-0">
                       <span className="text-[11px] sm:text-xs text-stone-500 font-semibold block leading-none mb-0.5">
-                        Worth{' '}
+                        {featuredDeal?.isMysteryBag === false ? 'Was ' : 'Worth '}
                         <span className="line-through text-stone-400">
                           {featuredDeal ? `₨ ${featuredDeal.originalPricePkr.toLocaleString()}` : '₨ 1,200'}
                         </span>
                       </span>
                       <span className="text-base sm:text-xl font-extrabold text-[#1B4332] leading-none">
-                        For {featuredDeal ? `₨ ${featuredDeal.currentPricePkr.toLocaleString()}` : '₨ 450'}
+                        {featuredDeal?.isMysteryBag === false ? 'Now ' : 'For '}
+                        {featuredDeal ? `₨ ${featuredDeal.currentPricePkr.toLocaleString()}` : '₨ 450'}
                       </span>
                     </div>
                   </div>

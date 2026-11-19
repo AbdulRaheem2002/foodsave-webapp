@@ -78,7 +78,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: '4mb' }));
 
 // Ensure MongoDB Atlas connection on API requests (supports serverless cold starts)
 app.use('/api', async (req: Request, res: Response, next) => {
@@ -789,6 +789,15 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
     return;
   }
 
+  const rawImage = String(imageUrl || '').trim();
+  if (rawImage.startsWith('data:')) {
+    const validDataImg = /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(rawImage);
+    if (!validDataImg || rawImage.length > 1_800_000) {
+      res.status(400).json({ error: 'Uploaded image must be JPEG/PNG/WebP under 1.3 MB.' });
+      return;
+    }
+  }
+
   const itemId = `itm-${Date.now()}`;
   const dealId = `dl-${Date.now()}`;
   const hrs = Math.max(0.5, Number(expiryHoursLeft || 2.0));
@@ -797,6 +806,12 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
   const allowedFlavors = ['savory', 'sweet', 'drinks', 'mixed'];
   const safeFlavor = allowedFlavors.includes(flavorProfile) ? flavorProfile : 'mixed';
   const windowLabel = String(pickupWindowText || '').trim() || `Pick up within ${hrs.toFixed(1)} hrs`;
+
+  const defaultImgByCat: Record<string, string> = {
+    bakery: '/images/box-sweet.jpg',
+    restaurant: '/images/box-savory.jpg',
+    grocery: '/images/hero-pastries.jpg',
+  };
 
   const newItem = {
     id: itemId,
@@ -808,7 +823,7 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
     quantity: qty,
     expiryDeadline: new Date(Date.now() + hrs * 3600 * 1000).toISOString(),
     retailerId: retailer.id,
-    imageUrl: imageUrl || '/images/box-sweet.jpg',
+    imageUrl: rawImage || defaultImgByCat[cat] || '/images/box-sweet.jpg',
   };
   memDb.items.push(newItem);
 
@@ -839,6 +854,7 @@ app.post('/api/retailer/items', authenticateToken, requireRetailer, async (req: 
     storeName: retailer.name,
     sector: retailer.location?.sector || '',
     flavorProfile: newItem.flavorProfile,
+    isMysteryBag: newItem.isMysteryBag,
     originalPricePkr: price,
     currentPricePkr: newDeal.currentDiscountedPricePkr,
     discountPercent: newDeal.discountPercent,

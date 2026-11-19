@@ -135,14 +135,23 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                     {formatCurrency(deal.currentPricePkr)}
                   </span>
                   <span className="text-xs text-slate-500 font-semibold">
-                    (Worth <span className="line-through text-slate-400">{formatCurrency(deal.originalPricePkr)}</span>)
+                    ({deal.isMysteryBag !== false ? 'Worth ' : 'Was '}
+                    <span className="line-through text-slate-400">{formatCurrency(deal.originalPricePkr)}</span>)
                   </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9]">
-                    Surprise Box
-                  </span>
+                  {deal.isMysteryBag !== false ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9]">
+                      Surprise Box
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#fff7ed] text-[#c2410c] border border-[#fed7aa]">
+                      -{deal.discountPercent}% Deal
+                    </span>
+                  )}
                 </div>
                 <p className="text-[11px] text-stone-500 mt-1 font-medium">
-                  Packed fresh at closing from unsold assortment — exact items vary daily.
+                  {deal.isMysteryBag !== false
+                    ? 'Packed fresh at closing from unsold assortment — exact items vary daily.'
+                    : 'Fresh closing meal deal prepared today — exact dish held at counter for pickup.'}
                 </p>
               </div>
             </div>
@@ -259,7 +268,11 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               className="btn-claim w-full py-4 text-base font-black shadow-lg shadow-[#2D6A4F]/30"
             >
               <Sparkles className="size-5" />
-              <span>{isSubmitting ? 'Securing Your Bag...' : `Claim Bag with ${paymentMethod}`}</span>
+              <span>
+                {isSubmitting
+                  ? 'Securing Your Pickup Pass...'
+                  : `${deal.isMysteryBag !== false ? 'Claim Box' : 'Claim Deal'} with ${paymentMethod}`}
+              </span>
             </button>
 
           </div>
@@ -273,7 +286,9 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             </div>
 
             <div>
-              <h2 className="text-2xl font-black text-[#1F2937] mb-1">Surprise Box Reserved!</h2>
+              <h2 className="text-2xl font-black text-[#1F2937] mb-1">
+                {deal.isMysteryBag !== false ? 'Surprise Box Reserved!' : 'Closing Deal Reserved!'}
+              </h2>
               <p className="text-xs text-slate-600">
                 Present your pickup code at <strong>{deal.storeName}</strong> counter within 15 minutes.
               </p>

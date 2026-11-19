@@ -87,8 +87,17 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
     }
 
     if (hasFixedBoxPrice && (!Number.isFinite(boxPriceNum) || boxPriceNum <= 0 || boxPriceNum >= worthNum)) {
-      res.status(400).json({ error: 'Box price must be greater than ₨ 0 and lower than Worth value.' });
+      res.status(400).json({ error: 'Box/deal price must be greater than ₨ 0 and lower than retail value.' });
       return;
+    }
+
+    const rawImage = String(imageUrl || '').trim();
+    if (rawImage.startsWith('data:')) {
+      const validDataImg = /^data:image\/(jpeg|jpg|png|webp);base64,/i.test(rawImage);
+      if (!validDataImg || rawImage.length > 1_800_000) {
+        res.status(400).json({ error: 'Uploaded image must be JPEG, PNG, or WebP under 1.3 MB.' });
+        return;
+      }
     }
 
     const expiryDeadline = new Date(Date.now() + (expiryHoursLeft || 2) * 3600 * 1000);
@@ -97,16 +106,23 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
       String(pickupWindowText || '').trim() ||
       `Pick up within ${Number(expiryHoursLeft || 2).toFixed(1)} hrs`;
 
+    const safeCat = category || 'bakery';
+    const defaultImgByCat: Record<string, string> = {
+      bakery: '/images/box-sweet.jpg',
+      restaurant: '/images/box-savory.jpg',
+      grocery: '/images/hero-pastries.jpg',
+    };
+
     const item = await Item.create({
       name: String(name).trim(),
-      category: category || 'bakery',
+      category: safeCat,
       flavorProfile: safeFlavor,
       isMysteryBag: isMysteryBag === undefined ? true : Boolean(isMysteryBag),
       originalPricePkr: worthNum,
       quantity: Number(quantity || 1),
       expiryDeadline,
       retailerRef: retailer._id,
-      imageUrl: imageUrl || '/images/box-sweet.jpg',
+      imageUrl: rawImage || defaultImgByCat[safeCat] || '/images/box-sweet.jpg',
     });
 
     const decay = calculateTimeDecay(worthNum, Number(expiryHoursLeft || 2), category || 'bakery');
@@ -133,6 +149,7 @@ export const addItemAndDeal = async (req: AuthRequest, res: Response): Promise<v
       storeName: retailer.name,
       sector: retailer.location?.sector || '',
       flavorProfile: item.flavorProfile,
+      isMysteryBag: item.isMysteryBag,
       originalPricePkr: item.originalPricePkr,
       currentPricePkr: deal.currentDiscountedPricePkr,
       discountPercent: deal.discountPercent,

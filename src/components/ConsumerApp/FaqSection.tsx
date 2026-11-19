@@ -7,8 +7,8 @@ const FAQS = [
     a: 'No! Unlike app-only platforms, you can browse live Islamabad, Rawalpindi, Lahore, and Karachi deals and lock a pickup pass directly in your phone browser in 15 seconds. You can also save BiteHour to your home screen in 2 taps.',
   },
   {
-    q: 'What is inside a BiteHour Surprise Box?',
-    a: 'Instead of listing single leftover pastries at steep markdowns, partner bakeries pack today’s freshest closing leftovers matching your chosen craving (Sweet, Savory, Coffee & Bake, or Assorted) guaranteed at full box value — e.g. Worth ₨ 1,200+ for ₨ 450.',
+    q: 'Can businesses sell both Surprise Boxes AND single spicy or exact meals?',
+    a: 'Yes! Bakeries, cafés, and hotels can drop assorted closing Surprise Boxes (e.g. Worth ₨ 1,200+ for ₨ 450), while spicy biryani spots, fast-food kitchens, and grocery marts can also post exact single closing deals with fixed prices or auto time-decay discounts.',
   },
   {
     q: 'How do payments work — do I have to pay online first?',
@@ -16,15 +16,15 @@ const FAQS = [
   },
   {
     q: 'Is the food fresh and same-day?',
-    a: 'Yes. Every BiteHour drop comes from licensed partner cafés, bakeries, restaurants, and groceries selling fresh same-day inventory before closing time.',
+    a: 'Yes. Every BiteHour drop comes from licensed partner cafés, bakeries, spicy kitchens, hotels, and groceries selling fresh same-day inventory before closing time.',
   },
   {
     q: 'How long is my pickup code held, and what if I miss the window?',
-    a: 'Each reservation locks your bag immediately for your 15-minute hold / store closing window. If you cannot make it, cancel ahead of time in My Bag so the store can release the stock to another customer.',
+    a: 'Each reservation locks your order immediately for your 15-minute hold / store closing window. If you cannot make it, cancel ahead of time in My Passes so the kitchen can release the stock to another customer.',
   },
   {
-    q: 'I run a bakery, café, or restaurant — how fast can I start?',
-    a: 'Apply in 30 seconds on our For Bakeries page. Once our team approves your store via email or WhatsApp (with zero launch commission), you receive Store POS access to list closing boxes and verify PK-XXXXX codes from any phone.',
+    q: 'I run a restaurant, hotel, bakery, or mart — how fast can I start?',
+    a: 'Apply in 30 seconds on our Partner Page. Once approved via email or WhatsApp (with zero launch commission), you get Store POS access to upload your own photos, drop boxes or single deals, and verify PK-XXXXX codes from any phone.',
   },
 ];
 

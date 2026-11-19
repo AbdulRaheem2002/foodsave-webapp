@@ -282,7 +282,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           storeCategory: role === 'retailer' ? storeCategory : undefined,
           storeAddress: role === 'retailer' ? storeAddress.trim() : undefined,
           city: role === 'retailer' ? city : undefined,
-          sector: role === 'retailer' ? sector.trim() : undefined,
+          sector: role === 'retailer' ? (sector.trim() || (city === 'Islamabad' ? 'F-7' : undefined)) : undefined,
         });
         if (res.pendingApproval || (role === 'retailer' && !res.token)) {
           const submittedName = res.retailer?.name || storeName.trim() || 'your bakery';
@@ -664,16 +664,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         onChange={(e) => setStoreCategory(e.target.value as 'grocery' | 'bakery' | 'restaurant')}
                         className="w-full px-3 py-2 rounded-xl bg-white border border-stone-200 text-stone-900 text-xs font-semibold focus:outline-none focus:border-[#f37021]"
                       >
-                        <option value="bakery">Bakery</option>
-                        <option value="grocery">Grocery</option>
-                        <option value="restaurant">Restaurant</option>
+                        <option value="bakery">Bakery / Patisserie</option>
+                        <option value="restaurant">Restaurant / Hotel / Spicy Kitchen / Café</option>
+                        <option value="grocery">Grocery / Supermarket</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-xs text-stone-700 mb-1 font-semibold">City *</label>
                       <select
                         value={city}
-                        onChange={(e) => setCity(e.target.value)}
+                        onChange={(e) => {
+                          setCity(e.target.value);
+                          setSector('');
+                        }}
                         className="w-full px-3 py-2 rounded-xl bg-white border border-stone-200 text-stone-900 text-xs font-semibold focus:outline-none focus:border-[#f37021]"
                       >
                         <option value="Islamabad">Islamabad</option>
@@ -685,14 +688,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs text-stone-700 mb-1 font-semibold">Sector / Neighborhood (Optional)</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. F-7 Markaz, F-6, Blue Area, H-12 NUST"
-                      value={sector}
-                      onChange={(e) => setSector(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl bg-white border border-stone-200 text-stone-900 text-xs font-semibold focus:outline-none focus:border-[#f37021]"
-                    />
+                    <label className="block text-xs text-stone-700 mb-1 font-semibold">
+                      Sector / Area {city === 'Islamabad' ? '*' : '(Optional)'}
+                    </label>
+                    {city === 'Islamabad' ? (
+                      <select
+                        value={sector || 'F-7'}
+                        onChange={(e) => setSector(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl bg-white border border-stone-200 text-stone-900 text-xs font-semibold focus:outline-none focus:border-[#f37021]"
+                      >
+                        <option value="F-6">F-6</option>
+                        <option value="F-7">F-7</option>
+                        <option value="E-11">E-11</option>
+                        <option value="F-10">F-10</option>
+                        <option value="Blue Area">Blue Area</option>
+                        <option value="NUST / H-12">NUST / H-12</option>
+                        <option value="I-8 / DHA">I-8 / DHA</option>
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder="e.g. Gulberg, Clifton, Bahria Town"
+                        value={sector}
+                        onChange={(e) => setSector(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl bg-white border border-stone-200 text-stone-900 text-xs font-semibold focus:outline-none focus:border-[#f37021]"
+                      />
+                    )}
                   </div>
 
                   <div>

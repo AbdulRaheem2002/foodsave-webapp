@@ -35,8 +35,8 @@ const BENEFITS = [
   },
   {
     icon: Clock,
-    title: 'Sell Surprise Boxes — Zero Itemized Markdowns',
-    desc: 'Never discount single menu items ("Chicken Croissant 60% off"). Pack assorted leftovers into a Bakery Surprise Box (Worth ₨ 1,200 for ₨ 450) in 30 seconds — zero cherry-picking.',
+    title: 'Surprise Boxes + Single Closing Deals',
+    desc: 'Bakeries & hotels sell Surprise Boxes (Worth ₨ 1,200 for ₨ 450 in 30s). Spicy kitchens, burger spots & marts can also post exact dishes with fixed or auto-decay pricing.',
   },
 ];
 
@@ -47,7 +47,9 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
 }) => {
   const [ownerName, setOwnerName] = useState('');
   const [businessName, setBusinessName] = useState('');
-  const [businessType, setBusinessType] = useState<'bakery' | 'cafe' | 'restaurant' | 'grocery' | 'dessert'>('bakery');
+  const [businessType, setBusinessType] = useState<
+    'bakery' | 'cafe' | 'restaurant' | 'hotel' | 'grocery' | 'dessert'
+  >('bakery');
   const [city, setCity] = useState('Islamabad');
   const [sector, setSector] = useState('');
   const [phone, setPhone] = useState('');
@@ -108,7 +110,7 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
             </div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#fff3e0] text-[#e65100] border border-[#ffe0b2] text-xs font-black">
               <Store className="size-3.5" />
-              <span>For Bakeries, Cafés &amp; Restaurants</span>
+              <span>For Bakeries, Restaurants, Hotels, Cafés &amp; Marts</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-extrabold text-[#171916] tracking-tight leading-[1.06]">
@@ -267,11 +269,12 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
                     onChange={(e) => setBusinessType(e.target.value as any)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#f7f5f0] border border-stone-200 text-xs font-semibold text-stone-900 focus:outline-none focus:border-[#1b4332]"
                   >
-                    <option value="bakery">Bakery</option>
+                    <option value="bakery">Bakery / Patisserie</option>
+                    <option value="restaurant">Restaurant / Spicy &amp; Fast Food</option>
+                    <option value="hotel">Hotel / High-Tea Buffet</option>
                     <option value="cafe">Café / Coffee Shop</option>
-                    <option value="dessert">Desserts / Patisserie</option>
-                    <option value="restaurant">Restaurant</option>
-                    <option value="grocery">Grocery / Mart</option>
+                    <option value="dessert">Desserts / Gelato</option>
+                    <option value="grocery">Grocery / Supermarket</option>
                   </select>
                 </div>
               </div>

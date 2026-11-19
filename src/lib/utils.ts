@@ -72,6 +72,56 @@ export function downloadCsvFile(filename: string, headers: string[], rows: Array
   URL.revokeObjectURL(url);
 }
 
+export async function compressImageFileToDataUrl(
+  file: File,
+  maxDimension = 900,
+  quality = 0.78
+): Promise<string> {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Please choose a valid image file (JPG, PNG, or WebP).');
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error('Image file is too large (max 10 MB).');
+  }
+
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let { width, height } = img;
+        if (width > maxDimension || height > maxDimension) {
+          const ratio = Math.min(maxDimension / width, maxDimension / height);
+          width = Math.max(1, Math.round(width * ratio));
+          height = Math.max(1, Math.round(height * ratio));
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error('Your browser could not process this photo.'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        URL.revokeObjectURL(objectUrl);
+        resolve(dataUrl);
+      } catch (err) {
+        URL.revokeObjectURL(objectUrl);
+        reject(err instanceof Error ? err : new Error('Failed to process image.'));
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Could not read the selected photo. Try JPG or PNG.'));
+    };
+    img.src = objectUrl;
+  });
+}
+
 export function getGoogleMapsDirectionsUrl(
   storeName: string,
   address?: string,

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { DealItem, RetailerStore, Reservation, DonationRecord, RetailerOrdersResponse } from '../../types';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { ShieldCheck, DollarSign, Leaf, Plus, TrendingUp, Edit3, Download, CheckCircle2, QrCode, X, Image as ImageIcon, Heart, MapPin, Users, ShoppingBag, Clock } from 'lucide-react';
+import { ShieldCheck, DollarSign, Leaf, Plus, TrendingUp, Edit3, Download, CheckCircle2, QrCode, X, Image as ImageIcon, Upload, Heart, MapPin, Users, ShoppingBag, Clock } from 'lucide-react';
 
-import { downloadCsvFile, formatCurrency } from '../../lib/utils';
+import { compressImageFileToDataUrl, downloadCsvFile, formatCurrency } from '../../lib/utils';
 import { addRetailerItemApi, overridePriceApi, verifyPickupCodeApi, updateReservationStatusApi, fetchRetailerOrdersApi } from '../../services/api';
 import { DonationModal } from './DonationModal';
 import { CsrCertificateModal } from './CsrCertificateModal';
@@ -28,7 +28,7 @@ const PRESET_IMAGES = {
   mixed: '/images/hero-pastries.jpg',
 };
 
-const SURPRISE_BOX_PRESETS: Array<{
+interface ListingPreset {
   id: string;
   label: string;
   title: string;
@@ -38,7 +38,9 @@ const SURPRISE_BOX_PRESETS: Array<{
   boxPricePkr: number;
   pickupSlot: string;
   imageUrl: string;
-}> = [
+}
+
+const SURPRISE_BOX_PRESETS: ListingPreset[] = [
   {
     id: 'sweet',
     label: '🥐 Sweet Bakery Box',
@@ -52,35 +54,82 @@ const SURPRISE_BOX_PRESETS: Array<{
   },
   {
     id: 'savory',
-    label: '🥪 Savory Café Box',
-    title: 'Savory Café Surprise Box',
-    category: 'bakery',
+    label: '🌶️ Spicy Kitchen / BBQ Box',
+    title: 'Spicy Kitchen Surprise Box',
+    category: 'restaurant',
     flavor: 'savory',
-    worthPkr: 1400,
-    boxPricePkr: 500,
-    pickupSlot: '9:00 PM – 10:30 PM',
+    worthPkr: 1600,
+    boxPricePkr: 600,
+    pickupSlot: '9:30 PM – 11:15 PM',
     imageUrl: '/images/box-savory.jpg',
   },
   {
     id: 'drinks',
-    label: '☕ Coffee & Bake Box',
-    title: 'Coffee & Bake Surprise Box',
+    label: '☕ Hotel Buffet / Café Box',
+    title: 'Hotel & Café Surprise Box',
     category: 'restaurant',
     flavor: 'drinks',
-    worthPkr: 1000,
-    boxPricePkr: 400,
+    worthPkr: 2200,
+    boxPricePkr: 800,
     pickupSlot: '8:30 PM – 10:30 PM',
     imageUrl: '/images/box-coffee.jpg',
   },
   {
     id: 'mixed',
-    label: '🛍️ Assorted Bakery Box',
-    title: 'Bakery Surprise Box',
-    category: 'bakery',
+    label: '🥑 Grocery & Bakery Crate',
+    title: 'Assorted Mart Surprise Box',
+    category: 'grocery',
     flavor: 'mixed',
     worthPkr: 1500,
     boxPricePkr: 550,
     pickupSlot: '9:30 PM – 11:00 PM',
+    imageUrl: '/images/hero-pastries.jpg',
+  },
+];
+
+const SINGLE_DEAL_PRESETS: ListingPreset[] = [
+  {
+    id: 'biryani',
+    label: '🍛 Spicy Biryani / Karahi',
+    title: 'Closing Chicken Biryani & Raita',
+    category: 'restaurant',
+    flavor: 'savory',
+    worthPkr: 750,
+    boxPricePkr: 380,
+    pickupSlot: '10:00 PM – 11:30 PM',
+    imageUrl: '/images/box-savory.jpg',
+  },
+  {
+    id: 'burger',
+    label: '🍔 Burger / Pizza Deal',
+    title: 'Loaded Grill Burger & Fries',
+    category: 'restaurant',
+    flavor: 'savory',
+    worthPkr: 950,
+    boxPricePkr: 480,
+    pickupSlot: '10:30 PM – 11:45 PM',
+    imageUrl: '/images/box-savory.jpg',
+  },
+  {
+    id: 'pastry',
+    label: '🥐 Cake / Pastries Plate',
+    title: 'Assorted Fresh Pastry Plate',
+    category: 'bakery',
+    flavor: 'sweet',
+    worthPkr: 1100,
+    boxPricePkr: 520,
+    pickupSlot: '9:30 PM – 11:00 PM',
+    imageUrl: '/images/box-sweet.jpg',
+  },
+  {
+    id: 'produce',
+    label: '🥑 Fresh Fruit / Mart Pack',
+    title: 'Closing Fresh Fruit & Mart Pack',
+    category: 'grocery',
+    flavor: 'mixed',
+    worthPkr: 1400,
+    boxPricePkr: 650,
+    pickupSlot: '9:00 PM – 11:00 PM',
     imageUrl: '/images/hero-pastries.jpg',
   },
 ];
@@ -158,7 +207,11 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [isSuccessCollected, setIsSuccessCollected] = useState<boolean>(false);
 
-  // Surprise Box Form State (30-Second Closing Setup)
+  // Dual-Mode Closing Setup: 'surprise' (Assorted Box) or 'single' (Direct Meal / Item Deal)
+  const [listingMode, setListingMode] = useState<'surprise' | 'single'>('surprise');
+  const [singlePricingMode, setSinglePricingMode] = useState<'fixed' | 'decay'>('fixed');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState('Bakery Surprise Box');
   const [newItemCategory, setNewItemCategory] = useState<'grocery' | 'bakery' | 'restaurant'>('bakery');
   const [newItemFlavor, setNewItemFlavor] = useState<'sweet' | 'savory' | 'drinks' | 'mixed'>('mixed');
@@ -169,7 +222,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
   const [newItemExpiryHours, setNewItemExpiryHours] = useState<number>(2.5);
   const [newItemImageUrl, setNewItemImageUrl] = useState<string>('/images/box-sweet.jpg');
 
-  const applySurprisePreset = (preset: (typeof SURPRISE_BOX_PRESETS)[number]) => {
+  const applyListingPreset = (preset: ListingPreset) => {
     setNewItemName(preset.title);
     setNewItemCategory(preset.category);
     setNewItemFlavor(preset.flavor);
@@ -177,6 +230,30 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
     setNewBoxPrice(preset.boxPricePkr);
     setNewItemPickupSlot(preset.pickupSlot);
     setNewItemImageUrl(preset.imageUrl);
+  };
+
+  const switchListingMode = (mode: 'surprise' | 'single') => {
+    setListingMode(mode);
+    setAddItemError(null);
+    const defaultPreset = mode === 'surprise' ? SURPRISE_BOX_PRESETS[0] : SINGLE_DEAL_PRESETS[0];
+    applyListingPreset(defaultPreset);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setPhotoUploadError(null);
+    setIsUploadingPhoto(true);
+    try {
+      const dataUrl = await compressImageFileToDataUrl(file, 900, 0.78);
+      setNewItemImageUrl(dataUrl);
+    } catch (err: any) {
+      setPhotoUploadError(err?.message || 'Could not process the selected photo.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
   };
 
   // CSV Report Generator
@@ -198,39 +275,48 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
 
   const handleCreateSurplusItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItemName) return;
+    if (!newItemName.trim()) return;
+
+    const isMystery = listingMode === 'surprise';
+    const hasExplicitPrice = isMystery || singlePricingMode === 'fixed';
+    if (hasExplicitPrice && newBoxPrice >= newItemPrice) {
+      setAddItemError('Closing price must be lower than original worth/menu price.');
+      return;
+    }
 
     setAddItemError(null);
     sounds.playAlertPing();
-    const imgUrl = newItemImageUrl || PRESET_IMAGES[newItemCategory];
+    const imgUrl = newItemImageUrl.trim() || PRESET_IMAGES[newItemCategory];
+    const estimatedAutoPrice = Math.round(newItemPrice * 0.65);
 
     try {
       const apiRes = await addRetailerItemApi({
-        name: newItemName,
+        name: newItemName.trim(),
         category: newItemCategory,
         flavorProfile: newItemFlavor,
-        isMysteryBag: true,
+        isMysteryBag: isMystery,
         pickupWindowText: newItemPickupSlot.trim() || undefined,
         originalPricePkr: newItemPrice,
-        boxPricePkr: newBoxPrice,
+        boxPricePkr: hasExplicitPrice ? newBoxPrice : undefined,
         quantity: newItemQuantity,
         expiryHoursLeft: newItemExpiryHours,
         imageUrl: imgUrl,
       });
 
       const createdDeal = apiRes?.deal;
+      const fallbackPrice = hasExplicitPrice ? newBoxPrice : estimatedAutoPrice;
 
       onAddItem({
         id: createdDeal?.id || createdDeal?._id,
-        title: newItemName,
+        title: newItemName.trim(),
         category: newItemCategory,
         flavorProfile: newItemFlavor,
-        isMysteryBag: true,
+        isMysteryBag: isMystery,
         originalPricePkr: newItemPrice,
-        currentPricePkr: createdDeal?.currentDiscountedPricePkr ?? newBoxPrice,
+        currentPricePkr: createdDeal?.currentDiscountedPricePkr ?? fallbackPrice,
         discountPercent:
           createdDeal?.discountPercent ??
-          Math.max(1, Math.round(((newItemPrice - newBoxPrice) / Math.max(1, newItemPrice)) * 100)),
+          Math.max(1, Math.round(((newItemPrice - fallbackPrice) / Math.max(1, newItemPrice)) * 100)),
         expiryHoursLeft: newItemExpiryHours,
         stockQuantity: newItemQuantity,
         pickupDeadline:
@@ -252,8 +338,8 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       });
 
       setIsAddItemOpen(false);
-      setNewItemName('');
-      setNewItemPickupSlot('');
+      setPhotoUploadError(null);
+      switchListingMode(listingMode);
       void loadStoreOrders();
     } catch (err: any) {
       setAddItemError(err?.message || 'Could not save listing. Please make sure you are signed in as a Retailer.');
@@ -440,7 +526,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
             className="px-4 py-2.5 rounded-full bg-[#FF9800] hover:bg-[#f57c00] text-white font-black text-xs shadow-md shadow-[#FF9800]/25 flex items-center justify-center gap-1.5 transition-all transform active:scale-95 flex-1 sm:flex-none cursor-pointer"
           >
             <Plus className="size-4" />
-            <span>Drop Surprise Box</span>
+            <span>Drop Box / Deal</span>
           </button>
         </div>
       </div>
@@ -565,7 +651,7 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
       <div className="bg-white p-6 rounded-[2rem] border border-[#2D6A4F]/15 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h3 className="text-base font-black text-[#1F2937] flex items-center gap-2 flex-wrap">
-            <span>Live Store Surprise Boxes ({selectedStore.name.split(' ')[0]})</span>
+            <span>Live Store Boxes &amp; Deals ({selectedStore.name.split(' ')[0]})</span>
             <span className="px-3 py-0.5 rounded-full text-xs bg-[#2D6A4F]/15 text-[#2D6A4F] border border-[#2D6A4F]/30 font-bold">
               {storeDeals.length} Live
             </span>
@@ -585,22 +671,22 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
               className="px-4 py-1.5 rounded-full bg-[#FF9800] text-white text-xs font-bold hover:bg-[#f57c00] transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
             >
               <Plus className="size-3.5" />
-              <span>Drop Box</span>
+              <span>Drop Box / Deal</span>
             </button>
           </div>
         </div>
 
         {storeDeals.length === 0 ? (
           <div className="p-8 rounded-2xl bg-[#F9F6F0] border border-stone-200 text-center">
-            <p className="text-sm font-bold text-stone-800">No Surprise Boxes Dropped Yet</p>
+            <p className="text-sm font-bold text-stone-800">No Closing Boxes or Deals Posted Yet</p>
             <p className="text-xs text-stone-500 mt-1 mb-4">
-              Pack assorted closing leftovers in 30 seconds — sell a Bakery Surprise Box (Worth ₨ 1,200 for ₨ 450) with zero itemized markdowns.
+              Drop a closing Surprise Box (Worth ₨ 1,200 for ₨ 450) OR list individual Spicy Biryani, Burger, Hotel Buffet, or Grocery closing deals with your own photo.
             </p>
             <button
               onClick={() => setIsAddItemOpen(true)}
               className="px-4 py-2 rounded-full bg-[#FF9800] hover:bg-[#f57c00] text-white font-bold text-xs shadow-xs cursor-pointer"
             >
-              + Drop First Surprise Box
+              + Drop First Box or Deal
             </button>
           </div>
         ) : (
@@ -608,12 +694,12 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
           <table className="w-full text-left text-xs">
             <thead className="bg-[#F9F6F0] text-slate-700 uppercase font-bold text-[10px] tracking-wider border-b border-[#2D6A4F]/15">
               <tr>
-                <th className="p-3">Surprise Box</th>
+                <th className="p-3">Listing</th>
                 <th className="p-3">Craving</th>
-                <th className="p-3">Worth Value</th>
-                <th className="p-3">Box Price</th>
+                <th className="p-3">Worth / Original</th>
+                <th className="p-3">Closing Price</th>
                 <th className="p-3">Format</th>
-                <th className="p-3">Boxes Left</th>
+                <th className="p-3">Stock Left</th>
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -633,15 +719,21 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                     </span>
                   </td>
                   <td className="p-3 text-slate-500 font-semibold">
-                    Worth {formatCurrency(deal.originalPricePkr)}
+                    {deal.isMysteryBag !== false ? 'Worth ' : ''}{formatCurrency(deal.originalPricePkr)}
                   </td>
                   <td className="p-3 font-black text-[#1B4332] text-sm">
                     {formatCurrency(deal.currentPricePkr)}
                   </td>
                   <td className="p-3">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9]">
-                      Surprise Box
-                    </span>
+                    {deal.isMysteryBag !== false ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#edf7ed] text-[#1B4332] border border-[#c8e6c9]">
+                        🎁 Surprise Box
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#fff7ed] text-[#c2410c] border border-[#fed7aa]">
+                        🔥 -{deal.discountPercent}% Deal
+                      </span>
+                    )}
                   </td>
                   <td className="p-3 font-bold text-[#1F2937]">
                     {deal.stockQuantity} pcs
@@ -879,11 +971,10 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
         </div>
       )}
 
-      {/* Drop Closing Surprise Box Modal */}
+      {/* Dual-Mode Drop Box or Deal Modal */}
       {isAddItemOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white p-6 rounded-3xl border border-stone-200 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative">
-            
+          <div className="bg-white p-6 rounded-3xl border border-stone-200 w-full max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl relative">
             <button
               onClick={() => setIsAddItemOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 transition-colors cursor-pointer"
@@ -895,30 +986,64 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#f37021]">
                 30-Second Closing Setup
               </span>
-              <h3 className="text-base font-black text-stone-900">Drop Closing Surprise Boxes</h3>
+              <h3 className="text-base font-black text-stone-900">
+                {listingMode === 'surprise' ? 'Drop Closing Surprise Boxes' : 'List Exact Dish / Closing Deal'}
+              </h3>
               <p className="text-[11px] text-stone-500 mt-0.5">
-                Never list individual discounted items — pick a box preset and pack whatever is left fresh at closing.
+                {listingMode === 'surprise'
+                  ? 'Pack assorted leftovers at closing — hide exact item markdowns in a Surprise Box.'
+                  : 'List a specific plate, biryani, burger, hotel buffet meal, or grocery crate with fixed or auto-decay pricing.'}
               </p>
+            </div>
+
+            {/* Dual-Mode Selector */}
+            <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-[#F9F6F0] border border-stone-200 mb-3.5">
+              <button
+                type="button"
+                onClick={() => switchListingMode('surprise')}
+                className={`py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                  listingMode === 'surprise'
+                    ? 'bg-[#1B4332] text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                🎁 Surprise Box
+              </button>
+              <button
+                type="button"
+                onClick={() => switchListingMode('single')}
+                className={`py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                  listingMode === 'single'
+                    ? 'bg-[#f37021] text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                🔥 Single Meal / Exact Deal
+              </button>
             </div>
 
             {/* 1-Tap Staff Presets */}
             <div className="mb-3.5 space-y-1.5">
               <span className="block text-[11px] font-bold text-stone-600">
-                1-Tap Box Presets (Worth ₨ Value → Fixed Box Price):
+                {listingMode === 'surprise'
+                  ? '1-Tap Box Presets (Worth ₨ Value → Fixed Box Price):'
+                  : '1-Tap Restaurant / Hotel / Mart Presets:'}
               </span>
               <div className="grid grid-cols-2 gap-1.5">
-                {SURPRISE_BOX_PRESETS.map((preset) => (
+                {(listingMode === 'surprise' ? SURPRISE_BOX_PRESETS : SINGLE_DEAL_PRESETS).map((preset) => (
                   <button
                     key={preset.id}
                     type="button"
-                    onClick={() => applySurprisePreset(preset)}
+                    onClick={() => applyListingPreset(preset)}
                     className="p-2 rounded-xl bg-[#FAF8F3] hover:bg-[#edf7ed] border border-[#E5DFD3] hover:border-[#1B4332]/40 text-left transition-colors cursor-pointer"
                   >
                     <span className="block text-[11px] font-extrabold text-stone-900 truncate">
                       {preset.label}
                     </span>
                     <span className="block text-[10px] text-[#1B4332] font-bold">
-                      Worth {formatCurrency(preset.worthPkr)} for {formatCurrency(preset.boxPricePkr)}
+                      {listingMode === 'surprise'
+                        ? `Worth ${formatCurrency(preset.worthPkr)} for ${formatCurrency(preset.boxPricePkr)}`
+                        : `${formatCurrency(preset.worthPkr)} → ${formatCurrency(preset.boxPricePkr)}`}
                     </span>
                   </button>
                 ))}
@@ -930,22 +1055,55 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                 {addItemError}
               </div>
             )}
+
             <form onSubmit={handleCreateSurplusItem} className="flex flex-col gap-3">
               <div>
-                <label className="block text-xs text-stone-600 mb-1 font-medium">Surprise Box Name:</label>
+                <label className="block text-xs text-stone-600 mb-1 font-medium">
+                  {listingMode === 'surprise' ? 'Surprise Box Name:' : 'Exact Dish / Deal Title:'}
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Bakery Surprise Box"
+                  placeholder={listingMode === 'surprise' ? 'e.g. Spicy Kitchen Surprise Box' : 'e.g. Closing Chicken Biryani & Raita'}
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
                 />
               </div>
 
+              {listingMode === 'single' && (
+                <div className="flex items-center gap-2 p-2 rounded-xl bg-[#FAF8F3] border border-[#E5DFD3]">
+                  <span className="text-[11px] font-bold text-stone-600 shrink-0">Pricing:</span>
+                  <button
+                    type="button"
+                    onClick={() => setSinglePricingMode('fixed')}
+                    className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
+                      singlePricingMode === 'fixed'
+                        ? 'bg-[#1B4332] text-white'
+                        : 'bg-white border border-stone-200 text-stone-700'
+                    }`}
+                  >
+                    Fixed Closing Price
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSinglePricingMode('decay')}
+                    className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-bold cursor-pointer transition-colors ${
+                      singlePricingMode === 'decay'
+                        ? 'bg-[#f37021] text-white'
+                        : 'bg-white border border-stone-200 text-stone-700'
+                    }`}
+                  >
+                    Auto Drop (-35% → -75%)
+                  </button>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-stone-600 mb-1 font-medium">Worth Inside (PKR):</label>
+                  <label className="block text-xs text-stone-600 mb-1 font-medium">
+                    {listingMode === 'surprise' ? 'Worth Inside (PKR):' : 'Regular Menu Price (PKR):'}
+                  </label>
                   <input
                     type="number"
                     required
@@ -955,17 +1113,25 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                     className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs text-stone-600 mb-1 font-medium">Customer Pays (PKR):</label>
-                  <input
-                    type="number"
-                    required
-                    min={50}
-                    value={newBoxPrice}
-                    onChange={(e) => setNewBoxPrice(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-[#1B4332]/40 text-[#1B4332] text-xs font-black focus:outline-none focus:border-[#2D6A4F]"
-                  />
-                </div>
+                {listingMode === 'surprise' || singlePricingMode === 'fixed' ? (
+                  <div>
+                    <label className="block text-xs text-stone-600 mb-1 font-medium">Customer Pays (PKR):</label>
+                    <input
+                      type="number"
+                      required
+                      min={50}
+                      value={newBoxPrice}
+                      onChange={(e) => setNewBoxPrice(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-[#1B4332]/40 text-[#1B4332] text-xs font-black focus:outline-none focus:border-[#2D6A4F]"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col justify-end">
+                    <div className="px-3 py-2 rounded-xl bg-[#fff7ed] border border-[#fed7aa] text-[#c2410c] text-[11px] font-bold">
+                      Starts ~{formatCurrency(Math.round(newItemPrice * 0.65))} → Drops -75%
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -976,33 +1142,37 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                     onChange={(e) => setNewItemFlavor(e.target.value as any)}
                     className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
                   >
-                    <option value="mixed">🍱 Assorted Box</option>
-                    <option value="sweet">🥐 Sweet Pastries</option>
-                    <option value="savory">🍗 Savory &amp; Snacks</option>
-                    <option value="drinks">☕ Coffee &amp; Bake</option>
+                    <option value="mixed">🍱 Assorted / Buffet</option>
+                    <option value="savory">🌶️ Spicy &amp; Savory</option>
+                    <option value="sweet">🥐 Sweet Pastries &amp; Desserts</option>
+                    <option value="drinks">☕ Coffee, Tea &amp; Bake</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-stone-600 mb-1 font-medium">Store Type:</label>
+                  <label className="block text-xs text-stone-600 mb-1 font-medium">Business Type:</label>
                   <select
                     value={newItemCategory}
                     onChange={(e) => {
                       const cat = e.target.value as any;
                       setNewItemCategory(cat);
-                      setNewItemImageUrl(PRESET_IMAGES[cat as keyof typeof PRESET_IMAGES] || '/images/box-sweet.jpg');
+                      if (!newItemImageUrl.startsWith('data:image/')) {
+                        setNewItemImageUrl(PRESET_IMAGES[cat as keyof typeof PRESET_IMAGES] || '/images/box-sweet.jpg');
+                      }
                     }}
                     className="w-full px-3 py-2 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-xs font-bold focus:outline-none focus:border-[#2D6A4F]"
                   >
-                    <option value="bakery">Bakery</option>
-                    <option value="restaurant">Café / Kitchen</option>
-                    <option value="grocery">Grocery</option>
+                    <option value="bakery">Bakery / Patisserie</option>
+                    <option value="restaurant">Restaurant / Hotel / Café</option>
+                    <option value="grocery">Grocery / Supermarket</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-2.5">
                 <div>
-                  <label className="block text-xs text-stone-600 mb-1 font-medium">Boxes (Qty):</label>
+                  <label className="block text-xs text-stone-600 mb-1 font-medium">
+                    {listingMode === 'surprise' ? 'Boxes (Qty):' : 'Plates / Packs:'}
+                  </label>
                   <input
                     type="number"
                     required
@@ -1035,23 +1205,57 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Box Photo Selector */}
+              {/* Photo Selector + Normal File Upload */}
               <div>
-                <label className="block text-xs text-stone-600 mb-1 font-medium flex items-center gap-1">
+                <label className="block text-xs text-stone-600 mb-1.5 font-medium flex items-center gap-1">
                   <ImageIcon className="size-3.5 text-[#f37021]" />
-                  <span>Box Photo (Presets or Custom URL):</span>
+                  <span>Food Photo (Upload Your Own or Pick Preset):</span>
                 </label>
+
+                <div className="flex items-center gap-3 mb-2 p-2.5 rounded-2xl bg-[#FAF8F3] border border-[#E5DFD3]">
+                  <img
+                    src={newItemImageUrl || '/images/box-sweet.jpg'}
+                    alt="Listing preview"
+                    className="size-12 rounded-xl object-cover border border-stone-200 shrink-0 bg-white"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1B4332] hover:bg-[#133326] text-white text-[11px] font-bold cursor-pointer transition-colors">
+                      <Upload className="size-3.5" />
+                      <span>{isUploadingPhoto ? 'Compressing...' : 'Upload Photo from Phone / PC'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploadingPhoto}
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-[10px] text-stone-500 mt-1 truncate">
+                      {newItemImageUrl.startsWith('data:image/')
+                        ? 'Custom photo uploaded & compressed automatically'
+                        : 'JPG, PNG or WebP — auto-compressed for fast loading'}
+                    </p>
+                  </div>
+                </div>
+
+                {photoUploadError && (
+                  <p className="text-[11px] font-semibold text-red-600 mb-1.5">{photoUploadError}</p>
+                )}
+
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {[
                     { label: 'Sweet Box', url: '/images/box-sweet.jpg' },
-                    { label: 'Savory Box', url: '/images/box-savory.jpg' },
-                    { label: 'Coffee Box', url: '/images/box-coffee.jpg' },
-                    { label: 'Pastries', url: '/images/hero-pastries.jpg' },
+                    { label: 'Savory / Spicy', url: '/images/box-savory.jpg' },
+                    { label: 'Coffee / Hotel', url: '/images/box-coffee.jpg' },
+                    { label: 'Pastries / Mart', url: '/images/hero-pastries.jpg' },
                   ].map((p) => (
                     <button
                       key={p.url}
                       type="button"
-                      onClick={() => setNewItemImageUrl(p.url)}
+                      onClick={() => {
+                        setPhotoUploadError(null);
+                        setNewItemImageUrl(p.url);
+                      }}
                       className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-colors cursor-pointer ${
                         newItemImageUrl === p.url
                           ? 'bg-[#1B4332] text-white border-[#1B4332]'
@@ -1062,20 +1266,35 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                     </button>
                   ))}
                 </div>
-                <input
-                  type="text"
-                  placeholder="/images/box-sweet.jpg"
-                  value={newItemImageUrl}
-                  onChange={(e) => setNewItemImageUrl(e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-[11px] font-medium focus:outline-none focus:border-[#2D6A4F]"
-                />
+
+                {!newItemImageUrl.startsWith('data:image/') ? (
+                  <input
+                    type="text"
+                    placeholder="/images/box-sweet.jpg or https://..."
+                    value={newItemImageUrl}
+                    onChange={(e) => setNewItemImageUrl(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-xl bg-[#F9F6F0] border border-stone-300 text-stone-900 text-[11px] font-medium focus:outline-none focus:border-[#2D6A4F]"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setNewItemImageUrl(PRESET_IMAGES[newItemCategory])}
+                    className="text-[11px] font-bold text-[#f37021] hover:underline cursor-pointer"
+                  >
+                    Reset to default stock photo
+                  </button>
+                )}
               </div>
 
               {/* Live Value Preview */}
               <div className="p-3 rounded-xl bg-[#edf7ed] border border-[#c8e6c9] text-xs font-bold text-[#1B4332] flex items-center justify-between gap-2">
-                <span className="truncate">{newItemName || 'Bakery Surprise Box'}</span>
+                <span className="truncate">{newItemName || 'New Closing Listing'}</span>
                 <span className="shrink-0">
-                  Worth {formatCurrency(newItemPrice)} for {formatCurrency(newBoxPrice)}
+                  {listingMode === 'surprise'
+                    ? `Worth ${formatCurrency(newItemPrice)} for ${formatCurrency(newBoxPrice)}`
+                    : singlePricingMode === 'fixed'
+                    ? `${formatCurrency(newItemPrice)} → ${formatCurrency(newBoxPrice)}`
+                    : `Auto-Decay (-35% → -75%)`}
                 </span>
               </div>
 
@@ -1089,9 +1308,10 @@ export const RetailerDashboard: React.FC<RetailerDashboardProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+                  disabled={isUploadingPhoto}
+                  className="flex-1 py-2.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] disabled:opacity-50 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
                 >
-                  Publish Surprise Boxes
+                  {listingMode === 'surprise' ? 'Publish Surprise Boxes' : 'Publish Closing Deal'}
                 </button>
               </div>
             </form>

@@ -111,7 +111,8 @@ export const DealMap: React.FC<DealMapProps> = ({
             />
             <div className="flex-1 min-w-0">
               <span className="text-[10px] font-black text-[#1B4332] uppercase block">
-                Surprise Box • {selectedDeal.location.sector || selectedDeal.location.city}
+                {selectedDeal.isMysteryBag !== false ? 'Surprise Box' : `-${selectedDeal.discountPercent}% Deal`} •{' '}
+                {selectedDeal.location.sector || selectedDeal.location.city}
               </span>
               <h4 className="text-xs font-bold text-stone-900 truncate">{selectedDeal.title}</h4>
               <div className="flex items-center gap-1.5 mt-0.5">
@@ -119,7 +120,8 @@ export const DealMap: React.FC<DealMapProps> = ({
                   {formatCurrency(selectedDeal.currentPricePkr)}
                 </span>
                 <span className="text-[10px] text-stone-400 font-semibold">
-                  (Worth <span className="line-through">{formatCurrency(selectedDeal.originalPricePkr)}</span>)
+                  ({selectedDeal.isMysteryBag !== false ? 'Worth ' : 'Was '}
+                  <span className="line-through">{formatCurrency(selectedDeal.originalPricePkr)}</span>)
                 </span>
               </div>
             </div>

@@ -38,22 +38,23 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
     return null;
   }
 
+  const isMystery = deal.isMysteryBag !== false;
   const savedAmountPkr = Math.max(0, deal.originalPricePkr - deal.currentPricePkr);
 
   const flavorLabels: Record<string, string> = {
     sweet: '🥐 Sweet',
-    savory: '🍗 Savory',
+    savory: '🌶️ Spicy & Savory',
     drinks: '☕ Coffee & Bake',
     mixed: '🍱 Assorted',
   };
   const flavorDescriptionWord: Record<string, string> = {
     sweet: 'sweet pastry',
-    savory: 'savory café',
+    savory: 'spicy & savory',
     drinks: 'coffee & bake',
-    mixed: 'assorted bakery',
+    mixed: 'assorted kitchen',
   };
   const flavorBadge = flavorLabels[deal.flavorProfile || 'mixed'] || '🍱 Assorted';
-  const boxWord = flavorDescriptionWord[deal.flavorProfile || 'mixed'] || 'assorted bakery';
+  const boxWord = flavorDescriptionWord[deal.flavorProfile || 'mixed'] || 'assorted kitchen';
   const areaLabel = deal.location.sector
     ? `${deal.location.sector}, ${deal.location.city}`
     : deal.location.city || 'Islamabad';
@@ -70,11 +71,17 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/20" />
 
-        {/* Top-Left: Surprise Box Value + Craving Tag */}
+        {/* Top-Left: Surprise Box or Direct Discount + Craving Tag */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5">
-          <span className="px-2.5 py-1 rounded-full bg-[#1B4332] text-white font-extrabold text-xs shadow-sm tracking-wide">
-            Surprise Box
-          </span>
+          {isMystery ? (
+            <span className="px-2.5 py-1 rounded-full bg-[#1B4332] text-white font-extrabold text-xs shadow-sm tracking-wide">
+              Surprise Box
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 rounded-full bg-[#e53935] text-white font-extrabold text-xs shadow-sm tracking-wide">
+              -{deal.discountPercent}% OFF
+            </span>
+          )}
           <span className="px-2.5 py-1 rounded-full bg-white/95 text-stone-800 font-bold text-xs shadow-sm">
             {flavorBadge}
           </span>
@@ -87,7 +94,8 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
           }`}
         >
           <span>
-            Only {deal.stockQuantity} {deal.stockQuantity === 1 ? 'box' : 'boxes'} left
+            Only {deal.stockQuantity}{' '}
+            {isMystery ? (deal.stockQuantity === 1 ? 'box left' : 'boxes left') : 'left'}
           </span>
         </div>
 
@@ -120,11 +128,15 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
             {deal.title}
           </h3>
 
-          {/* Closing Assortment Description (Prevents Cherry-Picking) */}
+          {/* Listing Description */}
           <p className="text-[13px] text-stone-600 line-clamp-2 leading-relaxed font-medium">
-            {deal.mysteryBagContents?.length
-              ? `Assorted closing surprise box (worth ${formatCurrency(deal.originalPricePkr)}+): e.g. ${deal.mysteryBagContents.join(', ')}.`
-              : `Fresh ${boxWord} assortment packed at closing from ${deal.storeName} (worth ${formatCurrency(deal.originalPricePkr)}+). Exact items vary daily.`}
+            {isMystery
+              ? deal.mysteryBagContents?.length
+                ? `Assorted closing surprise box (worth ${formatCurrency(deal.originalPricePkr)}+): e.g. ${deal.mysteryBagContents.join(', ')}.`
+                : `Fresh ${boxWord} assortment packed at closing from ${deal.storeName} (worth ${formatCurrency(deal.originalPricePkr)}+). Exact items vary daily.`
+              : deal.mysteryBagContents?.length
+              ? `Fresh closing deal from ${deal.storeName}: ${deal.mysteryBagContents.join(', ')}.`
+              : `Fresh ${boxWord} meal prepared today by ${deal.storeName}. Claim your discount and pick up before closing.`}
           </p>
 
           {/* Pickup Window & Freshness Guarantee */}
@@ -145,7 +157,8 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
           
           <div className="flex items-baseline justify-between">
             <span className="text-xs text-stone-500 font-bold">
-              Worth <span className="line-through text-stone-400 font-medium">{formatCurrency(deal.originalPricePkr)}</span>
+              {isMystery ? 'Worth ' : 'Was '}
+              <span className="line-through text-stone-400 font-medium">{formatCurrency(deal.originalPricePkr)}</span>
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] text-[11px] font-bold">
               Save {formatCurrency(savedAmountPkr)}
@@ -153,13 +166,13 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
           </div>
 
           <div className="flex items-baseline gap-1.5 -mt-1">
-            <span className="text-xs font-bold text-stone-500">For</span>
+            <span className="text-xs font-bold text-stone-500">{isMystery ? 'For' : 'Now'}</span>
             <span className="text-[1.65rem] font-extrabold text-[#171916] tracking-tight">
               {formatCurrency(deal.currentPricePkr)}
             </span>
           </div>
 
-          {/* Full-Width Claim Box Button */}
+          {/* Full-Width Claim Box / Deal Button */}
           <div className="flex items-center gap-2 pt-1">
             <button
               onClick={() => onSelect(deal)}
@@ -174,7 +187,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, onReserve, onSelect, o
               className="flex-1 py-3 px-4 rounded-full bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-[13px] shadow-md shadow-[#1b4332]/20 flex items-center justify-center gap-2 transition-all transform active:scale-98 cursor-pointer"
             >
               <ShoppingBag className="size-4" />
-              <span>Reserve Surprise Box</span>
+              <span>{isMystery ? 'Reserve Surprise Box' : 'Claim Closing Deal'}</span>
             </button>
           </div>
 

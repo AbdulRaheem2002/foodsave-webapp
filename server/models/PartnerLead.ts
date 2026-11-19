@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IPartnerLead extends Document {
   ownerName: string;
   businessName: string;
-  businessType: 'bakery' | 'cafe' | 'restaurant' | 'grocery' | 'dessert';
+  businessType: 'bakery' | 'cafe' | 'restaurant' | 'hotel' | 'grocery' | 'dessert';
   city: string;
   sector: string;
   phone: string;
@@ -19,7 +19,7 @@ const PartnerLeadSchema: Schema = new Schema(
     businessName: { type: String, required: true, trim: true },
     businessType: {
       type: String,
-      enum: ['bakery', 'cafe', 'restaurant', 'grocery', 'dessert'],
+      enum: ['bakery', 'cafe', 'restaurant', 'hotel', 'grocery', 'dessert'],
       default: 'bakery',
     },
     city: { type: String, required: true, trim: true },

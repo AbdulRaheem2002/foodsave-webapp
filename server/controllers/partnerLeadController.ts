@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { PartnerLead } from '../models/PartnerLead.js';
 import { normalizePhone, PK_PHONE_REGEX, EMAIL_REGEX } from '../utils/authValidation.js';
 
-const ALLOWED_TYPES = ['bakery', 'cafe', 'restaurant', 'grocery', 'dessert'] as const;
+const ALLOWED_TYPES = ['bakery', 'cafe', 'restaurant', 'hotel', 'grocery', 'dessert'] as const;
 
 export function validatePartnerLeadBody(body: any) {
   const ownerName = String(body?.ownerName || '').trim();

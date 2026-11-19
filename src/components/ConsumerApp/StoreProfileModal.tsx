@@ -126,7 +126,8 @@ export const StoreProfileModal: React.FC<StoreProfileModalProps> = ({
                   <div className="flex items-baseline gap-1.5 my-1">
                     <span className="text-sm font-black text-[#1b4332]">{formatCurrency(deal.currentPricePkr)}</span>
                     <span className="text-[10px] text-stone-400">
-                      Worth <span className="line-through">{formatCurrency(deal.originalPricePkr)}</span>
+                      {deal.isMysteryBag !== false ? 'Worth ' : 'Was '}
+                      <span className="line-through">{formatCurrency(deal.originalPricePkr)}</span>
                     </span>
                   </div>
                   <button
@@ -136,7 +137,7 @@ export const StoreProfileModal: React.FC<StoreProfileModalProps> = ({
                     }}
                     className="w-full py-1.5 rounded-lg bg-[#1b4332] hover:bg-[#133326] text-white font-bold text-[11px] shadow-xs transition-colors"
                   >
-                    Reserve Surprise Box
+                    {deal.isMysteryBag !== false ? 'Reserve Surprise Box' : 'Claim Closing Deal'}
                   </button>
                 </div>
               </div>

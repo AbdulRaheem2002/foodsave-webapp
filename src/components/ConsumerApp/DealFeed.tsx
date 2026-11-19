@@ -18,17 +18,18 @@ interface DealFeedProps {
 }
 
 const CATEGORIES: { key: CategoryType; label: string; icon: string }[] = [
-  { key: 'All', label: 'All Boxes', icon: '' },
-  { key: 'bakery', label: 'Bakery Boxes', icon: '🥐' },
-  { key: 'restaurant', label: 'Café & Meals', icon: '🍗' },
-  { key: 'grocery', label: 'Grocery Boxes', icon: '🥑' },
+  { key: 'All', label: 'All Deals', icon: '' },
+  { key: 'mystery-bag', label: 'Surprise Boxes', icon: '🎁' },
+  { key: 'restaurant', label: 'Restaurants & Hotels', icon: '🌶️' },
+  { key: 'bakery', label: 'Bakeries & Cafés', icon: '🥐' },
+  { key: 'grocery', label: 'Marts & Groceries', icon: '🥑' },
 ];
 
 const FLAVORS: { key: FlavorType; label: string }[] = [
-  { key: 'All', label: 'All Flavors' },
-  { key: 'sweet', label: '🥐 Sweet' },
-  { key: 'savory', label: '🍗 Savory' },
-  { key: 'drinks', label: '☕ Drinks' },
+  { key: 'All', label: 'All Cravings' },
+  { key: 'savory', label: '🌶️ Spicy & Savory' },
+  { key: 'sweet', label: '🥐 Sweet & Pastries' },
+  { key: 'drinks', label: '☕ Coffee & Buffet' },
   { key: 'mixed', label: '🍱 Mixed' },
 ];
 
@@ -71,7 +72,7 @@ export const DealFeed: React.FC<DealFeedProps> = ({
         selectedCategory === 'All'
           ? true
           : selectedCategory === 'mystery-bag'
-          ? !!deal.isMysteryBag
+          ? deal.isMysteryBag !== false
           : deal.category === selectedCategory;
 
       const matchesFlavor =
@@ -104,13 +105,13 @@ export const DealFeed: React.FC<DealFeedProps> = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search croissants, coffee box, F-7 bakery, savory..."
+                placeholder="Search biryani, spicy grill, surprise box, F-7 bakery, hotel buffet..."
                 className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#f7f5f0] border border-[#e8e3d8] text-stone-900 placeholder-stone-400 text-xs sm:text-sm focus:outline-none focus:border-[#1b4332] transition-all"
               />
             </div>
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#f7f5f0] border border-[#e8e3d8] text-xs">
-              <span className="text-stone-600 font-semibold whitespace-nowrap text-[11px]">Box Budget</span>
+              <span className="text-stone-600 font-semibold whitespace-nowrap text-[11px]">Max Budget</span>
               <select
                 value={maxBoxPrice}
                 onChange={(e) => setMaxBoxPrice(Number(e.target.value))}
@@ -201,31 +202,31 @@ export const DealFeed: React.FC<DealFeedProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 px-1">
         <div>
           <span className="text-xs font-bold uppercase tracking-[0.14em] text-[#2e7d32] block mb-1">
-            {deals.length === 0 ? 'Preview Tonight’s Format' : 'Live Closing Surprise Boxes'}
+            {deals.length === 0 ? 'Preview Tonight’s Formats' : 'Live Closing Boxes & Meal Deals'}
           </span>
           <h2 className="text-2xl sm:text-4xl font-extrabold text-[#171916] tracking-tight">
             {deals.length === 0 ? (
               <>
-                What Goes Into a{' '}
+                Surprise Boxes &amp;{' '}
                 <span className="font-serif-display italic font-semibold text-[#1B4332]">
-                  BiteHour Surprise Box
+                  Closing Kitchen Deals
                 </span>
               </>
             ) : (
-              "Today's Closing Surprise Boxes"
+              "Today's Closing Boxes & Meals"
             )}
           </h2>
           <p className="text-sm text-stone-600 mt-1 font-medium">
             {deals.length === 0
-              ? 'Guaranteed box value (e.g. Worth ₨ 1,200 for ₨ 450) with Sweet vs. Savory clarity — staff pack fresh leftovers at closing.'
-              : 'No cherry-picking individual dishes — reserve your Surprise Box by flavor & value and collect fresh before closing.'}
+              ? 'Save on Bakery & Hotel Surprise Boxes OR grab discounted single plates from spicy kitchens, grills, cafés & marts.'
+              : 'Reserve an assorted Surprise Box by value OR claim exact single dishes from partner bakeries, restaurants & hotels.'}
           </p>
         </div>
 
         <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#edf7ed] text-[#2e7d32] border border-[#c8e6c9] self-start sm:self-auto shadow-2xs">
           {deals.length === 0
-            ? 'Example Surprise Boxes'
-            : `${filteredDeals.length} Live Surprise Box${filteredDeals.length === 1 ? '' : 'es'}`}
+            ? 'Example Deal Formats'
+            : `${filteredDeals.length} Live Closing Deal${filteredDeals.length === 1 ? '' : 's'}`}
         </span>
       </div>
 

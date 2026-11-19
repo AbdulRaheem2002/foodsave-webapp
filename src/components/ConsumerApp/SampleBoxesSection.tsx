@@ -12,35 +12,44 @@ const SAMPLE_BOXES = [
     window: '9:30 PM – 11:00 PM',
     image: '/images/box-sweet.jpg',
     tag: '🥐 Sweet',
+    guideBadge: 'Example Box Guide',
+    formatPill: 'Surprise Box',
+    worthPrefix: 'Worth ',
     worth: '₨ 1,200',
     boxPrice: '₨ 450',
     valuePill: 'Worth ₨ 1,200',
   },
   {
-    title: 'Savory Café Surprise Box',
-    subtitle: 'Chef selection packed in 30s — e.g. paninis, savory puffs & flatbreads',
-    window: '9:00 PM – 10:30 PM',
+    title: 'Spicy Biryani & Grill Closing Meal',
+    subtitle: 'Exact closing restaurant portion — fresh chicken biryani, raita & charcoal tikka wrap',
+    window: '10:00 PM – 11:30 PM',
     image: '/images/box-savory.jpg',
-    tag: '🍗 Savory',
-    worth: '₨ 1,400',
-    boxPrice: '₨ 500',
-    valuePill: 'Worth ₨ 1,400',
+    tag: '🌶️ Spicy & Savory',
+    guideBadge: 'Single Meal Deal',
+    formatPill: '-50% Deal',
+    worthPrefix: 'Was ',
+    worth: '₨ 760',
+    boxPrice: '₨ 380',
+    valuePill: '-50% Closing Deal',
   },
   {
-    title: 'Coffee & Bake Surprise Box',
-    subtitle: 'Closing brew paired with freshly left-over almond bake or muffin',
+    title: 'Hotel Buffet & Café Takeaway Box',
+    subtitle: 'Fresh high-tea pastries, sandwiches & closing espresso brew from partner hotels & cafés',
     window: '8:30 PM – 10:30 PM',
     image: '/images/box-coffee.jpg',
-    tag: '☕ Drinks',
-    worth: '₨ 1,000',
-    boxPrice: '₨ 400',
-    valuePill: 'Worth ₨ 1,000',
+    tag: '☕ Hotel / Café',
+    guideBadge: 'Example Box Guide',
+    formatPill: 'Surprise Box',
+    worthPrefix: 'Worth ',
+    worth: '₨ 2,400',
+    boxPrice: '₨ 850',
+    valuePill: 'Worth ₨ 2,400',
   },
 ];
 
 /**
  * High-appetite visual preview rendered before the first partner drops live evening stock,
- * helping shoppers & Islamabad bakery owners picture exact BiteHour boxes transparently.
+ * showcasing both closing Surprise Boxes and Direct Meal Deals across bakeries, restaurants & hotels.
  */
 export const SampleBoxesSection: React.FC<SampleBoxesSectionProps> = ({ onOpenPartnerPage }) => {
   return (
@@ -62,7 +71,7 @@ export const SampleBoxesSection: React.FC<SampleBoxesSectionProps> = ({ onOpenPa
 
                 <div className="absolute top-3 left-3 flex items-center gap-1.5">
                   <span className="px-3 py-1 rounded-full bg-[#1B4332]/90 backdrop-blur-md text-white font-bold text-xs shadow-sm">
-                    Example Box Guide
+                    {box.guideBadge}
                   </span>
                   <span className="px-2.5 py-1 rounded-full bg-white/95 text-stone-800 font-bold text-xs shadow-sm">
                     {box.tag}
@@ -93,14 +102,22 @@ export const SampleBoxesSection: React.FC<SampleBoxesSectionProps> = ({ onOpenPa
             <div className="mt-4 pt-3.5 px-1 border-t border-stone-100 flex items-baseline justify-between">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-xs font-bold text-stone-400">
-                  Worth <span className="line-through">{box.worth}</span> for
+                  {box.worthPrefix}
+                  <span className="line-through">{box.worth}</span>{' '}
+                  {box.formatPill === 'Surprise Box' ? 'for' : '→'}
                 </span>
                 <span className="text-xl font-extrabold text-[#1B4332]">
                   {box.boxPrice}
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-[#2e7d32] bg-[#edf7ed] px-2.5 py-1 rounded-full border border-[#c8e6c9]">
-                Surprise Box
+              <span
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                  box.formatPill === 'Surprise Box'
+                    ? 'text-[#2e7d32] bg-[#edf7ed] border-[#c8e6c9]'
+                    : 'text-[#c2410c] bg-[#fff7ed] border-[#fed7aa]'
+                }`}
+              >
+                {box.formatPill}
               </span>
             </div>
           </div>
@@ -120,7 +137,7 @@ export const SampleBoxesSection: React.FC<SampleBoxesSectionProps> = ({ onOpenPa
             </span>
           </h3>
           <p className="text-sm text-emerald-100/85 leading-relaxed font-medium">
-            Own a bakery or café in Islamabad? Never mark down single menu items — let staff pack closing Surprise Boxes (Worth ₨ 1,200 for ₨ 450) in 30 seconds and collect cash the very same night.
+            Own a bakery, spicy restaurant, fast-food kitchen, hotel, café, or mart in Islamabad? Drop 30-second closing Surprise Boxes OR list exact closing meal deals with your own dish photos and collect cash the very same night.
           </p>
         </div>
 
@@ -131,7 +148,7 @@ export const SampleBoxesSection: React.FC<SampleBoxesSectionProps> = ({ onOpenPa
             className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-[#f37021] hover:bg-[#e26115] text-white text-sm font-extrabold shadow-lg transition-all shrink-0 cursor-pointer"
           >
             <Store className="size-4" />
-            <span>List Your Bakery Free</span>
+            <span>List Your Business Free</span>
             <ArrowRight className="size-4" />
           </button>
         )}
