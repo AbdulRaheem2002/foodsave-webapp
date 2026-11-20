@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingBag, Store, LogIn, MapPin, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, Store, LogIn, MapPin, ArrowLeft, ShieldCheck, Leaf } from 'lucide-react';
 import type { AuthUser, AppTab } from '../types';
 import { BiteHourLogo } from './BrandLogo';
 
@@ -95,6 +95,21 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="hidden xs:inline sm:inline">Admin</span>
               </button>
             )}
+
+            {/* Dedicated Impact Page Pill */}
+            <button
+              type="button"
+              onClick={() => setActiveTab(activeTab === 'impact' ? 'consumer' : 'impact')}
+              title="BiteHour Food Rescue Impact & Savings Calculator"
+              className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs sm:text-[13px] font-bold border flex items-center gap-1 transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'impact'
+                  ? 'bg-[#1B4332] border-[#1B4332] text-white shadow-xs'
+                  : 'bg-white border-[#E5DFD3] text-[#1B4332] hover:border-[#1B4332]/40 hover:bg-[#edf7ed]'
+              }`}
+            >
+              <Leaf className="size-3.5" />
+              <span className="hidden sm:inline">Impact</span>
+            </button>
 
             {/* Single Smart Business Action: For Bakeries (/partner), Store POS (logged-in retailer), or ← Live Deals */}
             <button

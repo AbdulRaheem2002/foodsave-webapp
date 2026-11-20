@@ -15,6 +15,7 @@ interface PartnerPageProps {
   onOpenMerchantRegister: () => void;
   onOpenStoreLogin?: () => void;
   onBackToDeals: () => void;
+  onOpenVendorAgreement?: () => void;
 }
 
 const BENEFITS = [
@@ -44,6 +45,7 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
   onOpenMerchantRegister,
   onOpenStoreLogin,
   onBackToDeals,
+  onOpenVendorAgreement,
 }) => {
   const [ownerName, setOwnerName] = useState('');
   const [businessName, setBusinessName] = useState('');
@@ -331,10 +333,24 @@ export const PartnerPage: React.FC<PartnerPageProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] disabled:opacity-50 text-white font-black text-xs shadow-md transition-all"
+                className="w-full py-3.5 rounded-xl bg-[#1b4332] hover:bg-[#133326] disabled:opacity-50 text-white font-black text-xs shadow-md transition-all cursor-pointer"
               >
                 {isSubmitting ? 'Submitting Application...' : 'Submit Partner Request →'}
               </button>
+
+              {onOpenVendorAgreement && (
+                <p className="text-[11px] text-stone-500 text-center font-medium">
+                  By applying, you confirm ICT / Punjab Food Authority hygiene standards &amp; agree to our{' '}
+                  <button
+                    type="button"
+                    onClick={onOpenVendorAgreement}
+                    className="font-bold text-[#1B4332] hover:underline cursor-pointer"
+                  >
+                    Partner Agreement (0% Fee)
+                  </button>
+                  .
+                </p>
+              )}
             </form>
           )}
         </div>

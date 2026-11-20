@@ -21,8 +21,8 @@ const STEPS = [
   {
     num: '03',
     icon: QrCode,
-    title: 'Show Pickup Code at Counter',
-    desc: 'Walk in during the store pickup window and show your PK-XXXXX counter pass. Cashiers verify it in 5 seconds.',
+    title: 'Show Code at Verified Kitchen',
+    desc: 'Walk in during the store closing window and show your PK-XXXXX pass at the verified partner counter. Cashiers verify it in 5 seconds.',
   },
   {
     num: '04',

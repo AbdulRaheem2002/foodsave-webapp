@@ -28,7 +28,7 @@ import {
   deleteDropSubscriber,
   deletePushSubscriber,
 } from './controllers/adminController.js';
-import { getDeals } from './controllers/dealController.js';
+import { getDeals, getPlatformImpact } from './controllers/dealController.js';
 import {
   createReservation,
   getMyReservations,
@@ -44,6 +44,7 @@ import {
   deleteDeal,
 } from './controllers/retailerController.js';
 import {
+  buildPlatformImpactPayload,
   buildPlatformSalesSummary,
   buildStoreSalesSummary,
   isItemExpired,
@@ -643,6 +644,33 @@ app.post('/api/push/test', async (req: Request, res: Response) => {
     }
     res.status(500).json({ error: pushErr?.message || 'Failed to send test push notification.' });
   }
+});
+
+// Public Non-PII Platform Impact Metrics
+app.get('/api/impact', async (req: Request, res: Response) => {
+  if (isMongoConnected()) {
+    try {
+      await getPlatformImpact(req, res);
+      return;
+    } catch (mongoErr) {
+      console.warn('⚠️ MongoDB getPlatformImpact fallback to memDb:', mongoErr);
+    }
+  }
+
+  const now = Date.now();
+  const verifiedKitchensCount = memDb.retailers.filter((r) => r.isVerified).length;
+  const activeDealsCount = memDb.deals.filter((deal) => {
+    const item = memDb.items.find((i) => i.id === deal.itemId);
+    return deal.status === 'active' && deal.stockQuantity > 0 && item && !isItemExpired(item.expiryDeadline, now);
+  }).length;
+
+  const orderRecords = memDb.reservations.map((r) => {
+    const deal = memDb.deals.find((d) => d.id === r.dealId);
+    const item = deal ? memDb.items.find((i) => i.id === deal.itemId) : undefined;
+    return mapReservationToOrderRecord(r, { item, deal });
+  });
+
+  res.json(buildPlatformImpactPayload(orderRecords, verifiedKitchensCount, activeDealsCount));
 });
 
 // 3. Deals Endpoint (Calculate Rule-Based Time Decay & Filter)

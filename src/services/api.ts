@@ -3,6 +3,7 @@ import type {
   AdminOverview,
   DealItem,
   DropAlertPreference,
+  PlatformImpactSummary,
   PushDeviceType,
   Reservation,
   RetailerOrdersResponse,
@@ -522,6 +523,15 @@ export async function fetchRetailerOrdersApi(): Promise<RetailerOrdersResponse> 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error || 'Unable to load store sales and buyer orders.');
+  }
+  return data;
+}
+
+export async function fetchPlatformImpactApi(): Promise<PlatformImpactSummary> {
+  const res = await fetch(`${API_BASE_URL}/impact`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Unable to load platform impact metrics.');
   }
   return data;
 }

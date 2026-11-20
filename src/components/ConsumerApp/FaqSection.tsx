@@ -15,16 +15,20 @@ const FAQS = [
     a: 'You can pay via Cash on Pickup right at the store counter when inspecting your pickup pass, or choose JazzCash / EasyPaisa where supported by the partner.',
   },
   {
-    q: 'Is the food fresh and same-day?',
-    a: 'Yes. Every BiteHour drop comes from licensed partner cafés, bakeries, spicy kitchens, hotels, and groceries selling fresh same-day inventory before closing time.',
+    q: 'Are partner bakeries, hotels & spicy kitchens verified?',
+    a: 'Yes. Every BiteHour store application is manually reviewed by our team before Store POS access is unlocked. Verified partners commit to licensed Halal operation, ICT / Punjab Food Authority hygiene compliance, and same-day food preparation.',
   },
   {
-    q: 'How long is my pickup code held, and what if I miss the window?',
-    a: 'Each reservation locks your order immediately for your 15-minute hold / store closing window. If you cannot make it, cancel ahead of time in My Passes so the kitchen can release the stock to another customer.',
+    q: 'What about allergies or dietary restrictions in Surprise Boxes?',
+    a: 'Surprise Boxes combine fresh unsold items from the counter and commonly contain wheat/gluten, dairy, eggs, sesame, or nuts. If you have food allergies, choose labeled Single Meal Deals or verify ingredients with counter staff before paying.',
+  },
+  {
+    q: 'What if plans change, I miss pickup, or there is a food quality issue?',
+    a: 'Each reservation locks your hold for 15 minutes or the closing pickup slot. Cancel ahead in My Bag if you cannot make it so the kitchen can release the food. For any quality mismatch at handover, inspect at the counter and contact support within 48 hours with your PK-XXXXX code.',
   },
   {
     q: 'I run a restaurant, hotel, bakery, or mart — how fast can I start?',
-    a: 'Apply in 30 seconds on our Partner Page. Once approved via email or WhatsApp (with zero launch commission), you get Store POS access to upload your own photos, drop boxes or single deals, and verify PK-XXXXX codes from any phone.',
+    a: 'Apply in 30 seconds on our Partner Page. Once approved under our 0% Launch Partner Agreement, you get instant Store POS access to upload your own dish photos, post Surprise Boxes or single deals, and verify PK-XXXXX codes from any phone.',
   },
 ];
 

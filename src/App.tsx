@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import type { DealItem, Reservation, RetailerStore, AuthUser, PakistanCity, AppTab } from './types';
+import type { DealItem, Reservation, RetailerStore, AuthUser, PakistanCity, AppTab, LegalPolicyKey } from './types';
 import { Navbar } from './components/Navbar';
 import { DealMap } from './components/ConsumerApp/DealMap';
 import { DealFeed } from './components/ConsumerApp/DealFeed';
@@ -7,6 +7,7 @@ import { MysteryBagsBanner } from './components/ConsumerApp/MysteryBagsBanner';
 import { HowItWorksSection } from './components/ConsumerApp/HowItWorksSection';
 import { FaqSection } from './components/ConsumerApp/FaqSection';
 import { PartnerPage } from './components/PartnerPage';
+import { ImpactPage } from './components/ImpactPage';
 import { AdminDashboard } from './components/AdminDashboard';
 import { InstallPwaBanner } from './components/InstallPwaBanner';
 import { ReservationModal } from './components/ConsumerApp/ReservationModal';
@@ -17,6 +18,7 @@ import { StoreProfileModal } from './components/ConsumerApp/StoreProfileModal';
 import { RetailerDashboard } from './components/RetailerPOS/RetailerDashboard';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
+import { LegalPolicyModal } from './components/LegalPolicyModal';
 import {
   fetchDealsApi,
   fetchStoresApi,
@@ -42,6 +44,7 @@ export function App() {
       if (window.location.pathname === '/partner') return 'partner';
       if (window.location.pathname === '/merchant') return 'retailer';
       if (window.location.pathname === '/admin') return 'admin';
+      if (window.location.pathname === '/impact') return 'impact';
     }
     return 'consumer';
   });
@@ -72,6 +75,8 @@ export function App() {
         ? '/merchant'
         : activeTab === 'admin'
         ? '/admin'
+        : activeTab === 'impact'
+        ? '/impact'
         : '/';
     if (window.location.pathname !== nextPath) {
       window.history.replaceState(null, '', nextPath);
@@ -91,6 +96,7 @@ export function App() {
 
   const [isPassesDrawerOpen, setIsPassesDrawerOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [activeLegalPolicy, setActiveLegalPolicy] = useState<LegalPolicyKey | null>(null);
   const [authInitialRole, setAuthInitialRole] = useState<'consumer' | 'retailer' | 'admin'>('consumer');
   const [authInitialMode, setAuthInitialMode] = useState<'login' | 'register'>('login');
   
@@ -508,6 +514,17 @@ export function App() {
               </div>
             </div>
           )
+        ) : activeTab === 'impact' ? (
+          <ImpactPage
+            onExploreDeals={() => {
+              setActiveTab('consumer');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onOpenPartnerPage={() => {
+              setActiveTab('partner');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         ) : activeTab === 'partner' ? (
           <PartnerPage
             onOpenMerchantRegister={() => {
@@ -534,6 +551,7 @@ export function App() {
               setActiveTab('consumer');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
+            onOpenVendorAgreement={() => setActiveLegalPolicy('vendor')}
           />
         ) : activeTab === 'retailer' ? (
           currentUser?.role === 'retailer' && currentUser.retailer?.isVerified ? (
@@ -873,6 +891,18 @@ export function App() {
           setActiveTab('retailer');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+        onOpenImpactPage={() => {
+          setActiveTab('impact');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenPolicy={(policy) => setActiveLegalPolicy(policy)}
+      />
+
+      {/* Comprehensive Terms, Privacy, Partner Agreement & Halal/Allergen Policies */}
+      <LegalPolicyModal
+        activePolicy={activeLegalPolicy}
+        onSelectPolicy={(policy) => setActiveLegalPolicy(policy)}
+        onClose={() => setActiveLegalPolicy(null)}
       />
 
     </div>

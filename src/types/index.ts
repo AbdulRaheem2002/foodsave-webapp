@@ -66,7 +66,20 @@ export interface RetailerStore {
   totalWastedValueAvoidedPkr: number;
 }
 
-export type AppTab = 'consumer' | 'retailer' | 'partner' | 'admin';
+export type AppTab = 'consumer' | 'retailer' | 'partner' | 'admin' | 'impact';
+
+export type LegalPolicyKey = 'terms' | 'privacy' | 'vendor' | 'halal';
+
+export interface PlatformImpactSummary {
+  mealsRescued: number;
+  activePendingHolds: number;
+  verifiedKitchensCount: number;
+  activeDealsCount: number;
+  merchantRevenueRecoveredPkr: number;
+  customerSavedPkr: number;
+  totalWastedValueAvoidedPkr: number;
+  co2AvoidedKg: number;
+}
 
 export interface Reservation {
   id: string;

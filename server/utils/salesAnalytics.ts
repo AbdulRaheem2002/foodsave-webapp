@@ -302,6 +302,30 @@ export function buildPlatformSalesSummary(allOrders: StoreOrderRecord[]): Platfo
   };
 }
 
+export function buildPlatformImpactPayload(
+  allOrders: StoreOrderRecord[],
+  verifiedKitchensCount: number,
+  activeDealsCount: number
+) {
+  const summary = buildPlatformSalesSummary(allOrders);
+  const mealsRescued = summary.totalUnitsSold;
+  const customerSavedPkr = Math.max(
+    0,
+    summary.totalWastedValueAvoidedPkr - summary.totalCollectedRevenuePkr
+  );
+
+  return {
+    mealsRescued,
+    activePendingHolds: summary.totalUnitsPending,
+    verifiedKitchensCount,
+    activeDealsCount,
+    merchantRevenueRecoveredPkr: summary.totalCollectedRevenuePkr,
+    customerSavedPkr,
+    totalWastedValueAvoidedPkr: summary.totalWastedValueAvoidedPkr,
+    co2AvoidedKg: Number((mealsRescued * 1.25).toFixed(1)),
+  };
+}
+
 export async function expireStalePendingReservationsMongo(
   filter: Record<string, unknown> = {}
 ): Promise<void> {

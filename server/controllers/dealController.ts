@@ -1,7 +1,13 @@
 import { Request, Response } from 'express';
 import { Deal } from '../models/Deal.js';
+import { Reservation } from '../models/Reservation.js';
+import { Retailer } from '../models/Retailer.js';
 import { calculateTimeDecay } from '../utils/decayCalculator.js';
-import { isItemExpired } from '../utils/salesAnalytics.js';
+import {
+  buildPlatformImpactPayload,
+  isItemExpired,
+  mapReservationToOrderRecord,
+} from '../utils/salesAnalytics.js';
 
 
 export const getDeals = async (req: Request, res: Response): Promise<void> => {
@@ -88,5 +94,28 @@ export const getDeals = async (req: Request, res: Response): Promise<void> => {
     res.json(filtered);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to fetch deals' });
+  }
+};
+
+export const getPlatformImpact = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const now = Date.now();
+    const [verifiedKitchensCount, activeDealsRaw, reservations] = await Promise.all([
+      Retailer.countDocuments({ isVerified: true }),
+      Deal.find({ status: 'active', stockQuantity: { $gt: 0 } }).populate('itemRef'),
+      Reservation.find({})
+        .populate({ path: 'dealRef', populate: { path: 'itemRef' } })
+        .select('status quantity totalAmountPkr paymentMethod paymentStatus pickupWindowEnd createdAt dealRef'),
+    ]);
+
+    const activeDealsCount = (activeDealsRaw as any[]).filter(
+      (deal) => deal.itemRef && !isItemExpired(deal.itemRef.expiryDeadline, now)
+    ).length;
+
+    const orderRecords = (reservations as any[]).map((r) => mapReservationToOrderRecord(r));
+
+    res.json(buildPlatformImpactPayload(orderRecords, verifiedKitchensCount, activeDealsCount));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to calculate platform impact.' });
   }
 };

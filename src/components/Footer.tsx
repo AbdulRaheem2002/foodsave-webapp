@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ShieldCheck, CheckCircle2, X } from 'lucide-react';
+import React from 'react';
+import { ShieldCheck, CheckCircle2 } from 'lucide-react';
+import type { LegalPolicyKey } from '../types';
 import { BiteHourLogo } from './BrandLogo';
 
 interface FooterProps {
@@ -7,33 +8,19 @@ interface FooterProps {
   itemsRescuedCount?: number;
   onOpenPartnerPage?: () => void;
   onOpenMerchantPortal?: () => void;
+  onOpenImpactPage?: () => void;
+  onOpenPolicy?: (policy: LegalPolicyKey) => void;
 }
-
-const POLICY_DETAILS: Record<'halal' | 'terms' | 'privacy', { title: string; body: string }> = {
-  halal: {
-    title: 'Halal & Same-Day Freshness Policy',
-    body: 'All partner bakeries, cafés, restaurants, and groceries on BiteHour Pakistan list 100% Halal-certified same-day food prepared fresh in licensed commercial kitchens and sold before closing.',
-  },
-  terms: {
-    title: 'Terms of Pickup & Reservation Hold',
-    body: 'Reservations lock your bag for a 15-minute counter hold (or within the posted closing pickup window). Please present your PK-XXXXX code at the store counter or cancel ahead in My Bag if plans change.',
-  },
-  privacy: {
-    title: 'Customer & Partner Privacy Policy',
-    body: 'We collect only your name, phone number, and email strictly to issue pickup passes, send order confirmations, and verify store partners. We never sell personal data to third parties.',
-  },
-};
 
 export const Footer: React.FC<FooterProps> = ({
   onOpenPartnerPage,
   onOpenMerchantPortal,
+  onOpenImpactPage,
+  onOpenPolicy,
 }) => {
-  const [activePolicy, setActivePolicy] = useState<'halal' | 'terms' | 'privacy' | null>(null);
-
   return (
     <footer className="w-full bg-[#F5F1E8] text-stone-700 pt-14 pb-10 px-4 lg:px-8 border-t border-[#E5DFD3]">
       <div className="max-w-7xl mx-auto flex flex-col gap-10">
-        
         {/* Payment Options Banner */}
         <div className="rounded-[1.75rem] bg-[#142E22] text-white p-6 sm:p-8 border border-[#1F4433] shadow-lg flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div>
@@ -67,7 +54,7 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="flex flex-col gap-3 items-start">
             <BiteHourLogo compact />
             <p className="text-xs text-stone-500 leading-relaxed font-medium">
-              Helping Pakistani bakeries, cafés, and restaurants turn evening surplus into affordable deals and new walk-in customers.
+              Helping Pakistani bakeries, restaurants, hotels, cafés, and marts turn evening surplus into affordable deals and new walk-in customers.
             </p>
           </div>
 
@@ -85,14 +72,14 @@ export const Footer: React.FC<FooterProps> = ({
 
           <div>
             <h4 className="text-xs font-black uppercase tracking-wider text-stone-400 mb-3">
-              For Merchants
+              For Kitchens &amp; Community
             </h4>
             <ul className="space-y-1.5 text-xs text-stone-600 font-medium">
               <li>
                 <button
                   type="button"
                   onClick={onOpenPartnerPage}
-                  className="font-bold text-[#1b4332] hover:text-[#f37021] hover:underline text-left transition-colors"
+                  className="font-bold text-[#1b4332] hover:text-[#f37021] hover:underline text-left transition-colors cursor-pointer"
                 >
                   Partner With Us (0% Launch Fee)
                 </button>
@@ -101,13 +88,29 @@ export const Footer: React.FC<FooterProps> = ({
                 <button
                   type="button"
                   onClick={onOpenMerchantPortal}
-                  className="hover:text-[#1b4332] hover:underline text-left transition-colors"
+                  className="hover:text-[#1b4332] hover:underline text-left transition-colors cursor-pointer"
                 >
                   Store POS Portal
                 </button>
               </li>
-              <li>Time-Decay Surplus Pricing</li>
-              <li>Cashier Pass Verification (0% Fee)</li>
+              <li>
+                <button
+                  type="button"
+                  onClick={onOpenImpactPage}
+                  className="hover:text-[#1b4332] hover:underline text-left transition-colors cursor-pointer"
+                >
+                  Live Rescue Impact &amp; Calculator
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onOpenPolicy?.('vendor')}
+                  className="hover:text-[#1b4332] hover:underline text-left transition-colors cursor-pointer"
+                >
+                  Partner &amp; Vendor Agreement
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -115,18 +118,18 @@ export const Footer: React.FC<FooterProps> = ({
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-[#2e7d32] flex items-center gap-1 mb-1">
                 <ShieldCheck className="size-3 text-[#2e7d32]" />
-                Quality &amp; Pickup Policy
+                Verified Partner Kitchens
               </span>
               <h5 className="text-xs font-black text-stone-900 mb-1">
-                Fresh Same-Day Surplus
+                Fresh Same-Day Closing Deals
               </h5>
               <p className="text-[11px] text-stone-500 leading-relaxed font-medium">
-                All partner stores list verified same-day surplus inventory with clear expiry and pickup deadlines.
+                Every verified partner lists same-day closing food with clear pickup deadlines — expired deals are hidden automatically.
               </p>
             </div>
             <div className="flex items-center gap-1 text-[10px] font-bold text-[#2e7d32] mt-3 pt-2 border-t border-stone-200">
               <CheckCircle2 className="size-3" />
-              <span>15-Minute Pickup Hold</span>
+              <span>15-Minute Pickup Hold • 48h Dispute Care</span>
             </div>
           </div>
         </div>
@@ -136,57 +139,38 @@ export const Footer: React.FC<FooterProps> = ({
           <div>
             © 2026 BiteHour Pakistan. All rights reserved.
           </div>
-          <div className="flex items-center gap-5 text-[11px]">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-5 text-[11px]">
             <button
               type="button"
-              onClick={() => setActivePolicy('halal')}
+              onClick={() => onOpenPolicy?.('halal')}
               className="hover:text-stone-700 cursor-pointer transition-colors"
             >
-              Halal Verification Policy
+              Halal &amp; Allergens
             </button>
             <button
               type="button"
-              onClick={() => setActivePolicy('terms')}
+              onClick={() => onOpenPolicy?.('vendor')}
+              className="hover:text-stone-700 cursor-pointer transition-colors"
+            >
+              Partner Agreement
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenPolicy?.('terms')}
               className="hover:text-stone-700 cursor-pointer transition-colors"
             >
               Terms of Service
             </button>
             <button
               type="button"
-              onClick={() => setActivePolicy('privacy')}
+              onClick={() => onOpenPolicy?.('privacy')}
               className="hover:text-stone-700 cursor-pointer transition-colors"
             >
               Privacy Policy
             </button>
           </div>
         </div>
-
       </div>
-
-      {activePolicy && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="relative w-full max-w-md bg-white border border-stone-200 rounded-3xl p-6 shadow-2xl space-y-3">
-            <button
-              type="button"
-              onClick={() => setActivePolicy(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600"
-            >
-              <X className="size-4" />
-            </button>
-            <h3 className="text-base font-black text-stone-900 pr-8">{POLICY_DETAILS[activePolicy].title}</h3>
-            <p className="text-xs text-stone-600 leading-relaxed font-medium">
-              {POLICY_DETAILS[activePolicy].body}
-            </p>
-            <button
-              type="button"
-              onClick={() => setActivePolicy(null)}
-              className="w-full py-2.5 rounded-xl bg-[#1b4332] text-white text-xs font-black"
-            >
-              Got it
-            </button>
-          </div>
-        </div>
-      )}
     </footer>
   );
 };
