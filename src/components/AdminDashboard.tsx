@@ -86,8 +86,10 @@ export const AdminDashboard: React.FC = () => {
     loadOverview();
   }, []);
 
+  const appOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+
   const buildStoreApprovalMsg = (store: AdminRetailerRecord) =>
-    `Assalam-o-Alaikum ${store.ownerName || ''}! Your BiteHour bakery account for ${store.name} (${store.sector || store.city}) is now APPROVED. Sign in at https://foodsave-webapp.vercel.app/merchant to post tonight's closing-hour deals!`;
+    `Assalam-o-Alaikum ${store.ownerName || ''}! Your BiteHour partner account for ${store.name} (${store.sector || store.city}) is now APPROVED. Sign in at ${appOrigin}/merchant to post tonight's closing-hour deals!`;
 
   const executeConfirmedAction = async () => {
     if (!confirmAction) return;
@@ -614,7 +616,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
           ) : (
             overview.partnerLeads.map((lead) => {
-              const outreachMsg = `Assalam-o-Alaikum ${lead.ownerName}! Thank you for applying ${lead.businessName} (${lead.sector}, ${lead.city}) to BiteHour. Reply here or register your Store POS login at https://foodsave-webapp.vercel.app/merchant so we can approve your account right away.`;
+              const outreachMsg = `Assalam-o-Alaikum ${lead.ownerName}! Thank you for applying ${lead.businessName} (${lead.sector}, ${lead.city}) to BiteHour. Reply here or register your Store POS login at ${appOrigin}/merchant so we can approve your account right away.`;
               return (
                 <div
                   key={lead.id}
@@ -795,7 +797,7 @@ export const AdminDashboard: React.FC = () => {
                   subscriber.preferences && subscriber.preferences.length > 0
                     ? subscriber.preferences
                     : [subscriber.preference || 'all'];
-                const dropPingMsg = `Assalam-o-Alaikum${subscriber.name ? ` ${subscriber.name}` : ''}! Tonight's BiteHour surplus bakery boxes just dropped in ${sectorList.join(', ')}. Reserve your closing-hour bag now before it sells out: https://foodsave-webapp.vercel.app`;
+                const dropPingMsg = `Assalam-o-Alaikum${subscriber.name ? ` ${subscriber.name}` : ''}! Tonight's BiteHour surplus boxes & closing deals just dropped in ${sectorList.join(', ')}. Reserve before it sells out: ${appOrigin}`;
                 return (
                   <div
                     key={subscriber.id}

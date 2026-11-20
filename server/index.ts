@@ -68,13 +68,47 @@ import {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = process.env.CLIENT_URL
-  ? [...process.env.CLIENT_URL.split(',').map((s) => s.trim()), 'http://localhost:5173', 'http://localhost:4173']
-  : undefined;
+const configuredOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',')
+      .map((s) => s.trim().replace(/\/+$/, ''))
+      .filter(Boolean)
+  : [];
+
+const allowedOrigins = configuredOrigins.length
+  ? [...configuredOrigins, 'http://localhost:5173', 'http://localhost:4173']
+  : null;
+
+function isOriginAllowed(origin?: string): boolean {
+  if (!origin || !allowedOrigins) return true;
+  const cleanOrigin = origin.replace(/\/+$/, '');
+  if (allowedOrigins.includes(cleanOrigin)) return true;
+
+  // Also allow Cloudflare Pages preview deploys (https://<hash>.<project>.pages.dev) when <project>.pages.dev is in CLIENT_URL
+  return configuredOrigins.some((allowed) => {
+    try {
+      const allowedUrl = new URL(allowed);
+      const incomingUrl = new URL(cleanOrigin);
+      return (
+        allowedUrl.protocol === 'https:' &&
+        incomingUrl.protocol === 'https:' &&
+        allowedUrl.hostname.endsWith('.pages.dev') &&
+        incomingUrl.hostname.endsWith(`.${allowedUrl.hostname}`)
+      );
+    } catch {
+      return false;
+    }
+  });
+}
 
 app.use(
   cors({
-    origin: allowedOrigins || true,
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked origin: ${origin}`));
+      }
+    },
     credentials: true,
   })
 );
